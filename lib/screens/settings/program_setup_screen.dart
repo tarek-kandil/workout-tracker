@@ -46,12 +46,27 @@ class _ProgramSetupScreenState extends ConsumerState<ProgramSetupScreen> {
     final db = ref.read(databaseProvider);
     final phases =
         await db.programsDao.getPhasesForProgram(widget.existingProgram!.id);
-    if (phases.isNotEmpty && mounted) {
-      setState(() {
-        _phaseId = phases.first.id;
-        _durationCtrl.text = phases.first.durationWeeks.toString();
-      });
+    if (phases.isEmpty || !mounted) return;
+
+    // Programs are single-phase for now. Zero out any extra phases so they
+    // don't inflate week totals. We keep the rows (and their WODs) intact so
+    // the phase feature can be revived later without data loss.
+    for (int i = 1; i < phases.length; i++) {
+      final p = phases[i];
+      await db.programsDao.updatePhase(ProgramPhasesCompanion(
+        id: Value(p.id),
+        programId: Value(p.programId),
+        phaseNumber: Value(p.phaseNumber),
+        name: Value(p.name),
+        durationWeeks: const Value(0),
+      ));
     }
+
+    if (!mounted) return;
+    setState(() {
+      _phaseId = phases.first.id;
+      _durationCtrl.text = phases.first.durationWeeks.toString();
+    });
   }
 
   @override
@@ -75,6 +90,7 @@ class _ProgramSetupScreenState extends ConsumerState<ProgramSetupScreen> {
         status: Value(widget.existingProgram!.status),
       ));
       if (_phaseId != null) {
+        // Update the primary phase with the user-specified duration.
         await db.programsDao.updatePhase(ProgramPhasesCompanion(
           id: Value(_phaseId!),
           programId: Value(widget.existingProgram!.id),
@@ -82,6 +98,19 @@ class _ProgramSetupScreenState extends ConsumerState<ProgramSetupScreen> {
           name: const Value('Main'),
           durationWeeks: Value(weeks),
         ));
+        // Zero out every other phase so they never contribute to week totals.
+        final allPhases = await db.programsDao
+            .getPhasesForProgram(widget.existingProgram!.id);
+        for (final p in allPhases) {
+          if (p.id == _phaseId) continue;
+          await db.programsDao.updatePhase(ProgramPhasesCompanion(
+            id: Value(p.id),
+            programId: Value(p.programId),
+            phaseNumber: Value(p.phaseNumber),
+            name: Value(p.name),
+            durationWeeks: const Value(0),
+          ));
+        }
         ref.invalidate(currentProgramWeekProvider);
       }
       ref.invalidate(allProgramsProvider);

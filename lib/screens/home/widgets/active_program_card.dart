@@ -20,7 +20,11 @@ class ActiveProgramCard extends ConsumerWidget {
         if (program == null) return const SizedBox.shrink();
 
         final phases = phasesAsync.valueOrNull ?? [];
-        final totalWeeks = phases.fold(0, (s, p) => s + p.durationWeeks);
+        // Use only the first phase duration — programs are single-phase in the
+        // current UI; extra legacy phases from the old multi-phase editor must
+        // not inflate this number.
+        final totalWeeks =
+            phases.isNotEmpty ? phases.first.durationWeeks : 0;
         final currentWeek = weekAsync.valueOrNull ?? 1;
         final progress =
             totalWeeks > 0 ? (currentWeek - 1) / totalWeeks : 0.0;
@@ -121,7 +125,7 @@ class ActiveProgramCard extends ConsumerWidget {
                               ?.copyWith(fontWeight: FontWeight.w600),
                         ),
                         Text(
-                          '${totalWeeks - currentWeek} weeks remaining',
+                          '${totalWeeks - currentWeek + 1} weeks remaining',
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],

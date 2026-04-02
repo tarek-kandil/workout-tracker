@@ -50,6 +50,8 @@ final currentProgramWeekProvider = FutureProvider<int?>((ref) async {
       .watch(databaseProvider)
       .programsDao
       .getPhasesForProgram(program.id);
+  // Extra phases are zeroed out so the fold always equals the first phase's
+  // duration, which is the user-visible program length.
   final totalWeeks = phases.fold(0, (sum, p) => sum + p.durationWeeks);
 
   final daysSinceStart =
