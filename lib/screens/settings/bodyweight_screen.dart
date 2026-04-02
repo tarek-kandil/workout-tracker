@@ -4,6 +4,7 @@ import 'package:drift/drift.dart' show Value;
 import '../../database/app_database.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/home_providers.dart';
+import '../../widgets/glass_background.dart';
 
 class BodyweightScreen extends ConsumerWidget {
   const BodyweightScreen({super.key});
@@ -19,7 +20,10 @@ class BodyweightScreen extends ConsumerWidget {
         icon: const Icon(Icons.add),
         label: const Text('Log Weight'),
       ),
-      body: entriesAsync.when(
+      body: Stack(
+        children: [
+          const Positioned.fill(child: GlassBackground()),
+          entriesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (entries) {
@@ -35,11 +39,13 @@ class BodyweightScreen extends ConsumerWidget {
             );
           }
           return ListView.builder(
-            padding: const EdgeInsets.only(bottom: 96),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
             itemCount: entries.length,
             itemBuilder: (_, i) => _EntryTile(entry: entries[i]),
           );
         },
+          ),
+        ],
       ),
     );
   }
@@ -122,24 +128,32 @@ class _EntryTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: Theme.of(context)
-            .colorScheme
-            .primaryContainer
-            .withValues(alpha: 0.5),
-        child: Icon(Icons.monitor_weight_outlined,
-            size: 18, color: Theme.of(context).colorScheme.primary),
-      ),
-      title: Text(
-        '${entry.weightKg.toStringAsFixed(1)} kg',
-        style: const TextStyle(fontWeight: FontWeight.w600),
-      ),
-      subtitle: Text(_formatDate(entry.date)),
-      trailing: IconButton(
-        icon: Icon(Icons.delete_outline,
-            color: Theme.of(context).colorScheme.error),
-        onPressed: () => _confirmDelete(context, ref),
+    final accent = Theme.of(context).colorScheme.primary;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0x26000000),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.09)),
+        ),
+        child: ListTile(
+          leading: CircleAvatar(
+            backgroundColor: accent.withValues(alpha: 0.15),
+            child: Icon(Icons.monitor_weight_outlined,
+                size: 18, color: accent),
+          ),
+          title: Text(
+            '${entry.weightKg.toStringAsFixed(1)} kg',
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          subtitle: Text(_formatDate(entry.date)),
+          trailing: IconButton(
+            icon: Icon(Icons.delete_outline,
+                color: Theme.of(context).colorScheme.error),
+            onPressed: () => _confirmDelete(context, ref),
+          ),
+        ),
       ),
     );
   }

@@ -18,19 +18,29 @@ void main() async {
 }
 
 ThemeData _buildTheme() {
-  const seedColor = Color(0xFF3D6BF8);
+  // ── Liquid Glass palette ───────────────────────────────────────────────────
+  const bg        = Color(0xFF0F172A); // Deep Midnight
+  const accent    = Color(0xFF818CF8); // Soft Indigo  — active states
+  const sky       = Color(0xFF38BDF8); // Electric Sky — rim light / highlights
+  const offWhite  = Color(0xF2F8FAFC); // Vibrant Text  — 90% opacity
+
   return ThemeData(
     colorScheme: ColorScheme.fromSeed(
-      seedColor: seedColor,
+      seedColor: accent,
       brightness: Brightness.dark,
+    ).copyWith(
+      // Override a few tokens so cards/buttons pick up the exact palette
+      primary: accent,
+      secondary: sky,
+      surface: const Color(0xFF1E293B),  // slightly lighter than bg for surfaces
     ),
     useMaterial3: true,
-    scaffoldBackgroundColor: const Color(0xFF0D1117),
+    scaffoldBackgroundColor: bg,
     cardTheme: CardThemeData(
       elevation: 0,
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
-      color: const Color(0xFF161C2C),
+      color: const Color(0xFF1E293B),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
@@ -38,34 +48,41 @@ ThemeData _buildTheme() {
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
+        backgroundColor: accent,
+        foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         minimumSize: const Size.fromHeight(48),
       ),
     ),
-    appBarTheme: const AppBarTheme(
+    appBarTheme: AppBarTheme(
       elevation: 0,
       scrolledUnderElevation: 0,
-      backgroundColor: Color(0xFF0D1117),
+      backgroundColor: const Color(0xCC0F172A), // glass dark — matches home AppBar
       surfaceTintColor: Colors.transparent,
+      titleTextStyle: const TextStyle(
+        color: offWhite,
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+      ),
     ),
     navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: const Color(0xFF0D1117),
+      backgroundColor: bg,
       elevation: 0,
       height: 64,
       surfaceTintColor: Colors.transparent,
-      indicatorColor: seedColor.withValues(alpha: 0.22),
+      indicatorColor: accent.withValues(alpha: 0.22),
       indicatorShape: const StadiumBorder(),
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
           return const TextStyle(
-              fontSize: 12, fontWeight: FontWeight.w700, color: seedColor);
+              fontSize: 12, fontWeight: FontWeight.w700, color: accent);
         }
         return TextStyle(
             fontSize: 12, color: Colors.white.withValues(alpha: 0.55));
       }),
       iconTheme: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return const IconThemeData(color: seedColor);
+          return const IconThemeData(color: accent);
         }
         return IconThemeData(color: Colors.white.withValues(alpha: 0.55));
       }),
@@ -75,7 +92,7 @@ ThemeData _buildTheme() {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: const Color(0xFF1C2438),
+      fillColor: const Color(0xFF1E293B),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
@@ -86,7 +103,7 @@ ThemeData _buildTheme() {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: seedColor),
+        borderSide: const BorderSide(color: sky),
       ),
       isDense: true,
     ),

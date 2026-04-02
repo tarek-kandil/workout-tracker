@@ -4,6 +4,7 @@ import 'package:drift/drift.dart' show Value;
 import '../../database/app_database.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/exercise_providers.dart';
+import '../../widgets/glass_background.dart';
 
 class ExerciseLibraryScreen extends ConsumerStatefulWidget {
   const ExerciseLibraryScreen({super.key});
@@ -210,7 +211,10 @@ class _ExerciseLibraryScreenState
 
     return Scaffold(
       appBar: AppBar(title: const Text('Exercise Library')),
-      body: Column(
+      body: Stack(
+        children: [
+          const Positioned.fill(child: GlassBackground()),
+          Column(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
@@ -252,13 +256,12 @@ class _ExerciseLibraryScreenState
                 }
                 final categories = grouped.keys.toList()..sort();
                 return ListView.builder(
-                  padding: const EdgeInsets.only(bottom: 88),
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 88),
                   itemCount: categories.fold<int>(
                     0,
                     (sum, cat) => sum + 1 + grouped[cat]!.length,
                   ),
                   itemBuilder: (_, index) {
-                    // Map flat index → category header or exercise tile
                     var remaining = index;
                     for (final cat in categories) {
                       if (remaining == 0) {
@@ -271,18 +274,37 @@ class _ExerciseLibraryScreenState
                       final items = grouped[cat]!;
                       if (remaining < items.length) {
                         final exercise = items[remaining];
-                        return ListTile(
-                          title: Text(exercise.name),
-                          onTap: () => _showExerciseDialog(
-                            existing: exercise,
-                            all: exercises,
-                          ),
-                          onLongPress: () => _confirmDelete(exercise),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.edit_outlined, size: 18),
-                            onPressed: () => _showExerciseDialog(
-                              existing: exercise,
-                              all: exercises,
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () => _showExerciseDialog(
+                                existing: exercise,
+                                all: exercises,
+                              ),
+                              onLongPress: () => _confirmDelete(exercise),
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: const Color(0x26000000),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.08),
+                                  ),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 10),
+                                child: Row(
+                                  children: [
+                                    Expanded(child: Text(exercise.name)),
+                                    Icon(Icons.edit_outlined,
+                                        size: 16,
+                                        color: Colors.white
+                                            .withValues(alpha: 0.3)),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
                         );
@@ -296,7 +318,9 @@ class _ExerciseLibraryScreenState
             ),
           ),
         ],
-      ),
+      ),          // Column
+        ],
+      ),          // Stack
       floatingActionButton: exercisesAsync.whenOrNull(
         data: (exercises) => FloatingActionButton(
           onPressed: () => _showExerciseDialog(all: exercises),

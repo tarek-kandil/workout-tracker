@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../database/app_database.dart';
 import '../../providers/database_provider.dart';
+import '../../widgets/glass_background.dart';
+import '../../widgets/liquid_glass_container.dart';
+import '../../widgets/vibrant_text.dart';
 
 class SessionDetailScreen extends ConsumerStatefulWidget {
   final WorkoutSession session;
@@ -13,7 +16,6 @@ class SessionDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
-  // exerciseId → (exercise name, sets)
   List<_ExerciseGroup> _groups = [];
   bool _loading = true;
 
@@ -29,7 +31,6 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     final exercises = await db.exercisesDao.getAllExercises();
     final exerciseMap = {for (final e in exercises) e.id: e};
 
-    // Group sets by exercise, preserving order of first appearance
     final seen = <int>[];
     final grouped = <int, List<WorkoutSet>>{};
     for (final s in sets) {
@@ -43,10 +44,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     setState(() {
       _groups = seen.map((id) {
         final ex = exerciseMap[id];
-        return _ExerciseGroup(
-          name: ex?.name ?? 'Unknown',
-          sets: grouped[id]!,
-        );
+        return _ExerciseGroup(name: ex?.name ?? 'Unknown', sets: grouped[id]!);
       }).toList();
       _loading = false;
     });
@@ -67,15 +65,27 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
           ],
         ),
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _groups.isEmpty
-              ? const Center(child: Text('No sets recorded for this session.'))
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _groups.length,
-                  itemBuilder: (_, i) => _ExerciseCard(group: _groups[i]),
-                ),
+      body: Stack(
+        children: [
+          const Positioned.fill(child: GlassBackground()),
+          _loading
+              ? const Center(child: CircularProgressIndicator())
+              : _groups.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No sets recorded for this session.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Colors.white.withValues(alpha: 0.4),
+                            ),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+                      itemCount: _groups.length,
+                      itemBuilder: (_, i) => _ExerciseCard(group: _groups[i]),
+                    ),
+        ],
+      ),
     );
   }
 }
@@ -92,54 +102,60 @@ class _ExerciseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = Theme.of(context).colorScheme.primary;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.only(bottom: 10),
+      child: LiquidGlassContainer(
+        borderRadius: 20,
+        blurSigma: 10,
+        padding: EdgeInsets.zero,
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(left: BorderSide(color: accent, width: 4)),
+          ),
+          padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(group.name,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleSmall
-                      ?.copyWith(fontWeight: FontWeight.bold)),
+              VibrantText(
+                group.name,
+                style: Theme.of(context)
+                    .textTheme
+                    .titleSmall!
+                    .copyWith(fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 10),
-              ...group.sets.asMap().entries.map((e) {
-                final s = e.value;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 52,
-                        child: Text(
-                          'Set ${s.setNumber}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withValues(alpha: 0.5),
-                              ),
+              ...group.sets.map((s) => Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 52,
+                          child: Text(
+                            'Set ${s.setNumber}',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                  color: Colors.white.withValues(alpha: 0.4),
+                                ),
+                          ),
                         ),
-                      ),
-                      Text(
-                        '${_fmtW(s.weightKg)} kg',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(width: 8),
-                      Text('×',
-                          style: Theme.of(context).textTheme.bodySmall),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${s.reps} reps',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                    ],
-                  ),
-                );
-              }),
+                        Text(
+                          '${_fmtW(s.weightKg)} kg',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(width: 8),
+                        Text('×',
+                            style: Theme.of(context).textTheme.bodySmall),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${s.reps} reps',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  )),
             ],
           ),
         ),

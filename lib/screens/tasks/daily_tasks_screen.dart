@@ -7,6 +7,8 @@ import '../../providers/daily_tasks_providers.dart';
 import '../../providers/database_provider.dart';
 import '../../services/notification_service.dart';
 import '../../widgets/celebration_overlay.dart';
+import '../../widgets/glass_background.dart';
+import '../../widgets/liquid_glass_container.dart';
 
 // ─── Screen ────────────────────────────────────────────────────────────────────
 
@@ -25,7 +27,10 @@ class DailyTasksScreen extends ConsumerWidget {
         icon: const Icon(Icons.add),
         label: const Text('Add Task'),
       ),
-      body: tasksAsync.when(
+      body: Stack(
+        children: [
+          const Positioned.fill(child: GlassBackground()),
+          tasksAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (tasks) {
@@ -97,6 +102,8 @@ class DailyTasksScreen extends ConsumerWidget {
             ],
           );
         },
+          ),
+        ],
       ),
     );
   }
@@ -397,76 +404,95 @@ class _TaskTile extends StatelessWidget {
     final theme = Theme.of(context);
     final dimmed = Colors.white.withValues(alpha: 0.38);
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: ListTile(
-        leading: Checkbox(
-          value: isCompleted,
-          onChanged:
-              task.isEnabled ? (val) => onToggle(val ?? false) : null,
-        ),
-        title: Text(
-          task.name,
-          style: isCompleted && task.isEnabled
-              ? TextStyle(decoration: TextDecoration.lineThrough, color: dimmed)
-              : null,
-        ),
-        subtitle: _buildSubtitle(context, theme),
-        trailing: PopupMenuButton<_Action>(
-          icon: const Icon(Icons.more_vert),
-          onSelected: (action) {
-            switch (action) {
-              case _Action.edit:
-                onEdit();
-              case _Action.toggleEnabled:
-                onToggleEnabled();
-              case _Action.test:
-                onTest();
-              case _Action.delete:
-                onDelete();
-            }
-          },
-          itemBuilder: (_) => [
-            const PopupMenuItem(
-              value: _Action.edit,
-              child: ListTile(
-                leading: Icon(Icons.edit_outlined),
-                title: Text('Edit'),
-                contentPadding: EdgeInsets.zero,
+    final accentColor = isCompleted ? Colors.green : theme.colorScheme.primary;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: LiquidGlassContainer(
+        borderRadius: 20,
+        blurSigma: 10,
+        padding: EdgeInsets.zero,
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              left: BorderSide(
+                color: task.isEnabled ? accentColor : Colors.amber,
+                width: 4,
               ),
             ),
-            PopupMenuItem(
-              value: _Action.toggleEnabled,
-              child: ListTile(
-                leading: Icon(task.isEnabled
-                    ? Icons.pause_circle_outline
-                    : Icons.play_circle_outline),
-                title: Text(task.isEnabled ? 'Pause' : 'Resume'),
-                contentPadding: EdgeInsets.zero,
-              ),
+          ),
+          child: ListTile(
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            leading: Checkbox(
+              value: isCompleted,
+              onChanged:
+                  task.isEnabled ? (val) => onToggle(val ?? false) : null,
             ),
-            if (task.reminderHour != null)
-              const PopupMenuItem(
-                value: _Action.test,
-                child: ListTile(
-                  leading: Icon(Icons.notifications_active_outlined),
-                  title: Text('Send test now'),
-                  contentPadding: EdgeInsets.zero,
+            title: Text(
+              task.name,
+              style: isCompleted && task.isEnabled
+                  ? TextStyle(
+                      decoration: TextDecoration.lineThrough, color: dimmed)
+                  : null,
+            ),
+            subtitle: _buildSubtitle(context, theme),
+            trailing: PopupMenuButton<_Action>(
+              icon: const Icon(Icons.more_vert),
+              onSelected: (action) {
+                switch (action) {
+                  case _Action.edit:
+                    onEdit();
+                  case _Action.toggleEnabled:
+                    onToggleEnabled();
+                  case _Action.test:
+                    onTest();
+                  case _Action.delete:
+                    onDelete();
+                }
+              },
+              itemBuilder: (_) => [
+                const PopupMenuItem(
+                  value: _Action.edit,
+                  child: ListTile(
+                    leading: Icon(Icons.edit_outlined),
+                    title: Text('Edit'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
                 ),
-              ),
-            PopupMenuItem(
-              value: _Action.delete,
-              child: ListTile(
-                leading: Icon(Icons.delete_outline,
-                    color: theme.colorScheme.error),
-                title: Text('Delete',
-                    style: TextStyle(color: theme.colorScheme.error)),
-                contentPadding: EdgeInsets.zero,
-              ),
+                PopupMenuItem(
+                  value: _Action.toggleEnabled,
+                  child: ListTile(
+                    leading: Icon(task.isEnabled
+                        ? Icons.pause_circle_outline
+                        : Icons.play_circle_outline),
+                    title: Text(task.isEnabled ? 'Pause' : 'Resume'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                if (task.reminderHour != null)
+                  const PopupMenuItem(
+                    value: _Action.test,
+                    child: ListTile(
+                      leading: Icon(Icons.notifications_active_outlined),
+                      title: Text('Send test now'),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                PopupMenuItem(
+                  value: _Action.delete,
+                  child: ListTile(
+                    leading: Icon(Icons.delete_outline,
+                        color: theme.colorScheme.error),
+                    title: Text('Delete',
+                        style: TextStyle(color: theme.colorScheme.error)),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ],
             ),
-          ],
+            onTap: task.isEnabled ? () => onToggle(!isCompleted) : null,
+          ),
         ),
-        onTap: task.isEnabled ? () => onToggle(!isCompleted) : null,
       ),
     );
   }

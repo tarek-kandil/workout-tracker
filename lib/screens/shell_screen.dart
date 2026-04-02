@@ -4,7 +4,6 @@ import '../providers/shell_providers.dart';
 import 'home/home_screen.dart';
 import 'history/session_history_screen.dart';
 import 'records/personal_records_screen.dart';
-import 'tasks/daily_tasks_screen.dart';
 import 'settings/settings_screen.dart';
 
 class ShellScreen extends ConsumerWidget {
@@ -14,7 +13,6 @@ class ShellScreen extends ConsumerWidget {
     HomeScreen(),
     SessionHistoryScreen(),
     PersonalRecordsScreen(),
-    DailyTasksScreen(),
     SettingsScreen(),
   ];
 
@@ -52,14 +50,9 @@ class ShellScreen extends ConsumerWidget {
               label: 'Records',
             ),
             NavigationDestination(
-              icon: Icon(Icons.check_circle_outline),
-              selectedIcon: Icon(Icons.check_circle),
-              label: 'Tasks',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.settings_outlined),
-              selectedIcon: Icon(Icons.settings),
-              label: 'Settings',
+              icon: Icon(Icons.person_outline),
+              selectedIcon: Icon(Icons.person),
+              label: 'Profile',
             ),
           ],
         ),

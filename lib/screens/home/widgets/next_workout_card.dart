@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../models/next_wod_result.dart';
 import '../../../models/weight_suggestion.dart';
 import '../../../providers/next_workout_provider.dart';
+import '../../../widgets/liquid_glass_container.dart';
+import '../../../widgets/vibrant_text.dart';
+import '../../../widgets/glass_route.dart';
 import '../../log/active_session_screen.dart';
 
 String _lastDoneLabel(DateTime? date) {
@@ -24,17 +28,18 @@ class NextWorkoutCard extends ConsumerWidget {
     final nextWodAsync = ref.watch(nextWodProvider);
 
     return nextWodAsync.when(
-      loading: () => const Card(
-        child: Padding(
-          padding: EdgeInsets.all(16),
+      loading: () => LiquidGlassContainer(
+        borderRadius: 32,
+        enableBlur: false,
+        child: const SizedBox(
+          height: 80,
           child: Center(child: CircularProgressIndicator()),
         ),
       ),
-      error: (e, _) => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text('Could not load next workout: $e'),
-        ),
+      error: (e, _) => LiquidGlassContainer(
+        borderRadius: 32,
+        enableBlur: false,
+        child: Text('Could not load next workout: $e'),
       ),
       data: (result) {
         if (result == null) return const SizedBox.shrink();
@@ -50,15 +55,20 @@ class _NextWodContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final phaseLabel = result.totalPhases > 1 ? ' · ${result.phase.name}' : '';
+    final phaseLabel =
+        result.totalPhases > 1 ? ' · ${result.phase.name}' : '';
     final accent = Theme.of(context).colorScheme.primary;
     final lastDone = _lastDoneLabel(result.lastSessionDate);
 
-    return Card(
+    return LiquidGlassContainer(
+      borderRadius: 32,
+      blurSigma: 18,
+      tintColor: accent.withValues(alpha: 0.10),
+      padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Hero gradient header ──────────────────────────────────────────
+          // ── Hero gradient header ────────────────────────────────────────
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
@@ -67,9 +77,13 @@ class _NextWodContent extends ConsumerWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  accent.withValues(alpha: 0.18),
-                  accent.withValues(alpha: 0.04),
+                  accent.withValues(alpha: 0.22),
+                  Colors.transparent,
                 ],
+              ),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(32),
+                topRight: Radius.circular(32),
               ),
             ),
             child: Column(
@@ -77,21 +91,29 @@ class _NextWodContent extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    Text(
+                    VibrantText(
                       'NEXT UP',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
-                        color: accent,
                         letterSpacing: 1.2,
                       ),
+                      gradientColors: const [
+                        Color(0xFF38BDF8), // Electric Sky
+                        Color(0xFF818CF8), // Soft Indigo
+                      ],
                     ),
                     const Spacer(),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: accent.withValues(alpha: 0.15),
+                        color: accent.withValues(alpha: 0.18),
                         borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          width: 0.8,
+                        ),
                       ),
                       child: Text(
                         'Week ${result.weekNumberInProgram}',
@@ -105,43 +127,44 @@ class _NextWodContent extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 6),
-                Text(
+                VibrantText(
                   result.wodTemplate.name + phaseLabel,
                   style: Theme.of(context)
                       .textTheme
-                      .headlineSmall
-                      ?.copyWith(fontWeight: FontWeight.bold),
+                      .headlineSmall!
+                      .copyWith(fontWeight: FontWeight.bold),
+                  // Default off-white gradient from VibrantText
                 ),
                 if (lastDone.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
                     lastDone,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withValues(alpha: 0.45),
-                        ),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.45),
+                    ),
                   ),
                 ],
               ],
             ),
           ),
-          // ── Exercise list ─────────────────────────────────────────────────
+          // ── Exercise list ───────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
             child: Column(
               children: [
-                ...result.exercises.map((entry) => _ExerciseTile(entry: entry)),
+                ...result.exercises
+                    .map((entry) => _ExerciseTile(entry: entry)),
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => ActiveSessionScreen(result: result),
-                      ),
-                    ),
+                    onPressed: () {
+                      HapticFeedback.mediumImpact();
+                      Navigator.of(context).push(
+                        glassRoute(ActiveSessionScreen(result: result)),
+                      );
+                    },
                     icon: const Icon(Icons.fitness_center, size: 18),
                     label: const Text('Start Workout'),
                   ),
@@ -208,8 +231,7 @@ class _SuggestionChip extends StatelessWidget {
         color = Theme.of(context).colorScheme.secondary;
         icon = Icons.trending_flat;
       case SuggestionType.noHistory:
-        return Text('—',
-            style: Theme.of(context).textTheme.bodySmall);
+        return Text('—', style: Theme.of(context).textTheme.bodySmall);
     }
 
     final label = suggestion.suggestedKg != null
@@ -230,7 +252,9 @@ class _SuggestionChip extends StatelessWidget {
           const SizedBox(width: 4),
           Text(label,
               style: TextStyle(
-                  fontSize: 12, color: color, fontWeight: FontWeight.w600)),
+                  fontSize: 12,
+                  color: color,
+                  fontWeight: FontWeight.w600)),
         ],
       ),
     );

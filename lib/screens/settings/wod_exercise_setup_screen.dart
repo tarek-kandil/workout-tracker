@@ -4,6 +4,7 @@ import 'package:drift/drift.dart' show Value;
 import '../../database/app_database.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/exercise_providers.dart';
+import '../../widgets/glass_background.dart';
 
 class WodExerciseSetupScreen extends ConsumerStatefulWidget {
   final int wodTemplateId;
@@ -120,22 +121,33 @@ class _WodExerciseSetupScreenState
 
     return Scaffold(
       appBar: AppBar(title: Text(_wodName)),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : exercisesAsync.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
+      body: Stack(
+        children: [
+          const Positioned.fill(child: GlassBackground()),
+          if (_loading)
+            const Center(child: CircularProgressIndicator())
+          else
+            exercisesAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(child: Text('Error: $e')),
               data: (allExercises) {
-                final exerciseMap = {
-                  for (final e in allExercises) e.id: e
-                };
+                final exerciseMap = {for (final e in allExercises) e.id: e};
                 if (_templateExercises.isEmpty) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text('No exercises yet'),
+                        Icon(Icons.fitness_center,
+                            size: 48,
+                            color: Colors.white.withValues(alpha: 0.3)),
+                        const SizedBox(height: 16),
+                        Text('No exercises yet',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                    color:
+                                        Colors.white.withValues(alpha: 0.5))),
                         const SizedBox(height: 16),
                         FilledButton.icon(
                           onPressed: _addExercise,
@@ -147,7 +159,7 @@ class _WodExerciseSetupScreenState
                   );
                 }
                 return ReorderableListView.builder(
-                  padding: const EdgeInsets.only(bottom: 80),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
                   itemCount: _templateExercises.length,
                   onReorder: (oldIndex, newIndex) async {
                     if (newIndex > oldIndex) newIndex--;
@@ -177,32 +189,59 @@ class _WodExerciseSetupScreenState
                     if (exercise == null) {
                       return const SizedBox.shrink(key: ValueKey(-1));
                     }
-                    return ListTile(
+                    final accent = Theme.of(context).colorScheme.primary;
+                    return Padding(
                       key: ValueKey(te.id),
-                      leading: const Icon(Icons.drag_handle),
-                      title: Text(exercise.name),
-                      subtitle: Text(
-                          '${te.targetSets} sets · ${te.repRangeMin}–${te.repRangeMax} reps'),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.tune, size: 20),
-                            onPressed: () => _editEntry(te, exercise),
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0x26000000),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.09)),
+                        ),
+                        child: ListTile(
+                          leading: Icon(Icons.drag_handle,
+                              color: Colors.white.withValues(alpha: 0.3)),
+                          title: Text(exercise.name,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w600)),
+                          subtitle: Text(
+                            '${te.targetSets} sets · ${te.repRangeMin}–${te.repRangeMax} reps',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                    color:
+                                        Colors.white.withValues(alpha: 0.45)),
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.remove_circle_outline,
-                                size: 20),
-                            color: Theme.of(context).colorScheme.error,
-                            onPressed: () => _deleteEntry(te),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: Icon(Icons.tune,
+                                    size: 20,
+                                    color: accent.withValues(alpha: 0.8)),
+                                onPressed: () => _editEntry(te, exercise),
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                    Icons.remove_circle_outline,
+                                    size: 20),
+                                color: Theme.of(context).colorScheme.error,
+                                onPressed: () => _deleteEntry(te),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     );
                   },
                 );
               },
             ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _addExercise,
         icon: const Icon(Icons.add),

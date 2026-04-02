@@ -5,6 +5,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/personal_record_entry.dart';
 import '../../models/weight_history_point.dart';
 import '../../providers/database_provider.dart';
+import '../../widgets/glass_background.dart';
+import '../../widgets/liquid_glass_container.dart';
+import '../../widgets/vibrant_text.dart';
 
 class ExerciseHistoryScreen extends ConsumerStatefulWidget {
   final PersonalRecordEntry record;
@@ -113,9 +116,13 @@ class _ExerciseHistoryScreenState
           ),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : CustomScrollView(
+      body: Stack(
+        children: [
+          const Positioned.fill(child: GlassBackground()),
+          if (_loading)
+            const Center(child: CircularProgressIndicator())
+          else
+            CustomScrollView(
               slivers: [
                 // ── Stat boxes ────────────────────────────────────────────
                 SliverToBoxAdapter(
@@ -151,16 +158,16 @@ class _ExerciseHistoryScreenState
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                      child: Card(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(8, 20, 16, 12),
-                          child: SizedBox(
-                            height: 220,
-                            child: _ProgressChart(
-                              history: _history,
-                              prKg: pr.maxWeightKg,
-                              goalKg: _goalKg,
-                            ),
+                      child: LiquidGlassContainer(
+                        borderRadius: 20,
+                        enableBlur: false,
+                        padding: const EdgeInsets.fromLTRB(8, 20, 16, 12),
+                        child: SizedBox(
+                          height: 220,
+                          child: _ProgressChart(
+                            history: _history,
+                            prKg: pr.maxWeightKg,
+                            goalKg: _goalKg,
                           ),
                         ),
                       ),
@@ -221,6 +228,8 @@ class _ExerciseHistoryScreenState
                 ],
               ],
             ),
+        ],
+      ),
     );
   }
 }
@@ -407,28 +416,31 @@ class _StatBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = accent ?? Theme.of(context).colorScheme.onSurface;
+    final color = accent ?? Colors.white;
     return Expanded(
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: color.withValues(alpha: 0.7),
-                      )),
-              const SizedBox(height: 4),
-              Text(
-                value,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
-              ),
-            ],
-          ),
+      child: LiquidGlassContainer(
+        borderRadius: 16,
+        blurSigma: 10,
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.5),
+                  ),
+            ),
+            const SizedBox(height: 4),
+            VibrantText(
+              value,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge!
+                  .copyWith(fontWeight: FontWeight.bold),
+              gradientColors: [color, color.withValues(alpha: 0.8)],
+            ),
+          ],
         ),
       ),
     );
@@ -454,51 +466,63 @@ class _HistoryTile extends StatelessWidget {
         '${days[d.weekday - 1]}, ${d.day} ${months[d.month - 1]} ${d.year}';
     final primary = Theme.of(context).colorScheme.primary;
 
-    return ListTile(
-      dense: true,
-      leading: CircleAvatar(
-        radius: 14,
-        backgroundColor: isPR
-            ? primary.withValues(alpha: 0.18)
-            : Theme.of(context)
-                .colorScheme
-                .surfaceContainerHighest
-                .withValues(alpha: 0.6),
-        child: Icon(
-          isPR ? Icons.emoji_events : Icons.fitness_center,
-          size: 14,
-          color: isPR ? primary : Colors.white.withValues(alpha: 0.5),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0x26000000),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isPR
+                ? primary.withValues(alpha: 0.3)
+                : Colors.white.withValues(alpha: 0.07),
+          ),
         ),
-      ),
-      title: Text(dateStr),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (isPR)
-            Container(
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: primary.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                'PR',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  color: primary,
-                ),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 14,
+              backgroundColor: isPR
+                  ? primary.withValues(alpha: 0.18)
+                  : Colors.white.withValues(alpha: 0.06),
+              child: Icon(
+                isPR ? Icons.emoji_events : Icons.fitness_center,
+                size: 14,
+                color: isPR ? primary : Colors.white.withValues(alpha: 0.4),
               ),
             ),
-          Text(
-            '${_fmtW(point.maxWeightKg)} kg',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: isPR ? primary : null,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(dateStr,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.7),
+                      )),
+            ),
+            if (isPR)
+              Container(
+                margin: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: primary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(6),
                 ),
-          ),
-        ],
+                child: Text('PR',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: primary,
+                    )),
+              ),
+            Text(
+              '${_fmtW(point.maxWeightKg)} kg',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: isPR ? primary : Colors.white.withValues(alpha: 0.85),
+                  ),
+            ),
+          ],
+        ),
       ),
     );
   }

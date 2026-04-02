@@ -4,6 +4,8 @@ import 'package:drift/drift.dart' show Value;
 import '../../database/app_database.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/next_workout_provider.dart';
+import '../../widgets/glass_background.dart';
+import '../../widgets/glass_route.dart';
 import 'wod_exercise_setup_screen.dart';
 
 class WodSetupScreen extends ConsumerStatefulWidget {
@@ -145,55 +147,102 @@ class _WodSetupScreenState extends ConsumerState<WodSetupScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Workouts')),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _wods.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text('No workouts yet'),
-                      const SizedBox(height: 16),
-                      FilledButton.icon(
-                        onPressed: _addWod,
-                        icon: const Icon(Icons.add),
-                        label: const Text('Add Workout'),
-                      ),
-                    ],
+      body: Stack(
+        children: [
+          const Positioned.fill(child: GlassBackground()),
+          if (_loading)
+            const Center(child: CircularProgressIndicator())
+          else if (_wods.isEmpty)
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.fitness_center,
+                      size: 48, color: Colors.white.withValues(alpha: 0.3)),
+                  const SizedBox(height: 16),
+                  Text('No workouts yet',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: Colors.white.withValues(alpha: 0.5),
+                          )),
+                  const SizedBox(height: 16),
+                  FilledButton.icon(
+                    onPressed: _addWod,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add Workout'),
                   ),
-                )
-              : ListView.builder(
-                  itemCount: _wods.length,
-                  itemBuilder: (context, i) {
-                    final wod = _wods[i];
-                    return ListTile(
-                      leading: CircleAvatar(
-                        child: Text('${wod.wodNumber}'),
-                      ),
-                      title: Text(wod.name),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.edit_outlined),
-                            onPressed: () => _renameWod(wod),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline),
-                            onPressed: () => _deleteWod(wod),
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                        ],
-                      ),
+                ],
+              ),
+            )
+          else
+            ListView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+              itemCount: _wods.length,
+              itemBuilder: (context, i) {
+                final wod = _wods[i];
+                final accent = Theme.of(context).colorScheme.primary;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
                       onTap: () => Navigator.of(context)
-                          .push(MaterialPageRoute(
-                            builder: (_) => WodExerciseSetupScreen(
-                                wodTemplateId: wod.id),
+                          .push(glassRoute(
+                            WodExerciseSetupScreen(wodTemplateId: wod.id),
                           ))
                           .then((_) => _load()),
-                    );
-                  },
-                ),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0x26000000),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.09)),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 16,
+                              backgroundColor:
+                                  accent.withValues(alpha: 0.18),
+                              child: Text(
+                                '${wod.wodNumber}',
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: accent),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(wod.name,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600)),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.edit_outlined, size: 18),
+                              onPressed: () => _renameWod(wod),
+                              color: Colors.white.withValues(alpha: 0.45),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline, size: 18),
+                              onPressed: () => _deleteWod(wod),
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                            Icon(Icons.chevron_right,
+                                size: 18,
+                                color: Colors.white.withValues(alpha: 0.25)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _addWod,
         icon: const Icon(Icons.add),

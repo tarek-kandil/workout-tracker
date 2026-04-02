@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/personal_record_entry.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/session_providers.dart';
+import '../../widgets/glass_background.dart';
+import '../../widgets/glass_route.dart';
 import 'exercise_history_screen.dart';
 
 class PersonalRecordsScreen extends ConsumerWidget {
@@ -14,31 +16,39 @@ class PersonalRecordsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Records')),
-      body: prAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
-        data: (records) {
-          if (records.isEmpty) {
-            return const Center(
-              child: Text('No records yet — log a workout to see your PRs.'),
-            );
-          }
-
-          // Group by category
-          final grouped = _groupByCategory(records);
-
-          return ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: grouped.length,
-            itemBuilder: (_, i) {
-              final item = grouped[i];
-              if (item.isHeader) {
-                return _CategoryHeader(label: item.label);
+      body: Stack(
+        children: [
+          const Positioned.fill(child: GlassBackground()),
+          prAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(child: Text('Error: $e')),
+            data: (records) {
+              if (records.isEmpty) {
+                return Center(
+                  child: Text(
+                    'No records yet — log a workout to see your PRs.',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.4),
+                        ),
+                  ),
+                );
               }
-              return _RecordTile(record: item.record!);
+              final grouped = _groupByCategory(records);
+              return ListView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                itemCount: grouped.length,
+                itemBuilder: (_, i) {
+                  final item = grouped[i];
+                  if (item.isHeader) {
+                    return _CategoryHeader(label: item.label);
+                  }
+                  return _RecordTile(record: item.record!);
+                },
+              );
             },
-          );
-        },
+          ),
+        ],
       ),
     );
   }
@@ -82,7 +92,7 @@ class _CategoryHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final accent = Theme.of(context).colorScheme.primary;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 6),
+      padding: const EdgeInsets.fromLTRB(4, 20, 4, 8),
       child: Row(
         children: [
           Container(
@@ -134,44 +144,80 @@ class _RecordTile extends ConsumerWidget {
       ),
     );
     if (confirmed != true || !context.mounted) return;
-    await ref.read(databaseProvider).setsDao.deleteSetsByExercise(record.exerciseId);
+    await ref
+        .read(databaseProvider)
+        .setsDao
+        .deleteSetsByExercise(record.exerciseId);
     ref.invalidate(personalRecordsProvider);
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ListTile(
-      title: Text(record.exerciseName,
-          style: const TextStyle(fontWeight: FontWeight.w500)),
-      subtitle: Text(
-        'Est. 1RM  ~${_fmtW(record.estimatedOneRm)} kg',
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
+    final accent = Theme.of(context).colorScheme.primary;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => Navigator.of(context).push(
+            glassRoute(ExerciseHistoryScreen(record: record)),
+          ),
+          onLongPress: () => _confirmDelete(context, ref),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0x26000000),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.09)),
             ),
-      ),
-      trailing: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Text(
-            '${_fmtW(record.maxWeightKg)} kg',
-            style: Theme.of(context)
-                .textTheme
-                .titleSmall
-                ?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          Text(
-            'PR',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        record.exerciseName,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Est. 1RM  ~${_fmtW(record.estimatedOneRm)} kg',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.white.withValues(alpha: 0.4),
+                            ),
+                      ),
+                    ],
+                  ),
                 ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${_fmtW(record.maxWeightKg)} kg',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    Text(
+                      'PR',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: accent,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 8),
+                Icon(Icons.chevron_right,
+                    size: 18, color: Colors.white.withValues(alpha: 0.25)),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
-      onTap: () => Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => ExerciseHistoryScreen(record: record),
-      )),
-      onLongPress: () => _confirmDelete(context, ref),
     );
   }
 }

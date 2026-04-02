@@ -8,6 +8,9 @@ import '../../providers/database_provider.dart';
 import '../../providers/next_workout_provider.dart';
 import '../../providers/program_providers.dart';
 import '../../widgets/celebration_overlay.dart';
+import '../../widgets/glass_background.dart';
+import '../../widgets/liquid_glass_container.dart';
+import '../../widgets/vibrant_text.dart';
 
 // ─── Local data model ──────────────────────────────────────────────────────────
 
@@ -156,9 +159,13 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
           ),
         ),
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
+      body: Stack(
+        children: [
+          const Positioned.fill(child: GlassBackground()),
+          if (_loading)
+            const Center(child: CircularProgressIndicator())
+          else
+            ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
               itemCount: exercises.length,
               itemBuilder: (_, i) {
@@ -184,6 +191,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
                 );
               },
             ),
+        ],
+      ),
     );
   }
 }
@@ -264,28 +273,19 @@ class _ExpandedCard extends StatelessWidget {
 
     final accent = Theme.of(context).colorScheme.primary;
 
-    return Card(
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+    return LiquidGlassContainer(
+      borderRadius: 20,
+      blurSigma: 12,
+      tintColor: accent.withValues(alpha: 0.08),
+      padding: EdgeInsets.zero,
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border(left: BorderSide(color: accent, width: 4)),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Left accent bar for active exercise
-            Container(
-              width: 4,
-              decoration: BoxDecoration(
-                color: accent,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  bottomLeft: Radius.circular(16),
-                ),
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
             // Header
             Row(
               children: [
@@ -293,12 +293,12 @@ class _ExpandedCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      VibrantText(
                         entry.exercise.name,
                         style: Theme.of(context)
                             .textTheme
-                            .titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
+                            .titleMedium!
+                            .copyWith(fontWeight: FontWeight.bold),
                       ),
                       Text(
                         '${te.targetSets} sets · ${te.repRangeMin}–${te.repRangeMax} reps',
@@ -350,10 +350,6 @@ class _ExpandedCard extends StatelessWidget {
                     label: const Text('Next Exercise'),
                   ),
               ],
-            ),
-          ],
-        ),
-      ),
             ),
           ],
         ),
@@ -451,48 +447,39 @@ class _CollapsedTile extends StatelessWidget {
         ? '—'
         : sets.map((s) => '${_fmtW(s.weightKg)}×${s.reps}').join('  ');
 
-    return Card(
+    return LiquidGlassContainer(
+      enableBlur: false,
+      borderRadius: 16,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: InkWell(
         onTap: onExpand,
         borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      entry.exercise.name,
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyMedium
-                          ?.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      summary,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.5),
-                          ),
-                    ),
-                  ],
-                ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    entry.exercise.name,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyMedium
+                        ?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    summary,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.4),
+                        ),
+                  ),
+                ],
               ),
-              Icon(
-                Icons.expand_more,
-                size: 20,
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withValues(alpha: 0.4),
-              ),
-            ],
-          ),
+            ),
+            Icon(Icons.expand_more,
+                size: 20, color: Colors.white.withValues(alpha: 0.3)),
+          ],
         ),
       ),
     );

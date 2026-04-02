@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../providers/daily_tasks_providers.dart';
-import '../../../providers/shell_providers.dart';
+import '../../../widgets/glass_route.dart';
+import '../../../widgets/liquid_glass_container.dart';
+import '../../../widgets/vibrant_text.dart';
+import '../../tasks/daily_tasks_screen.dart';
 
 class DailyTasksCard extends ConsumerWidget {
   const DailyTasksCard({super.key});
@@ -25,108 +28,98 @@ class DailyTasksCard extends ConsumerWidget {
     final accentColor = allDone ? Colors.green : scheme.primary;
 
     return GestureDetector(
-      onTap: () => ref.read(shellIndexProvider.notifier).state = 3,
-      child: Card(
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+      onTap: () => Navigator.of(context).push(glassRoute(const DailyTasksScreen())),
+      child: LiquidGlassContainer(
+        borderRadius: 28,
+        blurSigma: 12,
+        padding: EdgeInsets.zero,
+        // Left border replaces IntrinsicHeight + Row — avoids parentDataDirty assert
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              left: BorderSide(color: accentColor, width: 4),
+            ),
+          ),
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 4,
-                decoration: BoxDecoration(
-                  color: accentColor,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    bottomLeft: Radius.circular(12),
+              Row(
+                children: [
+                  Icon(
+                    allDone
+                        ? Icons.check_circle
+                        : Icons.check_circle_outline,
+                    size: 18,
+                    color: accentColor,
                   ),
-                ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Daily Tasks',
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white.withValues(alpha: 0.6),
+                          letterSpacing: 1.2,
+                        ),
+                  ),
+                  const Spacer(),
+                  if (streak > 0) _StreakBadge(streak: streak),
+                ],
               ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            allDone
-                                ? Icons.check_circle
-                                : Icons.check_circle_outline,
-                            size: 18,
-                            color: accentColor,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Daily Tasks',
+              const SizedBox(height: 10),
+              if (total == 0)
+                Text(
+                  'No active tasks',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.4),
+                      ),
+                )
+              else ...[
+                Row(
+                  children: [
+                    allDone
+                        ? VibrantText(
+                            'All done!',
                             style: Theme.of(context)
                                 .textTheme
-                                .labelMedium
+                                .titleMedium!
+                                .copyWith(fontWeight: FontWeight.w600),
+                            gradientColors: const [
+                              Colors.green,
+                              Color(0xFF80FF80),
+                            ],
+                          )
+                        : Text(
+                            '$done of $total done',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
                                 ?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white.withValues(alpha: 0.6),
-                                  letterSpacing: 1.2,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white.withValues(alpha: 0.9),
                                 ),
                           ),
-                          const Spacer(),
-                          if (streak > 0)
-                            _StreakBadge(streak: streak, allDone: allDone),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      if (total == 0)
-                        Text(
-                          'No active tasks',
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Colors.white.withValues(alpha: 0.4),
-                                  ),
-                        )
-                      else ...[
-                        Row(
-                          children: [
-                            Text(
-                              allDone ? 'All done!' : '$done of $total done',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: allDone
-                                        ? Colors.green
-                                        : Colors.white
-                                            .withValues(alpha: 0.9),
-                                  ),
-                            ),
-                            const Spacer(),
-                            Text(
-                              '${((done / total) * 100).round()}%',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color: accentColor,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: LinearProgressIndicator(
-                            value: total > 0 ? done / total : 0,
-                            minHeight: 6,
-                            backgroundColor: Colors.white.withValues(alpha: 0.1),
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(accentColor),
+                    const Spacer(),
+                    Text(
+                      '${((done / total) * 100).round()}%',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: accentColor,
+                            fontWeight: FontWeight.w600,
                           ),
-                        ),
-                      ],
-                    ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: total > 0 ? done / total : 0,
+                    minHeight: 6,
+                    backgroundColor: Colors.white.withValues(alpha: 0.1),
+                    valueColor: AlwaysStoppedAnimation<Color>(accentColor),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
         ),
@@ -137,9 +130,7 @@ class DailyTasksCard extends ConsumerWidget {
 
 class _StreakBadge extends StatelessWidget {
   final int streak;
-  final bool allDone;
-
-  const _StreakBadge({required this.streak, required this.allDone});
+  const _StreakBadge({required this.streak});
 
   @override
   Widget build(BuildContext context) {

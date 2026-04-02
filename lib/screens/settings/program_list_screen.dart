@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../database/app_database.dart';
 import '../../providers/program_providers.dart';
 import '../../providers/database_provider.dart';
+import '../../widgets/glass_background.dart';
+import '../../widgets/glass_route.dart';
 import 'program_setup_screen.dart';
 
 class ProgramListScreen extends ConsumerWidget {
@@ -14,47 +16,58 @@ class ProgramListScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Programs')),
-      body: programsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
-        data: (programs) {
-          if (programs.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.fitness_center, size: 64),
-                  const SizedBox(height: 16),
-                  const Text('No programs yet'),
-                  const SizedBox(height: 16),
-                  FilledButton.icon(
-                    onPressed: () => _createNew(context),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Create Program'),
-                  ),
-                ],
-              ),
-            );
-          }
-          return ListView.builder(
-            itemCount: programs.length,
-            itemBuilder: (context, i) =>
-                _ProgramTile(program: programs[i]),
-          );
-        },
-      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _createNew(context),
         icon: const Icon(Icons.add),
         label: const Text('New Program'),
       ),
+      body: Stack(
+        children: [
+          const Positioned.fill(child: GlassBackground()),
+          programsAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(child: Text('Error: $e')),
+            data: (programs) {
+              if (programs.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.fitness_center,
+                          size: 64,
+                          color: Colors.white.withValues(alpha: 0.3)),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No programs yet',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: Colors.white.withValues(alpha: 0.5),
+                            ),
+                      ),
+                      const SizedBox(height: 16),
+                      FilledButton.icon(
+                        onPressed: () => _createNew(context),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Create Program'),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              return ListView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+                itemCount: programs.length,
+                itemBuilder: (context, i) =>
+                    _ProgramTile(program: programs[i]),
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 
   void _createNew(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const ProgramSetupScreen()),
-    );
+    Navigator.of(context).push(glassRoute(const ProgramSetupScreen()));
   }
 }
 
@@ -64,38 +77,59 @@ class _ProgramTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final statusColors = {0: Colors.green, 1: Colors.blue, 2: Colors.grey};
     final statusLabels = {0: 'Active', 1: 'Completed', 2: 'Draft'};
-    final statusColors = {
-      0: Colors.green,
-      1: Colors.blue,
-      2: Colors.grey,
-    };
     final status = program.status;
+    final color = statusColors[status] ?? Colors.grey;
 
-    return ListTile(
-      title: Text(program.name),
-      subtitle: Text(statusLabels[status] ?? ''),
-      leading: CircleAvatar(
-        backgroundColor:
-            (statusColors[status] ?? Colors.grey).withValues(alpha: 0.2),
-        child: Icon(Icons.fitness_center,
-            color: statusColors[status] ?? Colors.grey),
-      ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.chevron_right),
-          IconButton(
-            icon: Icon(Icons.delete_outline,
-                color: Theme.of(context).colorScheme.error),
-            tooltip: 'Delete',
-            onPressed: () => _confirmDelete(context, ref),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => Navigator.of(context).push(
+            glassRoute(ProgramSetupScreen(existingProgram: program)),
           ),
-        ],
-      ),
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => ProgramSetupScreen(existingProgram: program),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0x26000000),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.09)),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: color.withValues(alpha: 0.18),
+                  child: Icon(Icons.fitness_center, color: color),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(program.name,
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                      Text(
+                        statusLabels[status] ?? '',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: color.withValues(alpha: 0.8),
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.delete_outline,
+                      color: Theme.of(context).colorScheme.error, size: 20),
+                  onPressed: () => _confirmDelete(context, ref),
+                ),
+                Icon(Icons.chevron_right,
+                    size: 18, color: Colors.white.withValues(alpha: 0.25)),
+              ],
+            ),
+          ),
         ),
       ),
     );

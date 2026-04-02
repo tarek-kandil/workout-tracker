@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../database/app_database.dart';
 import '../../providers/session_providers.dart';
+import '../../widgets/glass_background.dart';
+import '../../widgets/glass_route.dart';
 import 'session_detail_screen.dart';
 
 class SessionHistoryScreen extends ConsumerWidget {
@@ -13,31 +15,38 @@ class SessionHistoryScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('History')),
-      body: sessionsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
-        data: (sessions) {
-          if (sessions.isEmpty) {
-            return const Center(
-              child: Text('No sessions logged yet.'),
-            );
-          }
-
-          // Group sessions by calendar week (Monday-based)
-          final grouped = _groupByWeek(sessions);
-
-          return ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: grouped.length,
-            itemBuilder: (_, i) {
-              final group = grouped[i];
-              if (group.isHeader) {
-                return _WeekHeader(label: group.label);
+      body: Stack(
+        children: [
+          const Positioned.fill(child: GlassBackground()),
+          sessionsAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(child: Text('Error: $e')),
+            data: (sessions) {
+              if (sessions.isEmpty) {
+                return Center(
+                  child: Text(
+                    'No sessions logged yet.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.4),
+                        ),
+                  ),
+                );
               }
-              return _SessionTile(session: group.session!);
+              final grouped = _groupByWeek(sessions);
+              return ListView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                itemCount: grouped.length,
+                itemBuilder: (_, i) {
+                  final group = grouped[i];
+                  if (group.isHeader) {
+                    return _WeekHeader(label: group.label);
+                  }
+                  return _SessionTile(session: group.session!);
+                },
+              );
             },
-          );
-        },
+          ),
+        ],
       ),
     );
   }
@@ -60,7 +69,6 @@ class _ListItem {
 List<_ListItem> _groupByWeek(List<WorkoutSession> sessions) {
   final items = <_ListItem>[];
   String? lastKey;
-
   for (final s in sessions) {
     final key = _weekKey(s.date);
     if (key != lastKey) {
@@ -72,7 +80,6 @@ List<_ListItem> _groupByWeek(List<WorkoutSession> sessions) {
   return items;
 }
 
-// ISO week key: "2026-W13"
 String _weekKey(DateTime d) {
   final monday = d.subtract(Duration(days: d.weekday - 1));
   return '${monday.year}-W${_isoWeek(d).toString().padLeft(2, '0')}';
@@ -116,7 +123,7 @@ class _WeekHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final accent = Theme.of(context).colorScheme.primary;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 6),
+      padding: const EdgeInsets.fromLTRB(4, 20, 4, 8),
       child: Row(
         children: [
           Container(
@@ -148,31 +155,69 @@ class _SessionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: CircleAvatar(
-        backgroundColor:
-            Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.5),
-        child: Icon(Icons.fitness_center,
-            size: 18, color: Theme.of(context).colorScheme.primary),
-      ),
-      title: Text(session.workoutName,
-          style: const TextStyle(fontWeight: FontWeight.w600)),
-      subtitle: Text(_formatDate(session.date)),
-      trailing: session.weekNumber != null
-          ? Text(
-              'Wk ${session.weekNumber}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.45),
+    final accent = Theme.of(context).colorScheme.primary;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => Navigator.of(context).push(
+            glassRoute(SessionDetailScreen(session: session)),
+          ),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0x26000000),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.09),
+              ),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
                   ),
-            )
-          : null,
-      onTap: () => Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => SessionDetailScreen(session: session),
-      )),
+                  child: Icon(Icons.fitness_center, size: 18, color: accent),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        session.workoutName,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      Text(
+                        _formatDate(session.date),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.white.withValues(alpha: 0.45),
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (session.weekNumber != null)
+                  Text(
+                    'Wk ${session.weekNumber}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.35),
+                        ),
+                  ),
+                const SizedBox(width: 4),
+                Icon(Icons.chevron_right,
+                    size: 18, color: Colors.white.withValues(alpha: 0.25)),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

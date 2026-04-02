@@ -23,6 +23,12 @@ final wodTemplatesForPhaseProvider =
   return ref.watch(databaseProvider).programsDao.getWodTemplatesForPhase(phaseId);
 });
 
+/// Template exercises for a specific WOD (used for exercise summaries in program view).
+final wodTemplateExercisesProvider =
+    FutureProvider.family<List<WodTemplateExercise>, int>((ref, wodTemplateId) {
+  return ref.read(databaseProvider).programsDao.getTemplateExercises(wodTemplateId);
+});
+
 /// All programs (for the program management screen).
 final allProgramsProvider = FutureProvider<List<Program>>((ref) {
   return ref.watch(databaseProvider).programsDao.getAllPrograms();
