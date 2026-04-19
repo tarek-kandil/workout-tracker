@@ -6,6 +6,12 @@ import '../tables/program_phases_table.dart';
 
 part 'sessions_dao.g.dart';
 
+class SessionWithProgram {
+  final WorkoutSession session;
+  final String? programName;
+  const SessionWithProgram({required this.session, this.programName});
+}
+
 @DriftAccessor(tables: [WorkoutSessions, WodTemplates, ProgramPhases])
 class SessionsDao extends DatabaseAccessor<AppDatabase>
     with _$SessionsDaoMixin {
@@ -100,6 +106,32 @@ class SessionsDao extends DatabaseAccessor<AppDatabase>
   }
 
   Future<void> clearAllSessions() => delete(workoutSessions).go();
+
+  /// Sessions joined with their program name — used by the history screen.
+  Stream<List<SessionWithProgram>> watchSessionsWithProgram({int limit = 200}) {
+    final query = (select(workoutSessions)
+          ..orderBy([(t) =>
+              OrderingTerm(expression: t.date, mode: OrderingMode.desc)])
+          ..limit(limit))
+        .join([
+      leftOuterJoin(
+          wodTemplates, wodTemplates.id.equalsExp(workoutSessions.wodTemplateId),
+          useColumns: false),
+      leftOuterJoin(
+          programPhases, programPhases.id.equalsExp(wodTemplates.phaseId),
+          useColumns: false),
+      leftOuterJoin(
+          programs, programs.id.equalsExp(programPhases.programId),
+          useColumns: false),
+    ]);
+
+    return query.watch().map((rows) => rows.map((row) {
+          return SessionWithProgram(
+            session: row.readTable(workoutSessions),
+            programName: row.readTableOrNull(programs)?.name,
+          );
+        }).toList());
+  }
 
   /// Most recent session that used any WOD belonging to [phaseId].
   /// Simpler join path than getLastSessionForProgram — used for WOD rotation.

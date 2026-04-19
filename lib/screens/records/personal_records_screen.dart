@@ -182,12 +182,13 @@ class _RecordTile extends ConsumerWidget {
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 2),
-                      Text(
-                        'Est. 1RM  ~${_fmtW(record.estimatedOneRm)} kg',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.white.withValues(alpha: 0.4),
-                            ),
-                      ),
+                      if (!record.isTimed)
+                        Text(
+                          'Est. 1RM  ~${_fmtW(record.estimatedOneRm)} kg',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Colors.white.withValues(alpha: 0.4),
+                              ),
+                        ),
                     ],
                   ),
                 ),
@@ -195,7 +196,9 @@ class _RecordTile extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      '${_fmtW(record.maxWeightKg)} kg',
+                      record.isTimed
+                          ? _fmtSec(record.maxDurationSeconds ?? 0)
+                          : '${_fmtW(record.maxWeightKg)} kg',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -224,3 +227,9 @@ class _RecordTile extends ConsumerWidget {
 
 String _fmtW(double w) =>
     w == w.roundToDouble() ? w.toInt().toString() : w.toStringAsFixed(1);
+
+String _fmtSec(int seconds) {
+  final m = seconds ~/ 60;
+  final s = seconds % 60;
+  return '$m:${s.toString().padLeft(2, '0')}';
+}

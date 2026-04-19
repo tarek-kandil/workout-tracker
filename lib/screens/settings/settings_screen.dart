@@ -11,6 +11,7 @@ import 'bodyweight_screen.dart';
 import 'exercise_library_screen.dart';
 import 'program_list_screen.dart';
 import '../tasks/daily_tasks_screen.dart';
+import '../history/session_history_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -48,6 +49,15 @@ class SettingsScreen extends ConsumerWidget {
                       subtitle: 'Manage your daily goals',
                       onTap: () => Navigator.of(context).push(
                         glassRoute(const DailyTasksScreen()),
+                      ),
+                    ),
+                    _Divider(),
+                    _SettingsTile(
+                      icon: Icons.history,
+                      title: 'Workout History',
+                      subtitle: 'Browse past sessions',
+                      onTap: () => Navigator.of(context).push(
+                        glassRoute(const SessionHistoryScreen()),
                       ),
                     ),
                     _Divider(),

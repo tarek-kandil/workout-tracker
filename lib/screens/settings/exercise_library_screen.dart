@@ -57,6 +57,7 @@ class _ExerciseLibraryScreenState
     final categoryController =
         TextEditingController(text: existing?.category == 'Other' && existing != null ? '' : (existing?.category ?? ''));
     final formKey = GlobalKey<FormState>();
+    bool isTimed = existing?.isTimed ?? false;
 
     await showDialog<void>(
       context: context,
@@ -67,7 +68,8 @@ class _ExerciseLibraryScreenState
               title: Text(existing == null ? 'New Exercise' : 'Edit Exercise'),
               content: Form(
                 key: formKey,
-                child: Column(
+                child: SingleChildScrollView(
+                  child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     TextFormField(
@@ -133,7 +135,15 @@ class _ExerciseLibraryScreenState
                         );
                       },
                     ),
+                    const SizedBox(height: 8),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Timed exercise'),
+                      value: isTimed,
+                      onChanged: (v) => setDialogState(() => isTimed = v),
+                    ),
                   ],
+                ),
                 ),
               ),
               actions: [
@@ -158,12 +168,14 @@ class _ExerciseLibraryScreenState
                               await dao.insertExercise(ExercisesCompanion.insert(
                                 name: name,
                                 category: Value(category),
+                                isTimed: Value(isTimed),
                               ));
                             } else {
                               await dao.updateExercise(ExercisesCompanion(
                                 id: Value(existing.id),
                                 name: Value(name),
                                 category: Value(category),
+                                isTimed: Value(isTimed),
                               ));
                             }
                             if (ctx.mounted) Navigator.pop(ctx);
@@ -298,6 +310,16 @@ class _ExerciseLibraryScreenState
                                 child: Row(
                                   children: [
                                     Expanded(child: Text(exercise.name)),
+                                    if (exercise.isTimed) ...[
+                                      const SizedBox(width: 6),
+                                      Icon(Icons.timer_outlined,
+                                          size: 14,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary
+                                              .withValues(alpha: 0.7)),
+                                    ],
+                                    const SizedBox(width: 6),
                                     Icon(Icons.edit_outlined,
                                         size: 16,
                                         color: Colors.white

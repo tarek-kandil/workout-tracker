@@ -18,11 +18,6 @@ class StreakCard extends ConsumerWidget {
       // Left border replaces IntrinsicHeight + Row pattern — avoids the
       // two-pass layout conflict that fires !parentDataDirty inside BackdropFilter
       child: Container(
-        decoration: const BoxDecoration(
-          border: Border(
-            left: BorderSide(color: Colors.deepOrange, width: 4),
-          ),
-        ),
         padding: const EdgeInsets.all(16),
         child: streakAsync.when(
           loading: () => const Text('Calculating streak...'),

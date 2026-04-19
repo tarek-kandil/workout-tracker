@@ -38,27 +38,74 @@ class _WodSetupScreenState extends ConsumerState<WodSetupScreen> {
 
   Future<void> _addWod() async {
     final nameCtrl = TextEditingController(text: 'WOD ${_wods.length + 1}');
+    int restSeconds = 90;
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('New Workout'),
-        content: TextField(
-          controller: nameCtrl,
-          decoration: const InputDecoration(
-            labelText: 'Workout Name',
-            hintText: 'e.g. WOD 1 – Push',
-            border: OutlineInputBorder(),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('New Workout'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Workout Name',
+                  hintText: 'e.g. WOD 1 – Push',
+                  border: OutlineInputBorder(),
+                ),
+                autofocus: true,
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  const Icon(Icons.timer_outlined, size: 18),
+                  const SizedBox(width: 8),
+                  const Text('Rest'),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.remove, size: 16),
+                    onPressed: restSeconds > 15
+                        ? () => setDialogState(
+                            () => restSeconds = (restSeconds - 15).clamp(15, 600))
+                        : null,
+                    style: IconButton.styleFrom(
+                      minimumSize: const Size(32, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 52,
+                    child: Text(
+                      '${restSeconds}s',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add, size: 16),
+                    onPressed: restSeconds < 600
+                        ? () => setDialogState(
+                            () => restSeconds = (restSeconds + 15).clamp(15, 600))
+                        : null,
+                    style: IconButton.styleFrom(
+                      minimumSize: const Size(32, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          autofocus: true,
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel')),
+            FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Add')),
+          ],
         ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
-          FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Add')),
-        ],
       ),
     );
     if (confirmed != true) return;
@@ -69,6 +116,7 @@ class _WodSetupScreenState extends ConsumerState<WodSetupScreen> {
         phaseId: Value(widget.phaseId),
         wodNumber: Value(_wods.length + 1),
         name: Value(nameCtrl.text.trim()),
+        restSeconds: Value(restSeconds),
       ),
     );
     await _load();
@@ -85,26 +133,73 @@ class _WodSetupScreenState extends ConsumerState<WodSetupScreen> {
 
   Future<void> _renameWod(WodTemplate wod) async {
     final nameCtrl = TextEditingController(text: wod.name);
+    int restSeconds = wod.restSeconds;
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Rename Workout'),
-        content: TextField(
-          controller: nameCtrl,
-          decoration: const InputDecoration(
-            labelText: 'Workout Name',
-            border: OutlineInputBorder(),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Rename Workout'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Workout Name',
+                  border: OutlineInputBorder(),
+                ),
+                autofocus: true,
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  const Icon(Icons.timer_outlined, size: 18),
+                  const SizedBox(width: 8),
+                  const Text('Rest'),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.remove, size: 16),
+                    onPressed: restSeconds > 15
+                        ? () => setDialogState(
+                            () => restSeconds = (restSeconds - 15).clamp(15, 600))
+                        : null,
+                    style: IconButton.styleFrom(
+                      minimumSize: const Size(32, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 52,
+                    child: Text(
+                      '${restSeconds}s',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add, size: 16),
+                    onPressed: restSeconds < 600
+                        ? () => setDialogState(
+                            () => restSeconds = (restSeconds + 15).clamp(15, 600))
+                        : null,
+                    style: IconButton.styleFrom(
+                      minimumSize: const Size(32, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          autofocus: true,
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel')),
+            FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Save')),
+          ],
         ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
-          FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Save')),
-        ],
       ),
     );
     if (confirmed != true) return;
@@ -114,6 +209,7 @@ class _WodSetupScreenState extends ConsumerState<WodSetupScreen> {
             phaseId: Value(wod.phaseId),
             wodNumber: Value(wod.wodNumber),
             name: Value(nameCtrl.text.trim()),
+            restSeconds: Value(restSeconds),
           ),
         );
     _load();

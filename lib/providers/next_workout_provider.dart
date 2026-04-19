@@ -80,8 +80,10 @@ final nextWodProvider = FutureProvider<NextWodResult?>((ref) async {
   }
 
   // ── Derive lastSessionDate for "Last done" label ──────────────────────────
-  final lastSession =
-      await db.sessionsDao.getLastSessionForProgram(program.id);
+  // Use the last session for the specific next WOD, not the whole program.
+  final wodSessions =
+      await db.sessionsDao.getSessionsForWodTemplate(nextWod.id);
+  final lastSession = wodSessions.firstOrNull;
 
   // ── Load exercises + weight suggestions ──────────────────────────────────
   final templateExercises =

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/shell_providers.dart';
 import 'home/home_screen.dart';
-import 'history/session_history_screen.dart';
 import 'records/personal_records_screen.dart';
 import 'settings/settings_screen.dart';
 
@@ -11,7 +10,6 @@ class ShellScreen extends ConsumerWidget {
 
   static const List<Widget> _screens = [
     HomeScreen(),
-    SessionHistoryScreen(),
     PersonalRecordsScreen(),
     SettingsScreen(),
   ];
@@ -21,7 +19,6 @@ class ShellScreen extends ConsumerWidget {
     final selectedIndex = ref.watch(shellIndexProvider);
 
     return PopScope(
-      // Allow pop (exit app) only when already on the home tab
       canPop: selectedIndex == 0,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) {
@@ -39,10 +36,6 @@ class ShellScreen extends ConsumerWidget {
               icon: Icon(Icons.home_outlined),
               selectedIcon: Icon(Icons.home),
               label: 'Home',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.history),
-              label: 'History',
             ),
             NavigationDestination(
               icon: Icon(Icons.emoji_events_outlined),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../database/app_database.dart';
+import '../../database/daos/sessions_dao.dart';
 import '../../providers/session_providers.dart';
 import '../../widgets/glass_background.dart';
 import '../../widgets/glass_route.dart';
@@ -11,7 +12,7 @@ class SessionHistoryScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final sessionsAsync = ref.watch(recentSessionsProvider);
+    final sessionsAsync = ref.watch(sessionHistoryProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('History')),
@@ -21,8 +22,8 @@ class SessionHistoryScreen extends ConsumerWidget {
           sessionsAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => Center(child: Text('Error: $e')),
-            data: (sessions) {
-              if (sessions.isEmpty) {
+            data: (entries) {
+              if (entries.isEmpty) {
                 return Center(
                   child: Text(
                     'No sessions logged yet.',
@@ -32,7 +33,7 @@ class SessionHistoryScreen extends ConsumerWidget {
                   ),
                 );
               }
-              final grouped = _groupByWeek(sessions);
+              final grouped = _groupByWeek(entries);
               return ListView.builder(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
                 itemCount: grouped.length,
@@ -41,7 +42,7 @@ class SessionHistoryScreen extends ConsumerWidget {
                   if (group.isHeader) {
                     return _WeekHeader(label: group.label);
                   }
-                  return _SessionTile(session: group.session!);
+                  return _SessionTile(entry: group.entry!);
                 },
               );
             },
@@ -57,25 +58,25 @@ class SessionHistoryScreen extends ConsumerWidget {
 class _ListItem {
   final bool isHeader;
   final String label;
-  final WorkoutSession? session;
+  final SessionWithProgram? entry;
   const _ListItem.header(this.label)
       : isHeader = true,
-        session = null;
-  const _ListItem.session(this.session)
+        entry = null;
+  const _ListItem.entry(this.entry)
       : isHeader = false,
         label = '';
 }
 
-List<_ListItem> _groupByWeek(List<WorkoutSession> sessions) {
+List<_ListItem> _groupByWeek(List<SessionWithProgram> entries) {
   final items = <_ListItem>[];
   String? lastKey;
-  for (final s in sessions) {
-    final key = _weekKey(s.date);
+  for (final e in entries) {
+    final key = _weekKey(e.session.date);
     if (key != lastKey) {
-      items.add(_ListItem.header(_weekLabel(s.date)));
+      items.add(_ListItem.header(_weekLabel(e.session.date)));
       lastKey = key;
     }
-    items.add(_ListItem.session(s));
+    items.add(_ListItem.entry(e));
   }
   return items;
 }
@@ -150,12 +151,22 @@ class _WeekHeader extends StatelessWidget {
 }
 
 class _SessionTile extends StatelessWidget {
-  final WorkoutSession session;
-  const _SessionTile({required this.session});
+  final SessionWithProgram entry;
+  const _SessionTile({required this.entry});
 
   @override
   Widget build(BuildContext context) {
+    final session = entry.session;
     final accent = Theme.of(context).colorScheme.primary;
+
+    // Build subtitle: "Program Name · Week X" or just date
+    final parts = <String>[];
+    if (entry.programName != null) parts.add(entry.programName!);
+    if (session.weekNumber != null) parts.add('Week ${session.weekNumber}');
+    final subtitle = parts.isNotEmpty
+        ? '${_formatDate(session.date)}  ·  ${parts.join(' · ')}'
+        : _formatDate(session.date);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
@@ -195,7 +206,7 @@ class _SessionTile extends StatelessWidget {
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                       Text(
-                        _formatDate(session.date),
+                        subtitle,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: Colors.white.withValues(alpha: 0.45),
                             ),
@@ -203,14 +214,6 @@ class _SessionTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (session.weekNumber != null)
-                  Text(
-                    'Wk ${session.weekNumber}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.35),
-                        ),
-                  ),
-                const SizedBox(width: 4),
                 Icon(Icons.chevron_right,
                     size: 18, color: Colors.white.withValues(alpha: 0.25)),
               ],

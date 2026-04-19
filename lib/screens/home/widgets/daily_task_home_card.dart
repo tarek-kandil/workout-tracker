@@ -16,18 +16,11 @@ class DailyTaskHomeCard extends ConsumerWidget {
     final completions = completionsAsync.valueOrNull ?? {};
     final isDone = completions.contains(task.id);
 
-    final accentColor = isDone ? Colors.green : Theme.of(context).colorScheme.primary;
-
     return LiquidGlassContainer(
       borderRadius: 20,
       blurSigma: 12,
       padding: EdgeInsets.zero,
       child: Container(
-        decoration: BoxDecoration(
-          border: Border(
-            left: BorderSide(color: accentColor, width: 4),
-          ),
-        ),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Row(
           children: [

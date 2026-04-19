@@ -29,10 +29,11 @@ class ActiveProgramCard extends ConsumerWidget {
         final progress =
             totalWeeks > 0 ? (currentWeek - 1) / totalWeeks : 0.0;
 
+        final activePhases = phases.where((p) => p.durationWeeks > 0).toList();
         String? phaseName;
-        if (phases.length > 1) {
+        if (activePhases.length > 1) {
           int acc = 0;
-          for (final ph in phases) {
+          for (final ph in activePhases) {
             if (currentWeek <= acc + ph.durationWeeks) {
               phaseName = ph.name;
               break;

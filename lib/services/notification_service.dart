@@ -6,6 +6,7 @@ class NotificationService {
   static final _plugin = FlutterLocalNotificationsPlugin();
   static bool _initialized = false;
 
+  // Daily task reminders channel
   static const _channelId = 'daily_tasks';
   static const _channelName = 'Daily Tasks';
   static const _channelDesc = 'Reminders for your daily health tasks';
@@ -18,6 +19,11 @@ class NotificationService {
     priority: Priority.high,
     icon: '@mipmap/ic_launcher',
   );
+
+  // Live workout status notification
+  static const _workoutChannelId = 'workout_session';
+  static const _workoutChannelName = 'Active Workout';
+  static const _workoutNotifId = 2001;
 
   static Future<void> init() async {
     if (_initialized) return;
@@ -76,6 +82,44 @@ class NotificationService {
   }
 
   static Future<void> cancelReminder(int id) => _plugin.cancel(id);
+
+  /// Shows (or updates) a persistent workout-status notification.
+  /// [chronoMs] — epoch-ms from which the chronometer counts.
+  /// [chronoCountDown] — true = count down to [chronoMs], false = count up from it.
+  static Future<void> showWorkoutStatus({
+    required String title,
+    required String body,
+    int? chronoMs,
+    bool chronoCountDown = false,
+  }) async {
+    if (!_initialized) return;
+    await _plugin.show(
+      _workoutNotifId,
+      title,
+      body,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          _workoutChannelId,
+          _workoutChannelName,
+          channelDescription: 'Live workout progress',
+          importance: Importance.low,
+          priority: Priority.low,
+          ongoing: true,
+          autoCancel: false,
+          playSound: false,
+          enableVibration: false,
+          icon: '@mipmap/ic_launcher',
+          when: chronoMs,
+          usesChronometer: chronoMs != null,
+          chronometerCountDown: chronoCountDown,
+          showWhen: chronoMs != null,
+        ),
+      ),
+    );
+  }
+
+  static Future<void> cancelWorkoutStatus() =>
+      _plugin.cancel(_workoutNotifId);
 
   static tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
     final now = DateTime.now();

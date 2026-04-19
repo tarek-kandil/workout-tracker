@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../models/next_wod_result.dart';
 import '../../../models/weight_suggestion.dart';
 import '../../../providers/next_workout_provider.dart';
@@ -49,16 +50,95 @@ class NextWorkoutCard extends ConsumerWidget {
   }
 }
 
-class _NextWodContent extends ConsumerWidget {
+class _NextWodContent extends ConsumerStatefulWidget {
   final NextWodResult result;
   const _NextWodContent({required this.result});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final phaseLabel =
-        result.totalPhases > 1 ? ' · ${result.phase.name}' : '';
+  ConsumerState<_NextWodContent> createState() => _NextWodContentState();
+}
+
+class _NextWodContentState extends ConsumerState<_NextWodContent> {
+  bool _hasProgress = false;
+
+  String get _prefsKey =>
+      'workout_progress_${widget.result.wodTemplate.id}';
+
+  @override
+  void initState() {
+    super.initState();
+    _checkProgress();
+  }
+
+  Future<void> _checkProgress() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) setState(() => _hasProgress = prefs.containsKey(_prefsKey));
+  }
+
+  Future<void> _clearProgress() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_prefsKey);
+  }
+
+  Future<void> _onStartOrResume({bool resume = false}) async {
+    HapticFeedback.mediumImpact();
+    await Navigator.of(context).push(glassRoute(
+      ActiveSessionScreen(result: widget.result, autoResume: resume),
+    ));
+    _checkProgress();
+  }
+
+  Future<void> _onRestart() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Restart Workout?'),
+        content: const Text('Your saved progress will be lost.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Restart')),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      await _clearProgress();
+      await _onStartOrResume();
+    }
+  }
+
+  Future<void> _onCancel() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cancel Workout?'),
+        content: const Text('Your saved progress will be discarded.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Keep')),
+          FilledButton(
+            style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(ctx).colorScheme.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Discard'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      await _clearProgress();
+      setState(() => _hasProgress = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final accent = Theme.of(context).colorScheme.primary;
-    final lastDone = _lastDoneLabel(result.lastSessionDate);
+    final lastDone = _lastDoneLabel(widget.result.lastSessionDate);
 
     return LiquidGlassContainer(
       borderRadius: 32,
@@ -99,8 +179,8 @@ class _NextWodContent extends ConsumerWidget {
                         letterSpacing: 1.2,
                       ),
                       gradientColors: const [
-                        Color(0xFF38BDF8), // Electric Sky
-                        Color(0xFF818CF8), // Soft Indigo
+                        Color(0xFF38BDF8),
+                        Color(0xFF818CF8),
                       ],
                     ),
                     const Spacer(),
@@ -116,7 +196,7 @@ class _NextWodContent extends ConsumerWidget {
                         ),
                       ),
                       child: Text(
-                        'Week ${result.weekNumberInProgram}',
+                        'Week ${widget.result.weekNumberInProgram}',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
@@ -128,12 +208,11 @@ class _NextWodContent extends ConsumerWidget {
                 ),
                 const SizedBox(height: 6),
                 VibrantText(
-                  result.wodTemplate.name + phaseLabel,
+                  widget.result.wodTemplate.name,
                   style: Theme.of(context)
                       .textTheme
                       .headlineSmall!
                       .copyWith(fontWeight: FontWeight.bold),
-                  // Default off-white gradient from VibrantText
                 ),
                 if (lastDone.isNotEmpty) ...[
                   const SizedBox(height: 4),
@@ -153,22 +232,71 @@ class _NextWodContent extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
             child: Column(
               children: [
-                ...result.exercises
+                ...widget.result.exercises
                     .map((entry) => _ExerciseTile(entry: entry)),
                 const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: () {
-                      HapticFeedback.mediumImpact();
-                      Navigator.of(context).push(
-                        glassRoute(ActiveSessionScreen(result: result)),
-                      );
-                    },
-                    icon: const Icon(Icons.fitness_center, size: 18),
-                    label: const Text('Start Workout'),
+                if (_hasProgress) ...[
+                  // ── Resume row ─────────────────────────────────────────
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: () => _onStartOrResume(resume: true),
+                          icon: const Icon(Icons.play_arrow, size: 18),
+                          label: const Text('Resume Workout'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      OutlinedButton(
+                        onPressed: _onRestart,
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.all(13),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          side: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.25)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: const Tooltip(
+                          message: 'Restart',
+                          child: Icon(Icons.refresh, size: 18),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      OutlinedButton(
+                        onPressed: _onCancel,
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.all(13),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          foregroundColor:
+                              Theme.of(context).colorScheme.error,
+                          side: BorderSide(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .error
+                                  .withValues(alpha: 0.5)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: const Tooltip(
+                          message: 'Discard',
+                          child: Icon(Icons.close, size: 18),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
+                ] else ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: () => _onStartOrResume(),
+                      icon: const Icon(Icons.fitness_center, size: 18),
+                      label: const Text('Start Workout'),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -198,7 +326,9 @@ class _ExerciseTile extends StatelessWidget {
                 Text(entry.exercise.name,
                     style: const TextStyle(fontWeight: FontWeight.w500)),
                 Text(
-                  '${te.targetSets} sets · ${te.repRangeMin}–${te.repRangeMax} reps',
+                  entry.exercise.isTimed
+                      ? '${te.targetSets} sets · ${te.repRangeMin} s'
+                      : '${te.targetSets} sets · ${te.repRangeMin}–${te.repRangeMax} reps',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],

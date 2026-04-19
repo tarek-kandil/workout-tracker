@@ -44,7 +44,11 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     setState(() {
       _groups = seen.map((id) {
         final ex = exerciseMap[id];
-        return _ExerciseGroup(name: ex?.name ?? 'Unknown', sets: grouped[id]!);
+        return _ExerciseGroup(
+          name: ex?.name ?? 'Unknown',
+          isTimed: ex?.isTimed ?? false,
+          sets: grouped[id]!,
+        );
       }).toList();
       _loading = false;
     });
@@ -92,8 +96,9 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
 
 class _ExerciseGroup {
   final String name;
+  final bool isTimed;
   final List<WorkoutSet> sets;
-  _ExerciseGroup({required this.name, required this.sets});
+  _ExerciseGroup({required this.name, required this.isTimed, required this.sets});
 }
 
 class _ExerciseCard extends StatelessWidget {
@@ -127,34 +132,55 @@ class _ExerciseCard extends StatelessWidget {
               const SizedBox(height: 10),
               ...group.sets.map((s) => Padding(
                     padding: const EdgeInsets.only(bottom: 6),
-                    child: Row(
-                      children: [
-                        SizedBox(
-                          width: 52,
-                          child: Text(
-                            'Set ${s.setNumber}',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(
-                                  color: Colors.white.withValues(alpha: 0.4),
+                    child: group.isTimed
+                        ? Row(
+                            children: [
+                              SizedBox(
+                                width: 52,
+                                child: Text(
+                                  'Set ${s.setNumber}',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: Colors.white.withValues(alpha: 0.4),
+                                      ),
                                 ),
+                              ),
+                              Text(
+                                _fmtSec(s.durationSeconds ?? 0),
+                                style: const TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          )
+                        : Row(
+                            children: [
+                              SizedBox(
+                                width: 52,
+                                child: Text(
+                                  'Set ${s.setNumber}',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: Colors.white.withValues(alpha: 0.4),
+                                      ),
+                                ),
+                              ),
+                              Text(
+                                '${_fmtW(s.weightKg)} kg',
+                                style: const TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                              const SizedBox(width: 8),
+                              Text('×',
+                                  style: Theme.of(context).textTheme.bodySmall),
+                              const SizedBox(width: 8),
+                              Text(
+                                '${s.reps} reps',
+                                style: const TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                            ],
                           ),
-                        ),
-                        Text(
-                          '${_fmtW(s.weightKg)} kg',
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(width: 8),
-                        Text('×',
-                            style: Theme.of(context).textTheme.bodySmall),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${s.reps} reps',
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ],
-                    ),
                   )),
             ],
           ),
@@ -175,3 +201,9 @@ String _formatDate(DateTime d) {
 
 String _fmtW(double w) =>
     w == w.roundToDouble() ? w.toInt().toString() : w.toStringAsFixed(1);
+
+String _fmtSec(int seconds) {
+  final m = seconds ~/ 60;
+  final s = seconds % 60;
+  return '$m:${s.toString().padLeft(2, '0')}';
+}

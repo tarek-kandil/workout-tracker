@@ -416,45 +416,100 @@ class _ProgramSetupScreenState extends ConsumerState<ProgramSetupScreen> {
 
 // ── WOD list ──────────────────────────────────────────────────────────────────
 
-class _WodList extends ConsumerWidget {
+class _WodList extends ConsumerStatefulWidget {
   final int phaseId;
   final bool readOnly;
   const _WodList({required this.phaseId, required this.readOnly});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final wodsAsync = ref.watch(wodTemplatesForPhaseProvider(phaseId));
-    return wodsAsync.when(
-      loading: () => const Padding(
+  ConsumerState<_WodList> createState() => _WodListState();
+}
+
+class _WodListState extends ConsumerState<_WodList> {
+  List<WodTemplate>? _wods;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final wods = await ref
+        .read(databaseProvider)
+        .programsDao
+        .getWodTemplatesForPhase(widget.phaseId);
+    if (mounted) setState(() => _wods = wods);
+  }
+
+  Future<void> _onReorder(int oldIndex, int newIndex) async {
+    if (newIndex > oldIndex) newIndex--;
+    final wods = List<WodTemplate>.from(_wods!);
+    final item = wods.removeAt(oldIndex);
+    wods.insert(newIndex, item);
+    setState(() => _wods = wods);
+
+    final db = ref.read(databaseProvider);
+    for (int i = 0; i < wods.length; i++) {
+      await db.programsDao.updateWodTemplate(WodTemplatesCompanion(
+        id: Value(wods[i].id),
+        phaseId: Value(wods[i].phaseId),
+        wodNumber: Value(i + 1),
+        name: Value(wods[i].name),
+        notes: Value(wods[i].notes),
+      ));
+    }
+    ref.invalidate(wodTemplatesForPhaseProvider(widget.phaseId));
+    ref.invalidate(nextWodProvider);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Sync from provider after external edits (e.g. returning from WodSetupScreen)
+    ref.listen(wodTemplatesForPhaseProvider(widget.phaseId), (_, next) {
+      next.whenData((wods) {
+        if (mounted) setState(() => _wods = wods);
+      });
+    });
+
+    final wods = _wods;
+    if (wods == null) {
+      return const Padding(
         padding: EdgeInsets.symmetric(vertical: 8),
         child: LinearProgressIndicator(),
-      ),
-      error: (e, _) => const SizedBox.shrink(),
-      data: (wods) {
-        if (wods.isEmpty) {
-          return Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              readOnly
-                  ? 'No workouts in this program.'
-                  : 'No workouts yet — tap "Edit Workouts" to add.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.4),
-                  ),
+      );
+    }
+    if (wods.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Text(
+          widget.readOnly
+              ? 'No workouts in this program.'
+              : 'No workouts yet — tap "Edit Workouts" to add.',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.white.withValues(alpha: 0.4),
+              ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: ReorderableListView(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        buildDefaultDragHandles: false,
+        onReorder: widget.readOnly ? (a, b) {} : _onReorder,
+        children: [
+          for (int i = 0; i < wods.length; i++)
+            _WodTile(
+              key: ValueKey(wods[i].id),
+              wod: wods[i],
+              readOnly: widget.readOnly,
+              dragIndex: widget.readOnly ? null : i,
             ),
-          );
-        }
-        return Column(
-          children: [
-            const SizedBox(height: 8),
-            ...wods.map((wod) => _WodTile(
-                  key: ValueKey(wod.id),
-                  wod: wod,
-                  readOnly: readOnly,
-                )),
-          ],
-        );
-      },
+        ],
+      ),
     );
   }
 }
@@ -464,7 +519,8 @@ class _WodList extends ConsumerWidget {
 class _WodTile extends ConsumerWidget {
   final WodTemplate wod;
   final bool readOnly;
-  const _WodTile({super.key, required this.wod, required this.readOnly});
+  final int? dragIndex; // non-null → show drag handle
+  const _WodTile({super.key, required this.wod, required this.readOnly, this.dragIndex});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -472,9 +528,9 @@ class _WodTile extends ConsumerWidget {
         ref.watch(wodTemplateExercisesProvider(wod.id));
     final allExercisesAsync = ref.watch(exercisesProvider);
 
-    final exerciseMap = <int, String>{};
+    final exerciseMap = <int, Exercise>{};
     for (final e in allExercisesAsync.valueOrNull ?? []) {
-      exerciseMap[e.id] = e.name;
+      exerciseMap[e.id] = e;
     }
     final templateExercises = templateExercisesAsync.valueOrNull ?? [];
 
@@ -491,11 +547,22 @@ class _WodTile extends ConsumerWidget {
           // WOD name row
           Row(
             children: [
-              VibrantText(
-                wod.name,
-                style: Theme.of(context).textTheme.bodyMedium!,
+              if (dragIndex != null)
+                ReorderableDragStartListener(
+                  index: dragIndex!,
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Icon(Icons.drag_handle,
+                        size: 18,
+                        color: Colors.white.withValues(alpha: 0.3)),
+                  ),
+                ),
+              Expanded(
+                child: VibrantText(
+                  wod.name,
+                  style: Theme.of(context).textTheme.bodyMedium!,
+                ),
               ),
-              const Spacer(),
               if (!readOnly)
                 Icon(Icons.chevron_right,
                     size: 16,
@@ -522,7 +589,12 @@ class _WodTile extends ConsumerWidget {
           else ...[
             const SizedBox(height: 6),
             ...templateExercises.map((te) {
-              final name = exerciseMap[te.exerciseId] ?? '…';
+              final exercise = exerciseMap[te.exerciseId];
+              final name = exercise?.name ?? '…';
+              final isTimed = exercise?.isTimed ?? false;
+              final rangeStr = isTimed
+                  ? '${te.targetSets}×${te.repRangeMin}s'
+                  : '${te.targetSets}×${te.repRangeMin}–${te.repRangeMax}';
               return Padding(
                 padding: const EdgeInsets.only(top: 3),
                 child: Row(
@@ -548,7 +620,7 @@ class _WodTile extends ConsumerWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      '${te.targetSets}×${te.repRangeMin}–${te.repRangeMax}',
+                      rangeStr,
                       style:
                           Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: Colors.white.withValues(alpha: 0.35),

@@ -19,6 +19,7 @@ class _WodExerciseSetupScreenState
     extends ConsumerState<WodExerciseSetupScreen> {
   List<WodTemplateExercise> _templateExercises = [];
   String _wodName = 'Exercises';
+  int _restSeconds = 90;
   bool _loading = true;
 
   @override
@@ -31,15 +32,87 @@ class _WodExerciseSetupScreenState
     final db = ref.read(databaseProvider);
     final exercises =
         await db.programsDao.getTemplateExercises(widget.wodTemplateId);
-    // Get WOD name for the title by querying directly
     final wodResult = await (db.select(db.wodTemplates)
           ..where((w) => w.id.equals(widget.wodTemplateId)))
         .getSingleOrNull();
     setState(() {
       _templateExercises = exercises;
       _wodName = wodResult?.name ?? 'Exercises';
+      _restSeconds = wodResult?.restSeconds ?? 90;
       _loading = false;
     });
+  }
+
+  Future<void> _editRestTime() async {
+    int restSeconds = _restSeconds;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Rest Time'),
+          content: Row(
+            children: [
+              const Icon(Icons.timer_outlined, size: 18),
+              const SizedBox(width: 8),
+              const Text('Rest'),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.remove, size: 16),
+                onPressed: restSeconds > 15
+                    ? () => setDialogState(
+                        () => restSeconds = (restSeconds - 15).clamp(15, 600))
+                    : null,
+                style: IconButton.styleFrom(
+                  minimumSize: const Size(32, 32),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+              SizedBox(
+                width: 52,
+                child: Text(
+                  '${restSeconds}s',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.add, size: 16),
+                onPressed: restSeconds < 600
+                    ? () => setDialogState(
+                        () => restSeconds = (restSeconds + 15).clamp(15, 600))
+                    : null,
+                style: IconButton.styleFrom(
+                  minimumSize: const Size(32, 32),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel')),
+            FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Save')),
+          ],
+        ),
+      ),
+    );
+    if (confirmed != true) return;
+    final db = ref.read(databaseProvider);
+    final wod = await (db.select(db.wodTemplates)
+          ..where((w) => w.id.equals(widget.wodTemplateId)))
+        .getSingleOrNull();
+    if (wod == null) return;
+    await db.programsDao.updateWodTemplate(WodTemplatesCompanion(
+      id: Value(wod.id),
+      phaseId: Value(wod.phaseId),
+      wodNumber: Value(wod.wodNumber),
+      name: Value(wod.name),
+      restSeconds: Value(restSeconds),
+    ));
+    setState(() => _restSeconds = restSeconds);
   }
 
   Future<void> _addExercise() async {
@@ -52,7 +125,8 @@ class _WodExerciseSetupScreenState
       isScrollControlled: true,
       builder: (ctx) => _ExercisePickerSheet(
         exercises: allExercises,
-        onCreateNew: (name, category) => _createAndPickExercise(name, category),
+        onCreateNew: (name, category, isTimed) =>
+            _createAndPickExercise(name, category, isTimed),
       ),
     );
     if (picked == null) return;
@@ -63,8 +137,9 @@ class _WodExerciseSetupScreenState
             exerciseId: Value(picked.id),
             sortOrder: Value(_templateExercises.length + 1),
             targetSets: const Value(3),
-            repRangeMin: const Value(6),
-            repRangeMax: const Value(12),
+            // For timed exercises repRangeMin/Max store seconds (default 30–60 s)
+            repRangeMin: picked.isTimed ? const Value(30) : const Value(6),
+            repRangeMax: picked.isTimed ? const Value(60) : const Value(12),
           ),
         );
     _load();
@@ -72,11 +147,12 @@ class _WodExerciseSetupScreenState
 
   /// Creates a new exercise in the library and returns it so it can be added to the WOD.
   Future<Exercise?> _createAndPickExercise(
-      String name, String category) async {
+      String name, String category, bool isTimed) async {
     final db = ref.read(databaseProvider);
     final id = await db.exercisesDao.insertExercise(ExercisesCompanion(
       name: Value(name),
       category: Value(category),
+      isTimed: Value(isTimed),
     ));
     ref.invalidate(exercisesProvider);
     final allExercises = await db.exercisesDao.getAllExercises();
@@ -87,10 +163,22 @@ class _WodExerciseSetupScreenState
       WodTemplateExercise entry, Exercise exercise) async {
     final result = await showDialog<_ExerciseConfig>(
       context: context,
-      builder: (ctx) =>
-          _EditExerciseDialog(entry: entry, exercise: exercise),
+      builder: (ctx) => _EditExerciseDialog(entry: entry, exercise: exercise),
     );
     if (result == null) return;
+
+    // Persist isTimed change on the exercise itself if the user toggled it
+    if (result.isTimed != exercise.isTimed) {
+      await ref.read(databaseProvider).exercisesDao.updateExercise(
+        ExercisesCompanion(
+          id: Value(exercise.id),
+          name: Value(exercise.name),
+          category: Value(exercise.category),
+          isTimed: Value(result.isTimed),
+        ),
+      );
+      ref.invalidate(exercisesProvider);
+    }
 
     await ref.read(databaseProvider).programsDao.updateWodTemplateExercise(
           WodTemplateExercisesCompanion(
@@ -120,7 +208,18 @@ class _WodExerciseSetupScreenState
     final exercisesAsync = ref.watch(exercisesProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(_wodName)),
+      appBar: AppBar(
+        title: Text(_wodName),
+        actions: [
+          if (!_loading)
+            TextButton.icon(
+              onPressed: _editRestTime,
+              icon: const Icon(Icons.timer_outlined, size: 16),
+              label: Text('${_restSeconds}s rest'),
+              style: TextButton.styleFrom(foregroundColor: Colors.white70),
+            ),
+        ],
+      ),
       body: Stack(
         children: [
           const Positioned.fill(child: GlassBackground()),
@@ -207,7 +306,9 @@ class _WodExerciseSetupScreenState
                               style: const TextStyle(
                                   fontWeight: FontWeight.w600)),
                           subtitle: Text(
-                            '${te.targetSets} sets · ${te.repRangeMin}–${te.repRangeMax} reps',
+                            exercise.isTimed
+                                ? '${te.targetSets} sets · ${_fmtSec(te.repRangeMin)}'
+                                : '${te.targetSets} sets · ${te.repRangeMin}–${te.repRangeMax} reps',
                             style: Theme.of(context)
                                 .textTheme
                                 .bodySmall
@@ -255,7 +356,7 @@ class _WodExerciseSetupScreenState
 
 class _ExercisePickerSheet extends StatefulWidget {
   final List<Exercise> exercises;
-  final Future<Exercise?> Function(String name, String category) onCreateNew;
+  final Future<Exercise?> Function(String name, String category, bool isTimed) onCreateNew;
 
   const _ExercisePickerSheet({
     required this.exercises,
@@ -341,6 +442,7 @@ class _ExercisePickerSheetState extends State<_ExercisePickerSheet> {
       'Push', 'Pull', 'Legs', 'Core', 'Cardio', 'Other'
     ];
     String selectedCategory = 'Other';
+    bool isTimed = false;
     final name = _query.trim();
 
     final confirmed = await showDialog<bool>(
@@ -365,6 +467,12 @@ class _ExercisePickerSheetState extends State<_ExercisePickerSheet> {
                 onChanged: (v) =>
                     setDlgState(() => selectedCategory = v!),
               ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Timed exercise'),
+                value: isTimed,
+                onChanged: (v) => setDlgState(() => isTimed = v),
+              ),
             ],
           ),
           actions: [
@@ -381,7 +489,7 @@ class _ExercisePickerSheetState extends State<_ExercisePickerSheet> {
 
     if (confirmed != true) return;
     final exercise =
-        await widget.onCreateNew(name, selectedCategory);
+        await widget.onCreateNew(name, selectedCategory, isTimed);
     if (exercise != null && sheetCtx.mounted) {
       Navigator.pop(sheetCtx, exercise);
     }
@@ -395,36 +503,65 @@ class _ExerciseConfig {
   final int repMin;
   final int repMax;
   final String notes;
+  final bool isTimed;
   const _ExerciseConfig({
     required this.sets,
     required this.repMin,
     required this.repMax,
     required this.notes,
+    required this.isTimed,
   });
 }
 
 class _EditExerciseDialog extends StatefulWidget {
   final WodTemplateExercise entry;
   final Exercise exercise;
-  const _EditExerciseDialog(
-      {required this.entry, required this.exercise});
+  const _EditExerciseDialog({required this.entry, required this.exercise});
 
   @override
   State<_EditExerciseDialog> createState() => _EditExerciseDialogState();
 }
 
 class _EditExerciseDialogState extends State<_EditExerciseDialog> {
+  static const List<int> _steps = [
+    10, 20, 30, 45,
+    60, 90, 120, 150, 180, 210, 240, 270, 300,
+    360, 420, 480, 540, 600,
+  ];
+
+  static int _nearestIdx(int seconds) {
+    int best = 0;
+    int bestDiff = (seconds - _steps[0]).abs();
+    for (int i = 1; i < _steps.length; i++) {
+      final diff = (seconds - _steps[i]).abs();
+      if (diff < bestDiff) { bestDiff = diff; best = i; }
+    }
+    return best;
+  }
+
   late int _sets;
+  late bool _isTimed;
   late int _repMin;
   late int _repMax;
+  late int _durationIdx; // single index into _steps for timed exercises
   late final TextEditingController _notesCtrl;
+
+  static const _accent = Colors.indigoAccent;
 
   @override
   void initState() {
     super.initState();
     _sets = widget.entry.targetSets;
-    _repMin = widget.entry.repRangeMin;
-    _repMax = widget.entry.repRangeMax;
+    _isTimed = widget.exercise.isTimed;
+    if (widget.exercise.isTimed) {
+      _durationIdx = _nearestIdx(widget.entry.repRangeMin);
+      _repMin = 6;
+      _repMax = 12;
+    } else {
+      _repMin = widget.entry.repRangeMin;
+      _repMax = widget.entry.repRangeMax;
+      _durationIdx = _nearestIdx(30);
+    }
     _notesCtrl = TextEditingController(text: widget.entry.notes ?? '');
   }
 
@@ -434,71 +571,225 @@ class _EditExerciseDialogState extends State<_EditExerciseDialog> {
     super.dispose();
   }
 
+  void _onTimedToggle(bool v) {
+    setState(() {
+      _isTimed = v;
+      if (v) {
+        _durationIdx = _nearestIdx(30);
+      } else {
+        _repMin = 6;
+        _repMax = 12;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.exercise.name),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _StepperRow(
-            label: 'Target Sets',
-            value: _sets,
-            min: 1,
-            max: 10,
-            onChanged: (v) => setState(() => _sets = v),
-          ),
-          const SizedBox(height: 12),
-          Row(
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey[900],
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: _StepperRow(
-                  label: 'Min Reps',
-                  value: _repMin,
-                  min: 1,
-                  max: _repMax - 1,
-                  onChanged: (v) => setState(() => _repMin = v),
+              // ── Header ──────────────────────────────────────────────────
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      widget.exercise.name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white38, size: 20),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+
+              // ── Timed toggle ─────────────────────────────────────────────
+              Row(
+                children: [
+                  const Icon(Icons.timer_outlined, size: 18, color: Colors.white54),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Timed exercise',
+                      style: TextStyle(color: Colors.white70, fontSize: 14),
+                    ),
+                  ),
+                  Switch(
+                    value: _isTimed,
+                    onChanged: _onTimedToggle,
+                    activeThumbColor: _accent,
+                  ),
+                ],
+              ),
+              Divider(color: Colors.white.withValues(alpha: 0.08)),
+              const SizedBox(height: 20),
+
+              // ── Sets picker ──────────────────────────────────────────────
+              const _Label('SETS'),
+              const SizedBox(height: 14),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _CircleBtn(
+                    icon: Icons.remove,
+                    onTap: () => setState(() => _sets = (_sets - 1).clamp(1, 10)),
+                  ),
+                  const SizedBox(width: 36),
+                  Column(
+                    children: [
+                      Text(
+                        '$_sets',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 56,
+                          height: 1,
+                        ),
+                      ),
+                      const Text('sets',
+                          style: TextStyle(color: Colors.white38, fontSize: 12)),
+                    ],
+                  ),
+                  const SizedBox(width: 36),
+                  _CircleBtn(
+                    icon: Icons.add,
+                    onTap: () => setState(() => _sets = (_sets + 1).clamp(1, 10)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 28),
+              Divider(color: Colors.white.withValues(alpha: 0.08)),
+              const SizedBox(height: 20),
+
+              // ── Duration OR Reps ─────────────────────────────────────────
+              if (_isTimed) ...[
+                const _Label('DURATION'),
+                const SizedBox(height: 14),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _CircleBtn(
+                      icon: Icons.remove,
+                      onTap: () => setState(() =>
+                          _durationIdx = (_durationIdx - 1).clamp(0, _steps.length - 1)),
+                    ),
+                    const SizedBox(width: 36),
+                    Column(
+                      children: [
+                        Text(
+                          _fmtSec(_steps[_durationIdx]),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 56,
+                            height: 1,
+                          ),
+                        ),
+                        const Text('per set',
+                            style: TextStyle(color: Colors.white38, fontSize: 12)),
+                      ],
+                    ),
+                    const SizedBox(width: 36),
+                    _CircleBtn(
+                      icon: Icons.add,
+                      onTap: () => setState(() =>
+                          _durationIdx = (_durationIdx + 1).clamp(0, _steps.length - 1)),
+                    ),
+                  ],
+                ),
+              ] else ...[
+                const _Label('REP RANGE'),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _StepperRow(
+                        label: 'Min Reps',
+                        value: _repMin,
+                        min: 1,
+                        max: _repMax,
+                        onChanged: (v) => setState(() => _repMin = v),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _StepperRow(
+                        label: 'Max Reps',
+                        value: _repMax,
+                        min: _repMin,
+                        max: 50,
+                        onChanged: (v) => setState(() => _repMax = v),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 24),
+              Divider(color: Colors.white.withValues(alpha: 0.08)),
+              const SizedBox(height: 12),
+
+              // ── Coaching note ────────────────────────────────────────────
+              TextField(
+                controller: _notesCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Coaching Note (optional)',
+                  hintText: 'e.g. pause at bottom',
+                  border: OutlineInputBorder(),
+                  isDense: true,
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _StepperRow(
-                  label: 'Max Reps',
-                  value: _repMax,
-                  min: _repMin + 1,
-                  max: 50,
-                  onChanged: (v) => setState(() => _repMax = v),
+              const SizedBox(height: 24),
+
+              // ── Save ─────────────────────────────────────────────────────
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _accent,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    elevation: 0,
+                  ),
+                  onPressed: () => Navigator.pop(
+                    context,
+                    _ExerciseConfig(
+                      sets: _sets,
+                      repMin: _isTimed ? _steps[_durationIdx] : _repMin,
+                      repMax: _isTimed ? _steps[_durationIdx] : _repMax,
+                      notes: _notesCtrl.text,
+                      isTimed: _isTimed,
+                    ),
+                  ),
+                  child: const Text(
+                    'Save',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _notesCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Coaching Note (optional)',
-              hintText: 'e.g. pause at bottom',
-              border: OutlineInputBorder(),
-              isDense: true,
-            ),
-          ),
-        ],
+        ),
       ),
-      actions: [
-        TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel')),
-        FilledButton(
-            onPressed: () => Navigator.pop(
-                context,
-                _ExerciseConfig(
-                  sets: _sets,
-                  repMin: _repMin,
-                  repMax: _repMax,
-                  notes: _notesCtrl.text,
-                )),
-            child: const Text('Save')),
-      ],
     );
   }
 }
@@ -528,18 +819,67 @@ class _StepperRow extends StatelessWidget {
           children: [
             IconButton(
               icon: const Icon(Icons.remove),
-              onPressed: value > min ? () => onChanged(value - 1) : null,
+              onPressed: value > min ? () => onChanged((value - 1).clamp(min, max)) : null,
               iconSize: 20,
             ),
             Text('$value', style: Theme.of(context).textTheme.titleMedium),
             IconButton(
               icon: const Icon(Icons.add),
-              onPressed: value < max ? () => onChanged(value + 1) : null,
+              onPressed: value < max ? () => onChanged((value + 1).clamp(min, max)) : null,
               iconSize: 20,
             ),
           ],
         ),
       ],
+    );
+  }
+}
+
+/// Formats seconds as "M:SS" (e.g. 90 → "1:30", 30 → "0:30").
+String _fmtSec(int seconds) {
+  final m = seconds ~/ 60;
+  final s = seconds % 60;
+  return '$m:${s.toString().padLeft(2, '0')}';
+}
+
+// ── Shared helper widgets ──────────────────────────────────────────────────────
+
+class _CircleBtn extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _CircleBtn({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.indigoAccent.withValues(alpha: 0.15),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Icon(icon, color: Colors.indigoAccent, size: 22),
+        ),
+      ),
+    );
+  }
+}
+
+class _Label extends StatelessWidget {
+  final String text;
+  const _Label(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(
+        color: Colors.white38,
+        fontWeight: FontWeight.w700,
+        fontSize: 11,
+        letterSpacing: 1.2,
+      ),
     );
   }
 }

@@ -10,6 +10,7 @@ class WorkoutSets extends Table {
   IntColumn get setNumber => integer()();
   IntColumn get reps => integer()();
   RealColumn get weightKg => real()();
+  IntColumn get durationSeconds => integer().nullable()();
   // RPE: Rate of Perceived Exertion (6.0–10.0), optional
   RealColumn get rpe => real().nullable()();
   TextColumn get notes => text().nullable()();

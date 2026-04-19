@@ -129,6 +129,7 @@ class ProgramsDao extends DatabaseAccessor<AppDatabase>
           wodNumber: Value(wod.wodNumber),
           name: Value(wod.name),
           notes: Value(wod.notes),
+          restSeconds: Value(wod.restSeconds),
         ));
         final exercises = await getTemplateExercises(wod.id);
         for (final ex in exercises) {

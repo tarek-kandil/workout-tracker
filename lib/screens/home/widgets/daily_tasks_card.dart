@@ -35,11 +35,6 @@ class DailyTasksCard extends ConsumerWidget {
         padding: EdgeInsets.zero,
         // Left border replaces IntrinsicHeight + Row — avoids parentDataDirty assert
         child: Container(
-          decoration: BoxDecoration(
-            border: Border(
-              left: BorderSide(color: accentColor, width: 4),
-            ),
-          ),
           padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
