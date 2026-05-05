@@ -2335,34 +2335,25 @@ class _SetRowState extends State<_SetRow> {
   }
 
   void _handleWeight(double delta) {
-    if (!_initialized) {
-      _initialized = true;
-      widget.onChanged(widget.referenceData);
-    } else {
-      widget.onChanged(_SetData(
-        weightKg: (widget.data.weightKg + delta).clamp(0.0, double.infinity),
-        reps: widget.data.reps,
-        durationSeconds: widget.data.durationSeconds,
-      ));
-    }
+    final base = _initialized ? widget.data : widget.referenceData;
+    _initialized = true;
+    widget.onChanged(_SetData(
+      weightKg: (base.weightKg + delta).clamp(0.0, double.infinity),
+      reps: base.reps,
+      durationSeconds: base.durationSeconds,
+    ));
   }
 
   void _handleReps(int delta) {
-    if (!_initialized) {
-      _initialized = true;
-      widget.onChanged(widget.referenceData);
-    } else {
-      widget.onChanged(_SetData(weightKg: widget.data.weightKg, reps: (widget.data.reps + delta).clamp(1, 999)));
-    }
+    final base = _initialized ? widget.data : widget.referenceData;
+    _initialized = true;
+    widget.onChanged(_SetData(weightKg: base.weightKg, reps: (base.reps + delta).clamp(1, 999)));
   }
 
   void _handleDuration(int delta) {
-    if (!_initialized) {
-      _initialized = true;
-      widget.onChanged(widget.referenceData);
-    } else {
-      widget.onChanged(_SetData(weightKg: widget.data.weightKg, reps: 0, durationSeconds: (widget.data.durationSeconds + delta).clamp(5, 3600)));
-    }
+    final base = _initialized ? widget.data : widget.referenceData;
+    _initialized = true;
+    widget.onChanged(_SetData(weightKg: base.weightKg, reps: 0, durationSeconds: (base.durationSeconds + delta).clamp(5, 3600)));
   }
 
   void _commitWeight() {
@@ -2429,7 +2420,7 @@ class _SetRowState extends State<_SetRow> {
                 onCommit: _commitDuration,
               )
             : _StepperField(
-                label: _editingSecondary ? null : '${widget.data.reps} reps',
+                label: _editingSecondary ? null : '${widget.data.reps}',
                 editingController: _editingSecondary ? _secondaryCtrl : null,
                 isInteger: true,
                 onDecrement: () => _handleReps(-1),
@@ -2480,7 +2471,7 @@ class _StepperField extends StatelessWidget {
               )
             : GestureDetector(
                 onTap: onTapValue,
-                child: Text(label ?? '', textAlign: TextAlign.center,
+                child: Text(label ?? '', textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
               ),
       ),
