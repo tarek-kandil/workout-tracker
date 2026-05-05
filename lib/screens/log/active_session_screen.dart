@@ -1184,23 +1184,24 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                 );
               },
             ),
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 280),
-            curve: Curves.easeOut,
-            top: _resting && !_loading ? 8 : -80,
-            left: 16,
-            right: 16,
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 220),
-              opacity: _resting && !_loading ? 1.0 : 0.0,
-              child: _RestPill(
-                secondsLeft: _restSecondsLeft,
-                totalSeconds: _restTotalSeconds,
-                nextLabel: _getNextLabel(),
-                onSkip: _skipRest,
+          if (!_loading && _sessionItems.isNotEmpty)
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 280),
+              curve: Curves.easeOut,
+              top: _resting ? 8 : -80,
+              left: 16,
+              right: 16,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 220),
+                opacity: _resting ? 1.0 : 0.0,
+                child: _RestPill(
+                  secondsLeft: _restSecondsLeft,
+                  totalSeconds: _restTotalSeconds,
+                  nextLabel: _getNextLabel(),
+                  onSkip: _skipRest,
+                ),
               ),
             ),
-          ),
           if (_showResumePrompt && !_loading)
             _ResumePromptOverlay(
               savedAtMs: _savedAtMs,
