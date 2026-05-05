@@ -82,14 +82,16 @@ class _RimLight extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final rimColor =
+        Theme.of(context).colorScheme.secondary.withValues(alpha: 0.35);
     return DecoratedBox(
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0x5938BDF8), // Electric Sky 35% — top-left refraction catch
-            Color(0x0CFFFFFF), // white 5%          — bottom-right fade
+            rimColor,
+            Colors.white.withValues(alpha: 0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(borderRadius),
