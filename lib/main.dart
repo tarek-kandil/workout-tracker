@@ -13,9 +13,18 @@ import 'utils/constants.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Pre-load theme prefs so ThemeNotifier starts with the correct state —
+  // avoids a dark→light flash on apps that have saved light mode.
+  final prefs = await SharedPreferences.getInstance();
+  final initialTheme = ThemeNotifier.preload(prefs);
+
   runApp(
-    const ProviderScope(
-      child: WorkoutTrackerApp(),
+    ProviderScope(
+      overrides: [
+        themeProvider.overrideWith(() => ThemeNotifier(initialTheme)),
+      ],
+      child: const WorkoutTrackerApp(),
     ),
   );
 }

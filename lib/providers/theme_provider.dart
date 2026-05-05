@@ -9,20 +9,12 @@ class ThemeNotifier extends Notifier<ThemeState> {
   static const _keyBrightness = 'theme_brightness';
   static const _keyPalette = 'theme_palette';
 
-  @override
-  ThemeState build() {
-    _loadFromPrefs(); // fire-and-forget — updates state when prefs load
-    return (
-      brightness: Brightness.dark,
-      palette: AppPaletteLibrary.defaultPalette,
-    );
-  }
-
-  Future<void> _loadFromPrefs() async {
-    final prefs = await SharedPreferences.getInstance();
+  /// Preload from SharedPreferences before ProviderScope starts.
+  /// Call this in main() and pass the result as [overrideWith].
+  static ThemeState preload(SharedPreferences prefs) {
     final bStr = prefs.getString(_keyBrightness) ?? 'dark';
     final pName = prefs.getString(_keyPalette) ?? '';
-    state = (
+    return (
       brightness: bStr == 'light' ? Brightness.light : Brightness.dark,
       palette: AppPaletteLibrary.all.firstWhere(
         (p) => p.name == pName,
@@ -30,6 +22,14 @@ class ThemeNotifier extends Notifier<ThemeState> {
       ),
     );
   }
+
+  ThemeNotifier([this._initial]);
+  final ThemeState? _initial;
+
+  @override
+  ThemeState build() =>
+      _initial ??
+      (brightness: Brightness.dark, palette: AppPaletteLibrary.defaultPalette);
 
   Future<void> toggleBrightness() async {
     final newBrightness = state.brightness == Brightness.dark

@@ -1,60 +1,32 @@
-import 'dart:ui' show ImageFilter, lerpDouble;
+import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 
-/// Animated color blob background that gives BackdropFilter something to blur.
-class GlassBackground extends StatefulWidget {
+/// Static colour blob background that gives BackdropFilter something to blur.
+/// No animation — keeps the UI calm and consistent with Option B (clean/minimal).
+class GlassBackground extends StatelessWidget {
   const GlassBackground({super.key});
 
   @override
-  State<GlassBackground> createState() => _GlassBackgroundState();
-}
-
-class _GlassBackgroundState extends State<GlassBackground>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 8),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _ctrl,
-      builder: (context, _) {
-        final t = _ctrl.value;
-        final cs = Theme.of(context).colorScheme;
-        return Stack(
-          children: [
-            Positioned(
-              top: lerpDouble(-60, 20, t),
-              right: lerpDouble(-40, 40, t),
-              child: _Blob(color: cs.primary, opacity: 0.24, size: 280),
-            ),
-            Positioned(
-              top: lerpDouble(200, 280, t),
-              left: lerpDouble(-80, -20, t),
-              child: _Blob(color: cs.secondary, opacity: 0.18, size: 240),
-            ),
-            Positioned(
-              bottom: lerpDouble(60, 140, t),
-              right: lerpDouble(20, 80, t),
-              child: _Blob(color: cs.primary, opacity: 0.15, size: 220),
-            ),
-          ],
-        );
-      },
+    final cs = Theme.of(context).colorScheme;
+    return Stack(
+      children: [
+        Positioned(
+          top: -40,
+          right: -60,
+          child: _Blob(color: cs.primary, opacity: 0.18, size: 320),
+        ),
+        Positioned(
+          top: 240,
+          left: -80,
+          child: _Blob(color: cs.secondary, opacity: 0.12, size: 260),
+        ),
+        Positioned(
+          bottom: 100,
+          right: 40,
+          child: _Blob(color: cs.primary, opacity: 0.10, size: 240),
+        ),
+      ],
     );
   }
 }
