@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../providers/program_providers.dart';
+import '../../../widgets/glass_route.dart';
 import '../../../widgets/liquid_glass_container.dart';
 import '../../../widgets/vibrant_text.dart';
+import '../week_wods_screen.dart';
 
 class ActiveProgramCard extends ConsumerWidget {
   const ActiveProgramCard({super.key});
@@ -45,7 +48,12 @@ class ActiveProgramCard extends ConsumerWidget {
         final primary = Theme.of(context).colorScheme.primary;
         final tertiary = Theme.of(context).colorScheme.tertiary;
 
-        return LiquidGlassContainer(
+        return GestureDetector(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            Navigator.of(context).push(glassRoute(const WeekWodsScreen()));
+          },
+          child: LiquidGlassContainer(
           borderRadius: 32,
           blurSigma: 18,
           tintColor: primary.withValues(alpha: 0.10),
@@ -144,6 +152,7 @@ class ActiveProgramCard extends ConsumerWidget {
                 ),
               ),
             ],
+          ),
           ),
         );
       },

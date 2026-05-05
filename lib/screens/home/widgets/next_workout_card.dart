@@ -171,18 +171,18 @@ class _NextWodContentState extends ConsumerState<_NextWodContent> {
               children: [
                 Row(
                   children: [
-                    VibrantText(
-                      'NEXT UP',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.2,
-                      ),
-                      gradientColors: const [
-                        Color(0xFF38BDF8),
-                        Color(0xFF818CF8),
-                      ],
-                    ),
+                    Builder(builder: (ctx) {
+                      final cs = Theme.of(ctx).colorScheme;
+                      return VibrantText(
+                        'NEXT UP',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.2,
+                        ),
+                        gradientColors: [cs.secondary, cs.primary],
+                      );
+                    }),
                     const Spacer(),
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -232,7 +232,7 @@ class _NextWodContentState extends ConsumerState<_NextWodContent> {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
             child: Column(
               children: [
-                ...widget.result.exercises
+                ...widget.result.allExercises
                     .map((entry) => _ExerciseTile(entry: entry)),
                 const SizedBox(height: 12),
                 if (_hasProgress) ...[
