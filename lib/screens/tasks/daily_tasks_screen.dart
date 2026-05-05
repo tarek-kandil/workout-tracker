@@ -402,7 +402,7 @@ class _TaskTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final dimmed = Colors.white.withValues(alpha: 0.38);
+    final dimmed = theme.colorScheme.onSurface.withValues(alpha: 0.38);
 
     final accentColor = isCompleted ? Colors.green : theme.colorScheme.primary;
     return Padding(

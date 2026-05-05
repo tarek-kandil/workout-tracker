@@ -852,7 +852,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     final si = _sessionItems[itemIdx];
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1A1A2E),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) => SafeArea(
         child: Padding(
@@ -883,7 +883,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   void _showCircuitExerciseActions(BuildContext context, int itemIdx, int exIdx) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1A1A2E),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) => SafeArea(
         child: Padding(
@@ -1011,7 +1011,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     int sets = 3, repMin = 8, repMax = 12;
     showModalBottomSheet(
       context: context, isScrollControlled: true,
-      backgroundColor: const Color(0xFF1A1A2E),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setM) => Padding(
@@ -1612,7 +1612,7 @@ class _RoundRowItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const teal = Color(0xFF14B8A6);
+    final teal = Theme.of(context).colorScheme.secondary;
     final accent = Theme.of(context).colorScheme.primary;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
@@ -1794,7 +1794,7 @@ class _CircuitCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const teal = Color(0xFF14B8A6);
+    final teal = Theme.of(context).colorScheme.secondary;
     final isActive = cardState == _CardState.active && itemIndex == currentItemIdx;
     final isDone = cardState == _CardState.completed;
 
@@ -1814,12 +1814,12 @@ class _CircuitCard extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
           child: Row(children: [
-            const Icon(Icons.loop, size: 14, color: Color(0xFF14B8A6)),
+            Icon(Icons.loop, size: 14, color: teal),
             const SizedBox(width: 7),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(
                 circuit.name != null && circuit.name!.isNotEmpty ? circuit.name! : 'Circuit',
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF14B8A6)),
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: teal),
               ),
               Text(
                 '${circuit.rounds} rounds · ${circuit.restBetweenRoundsSeconds}s rest between rounds',
@@ -1835,7 +1835,7 @@ class _CircuitCard extends StatelessWidget {
             ),
           ]),
         ),
-        const Divider(height: 1, color: Color(0x1414B8A6)),
+        Divider(height: 1, color: teal.withValues(alpha: 0.08)),
         for (int exIdx = 0; exIdx < circuit.exercises.length; exIdx++) ...[
           _CircuitExerciseSection(
             exercise: circuit.exercises[exIdx],
@@ -1964,9 +1964,9 @@ class _ExerciseLibrarySheetState extends ConsumerState<_ExerciseLibrarySheet> {
     return DraggableScrollableSheet(
       initialChildSize: 0.75, minChildSize: 0.5, maxChildSize: 0.95, expand: false,
       builder: (ctx, scroll) => Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFF1A1A2E),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: Theme.of(ctx).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(children: [
           const SizedBox(height: 10),
@@ -1997,7 +1997,7 @@ class _ExerciseLibrarySheetState extends ConsumerState<_ExerciseLibrarySheet> {
                 : ListView(controller: scroll, children: [
                     if (showCreate)
                       ListTile(
-                        leading: const Icon(Icons.add_circle_outline, color: Colors.purple),
+                        leading: Icon(Icons.add_circle_outline, color: Theme.of(context).colorScheme.primary),
                         title: Text('Create "$_query"', style: const TextStyle(fontWeight: FontWeight.w700)),
                         subtitle: const Text('Add to exercise library'),
                         onTap: () => _createAndSelect(_query),

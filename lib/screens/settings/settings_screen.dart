@@ -4,7 +4,9 @@ import '../../providers/database_provider.dart';
 import '../../providers/next_workout_provider.dart';
 import '../../providers/program_providers.dart';
 import '../../providers/session_providers.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/glass_background.dart';
+import '../../widgets/glass_card.dart';
 import '../../widgets/glass_route.dart';
 import '../../widgets/liquid_glass_container.dart';
 import 'bodyweight_screen.dart';
@@ -26,6 +28,42 @@ class SettingsScreen extends ConsumerWidget {
           ListView(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
             children: [
+              // ── Appearance group ────────────────────────────────────────
+              _SectionLabel(label: 'APPEARANCE'),
+              const SizedBox(height: 8),
+              GlassCard(
+                borderRadius: 20,
+                padding: EdgeInsets.zero,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  child: Row(
+                    children: [
+                      Icon(
+                        ref.watch(themeProvider).brightness == Brightness.dark
+                            ? Icons.dark_mode_outlined
+                            : Icons.light_mode_outlined,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 22,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Dark Mode',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+                      Switch(
+                        value: ref.watch(themeProvider).brightness ==
+                            Brightness.dark,
+                        onChanged: (_) =>
+                            ref.read(themeProvider.notifier).toggleBrightness(),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+
               // ── Training group ──────────────────────────────────────────
               _SectionLabel(label: 'TRAINING'),
               const SizedBox(height: 8),
@@ -159,7 +197,7 @@ class _SectionLabel extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Colors.white.withValues(alpha: 0.4),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
               letterSpacing: 1.2,
               fontWeight: FontWeight.w700,
             ),
@@ -209,7 +247,7 @@ class _SettingsTile extends StatelessWidget {
           ? Text(
               subtitle!,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.4),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
                   ),
             )
           : null,

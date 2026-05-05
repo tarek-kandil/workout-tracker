@@ -29,7 +29,7 @@ class PersonalRecordsScreen extends ConsumerWidget {
                     'No records yet — log a workout to see your PRs.',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.4),
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
                         ),
                   ),
                 );
@@ -166,9 +166,11 @@ class _RecordTile extends ConsumerWidget {
           borderRadius: BorderRadius.circular(16),
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0x26000000),
+              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.45),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.09)),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.12),
+              ),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(

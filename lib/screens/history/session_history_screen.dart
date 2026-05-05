@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../database/app_database.dart';
 import '../../database/daos/sessions_dao.dart';
 import '../../providers/session_providers.dart';
 import '../../widgets/glass_background.dart';
@@ -28,7 +27,7 @@ class SessionHistoryScreen extends ConsumerWidget {
                   child: Text(
                     'No sessions logged yet.',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.4),
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
                         ),
                   ),
                 );
@@ -178,10 +177,10 @@ class _SessionTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0x26000000),
+              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.45),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.09),
+                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.12),
               ),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
