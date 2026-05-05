@@ -1097,20 +1097,18 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
           ),
         ),
       ),
-      bottomNavigationBar: _resting
-          ? null
-          : SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                child: FilledButton.icon(
-                  onPressed: _saving || _loading ? null : _finish,
-                  icon: _saving
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.check),
-                  label: const Text('Finish Workout'),
-                ),
-              ),
-            ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: FilledButton.icon(
+            onPressed: _saving || _loading ? null : _finish,
+            icon: _saving
+                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.check),
+            label: const Text('Finish Workout'),
+          ),
+        ),
+      ),
       body: Stack(
         children: [
           const Positioned.fill(child: GlassBackground()),
@@ -1118,7 +1116,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
             const Center(child: CircularProgressIndicator())
           else
             ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              padding: EdgeInsets.fromLTRB(16, _resting ? 72 : 8, 16, 24),
               itemCount: _sessionItems.length * 2 + 1,
               itemBuilder: (_, i) {
                 if (i.isEven) {
@@ -1186,13 +1184,23 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                 );
               },
             ),
-          if (_resting && !_loading)
-            _RestTimerOverlay(
-              secondsLeft: _restSecondsLeft,
-              totalSeconds: _restTotalSeconds,
-              nextLabel: _getNextLabel(),
-              onSkip: _skipRest,
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 280),
+            curve: Curves.easeOut,
+            top: _resting && !_loading ? 8 : -80,
+            left: 16,
+            right: 16,
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 220),
+              opacity: _resting && !_loading ? 1.0 : 0.0,
+              child: _RestPill(
+                secondsLeft: _restSecondsLeft,
+                totalSeconds: _restTotalSeconds,
+                nextLabel: _getNextLabel(),
+                onSkip: _skipRest,
+              ),
             ),
+          ),
           if (_showResumePrompt && !_loading)
             _ResumePromptOverlay(
               savedAtMs: _savedAtMs,
@@ -2060,62 +2068,69 @@ class _TimedSetInput extends StatelessWidget {
   }
 }
 
-// ─── _RestTimerOverlay ────────────────────────────────────────────────────────
+// ─── _RestPill ─────────────────────────────────────────────────────────────────
 
-class _RestTimerOverlay extends StatelessWidget {
+class _RestPill extends StatelessWidget {
   final int secondsLeft;
   final int totalSeconds;
   final String nextLabel;
   final VoidCallback onSkip;
 
-  const _RestTimerOverlay({required this.secondsLeft, required this.totalSeconds, required this.nextLabel, required this.onSkip});
+  const _RestPill({
+    required this.secondsLeft,
+    required this.totalSeconds,
+    required this.nextLabel,
+    required this.onSkip,
+  });
 
   @override
   Widget build(BuildContext context) {
     final accent = Theme.of(context).colorScheme.tertiary;
-    return Positioned.fill(
-      child: Container(
-        color: Colors.black.withValues(alpha: 0.80),
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          const Text('REST', style: TextStyle(color: Colors.white38, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 2.0)),
-          const SizedBox(height: 32),
-          Stack(alignment: Alignment.center, children: [
-            SizedBox(
-              width: 160, height: 160,
-              child: CircularProgressIndicator(
-                value: totalSeconds > 0 ? secondsLeft / totalSeconds : 0,
-                strokeWidth: 6, backgroundColor: Colors.white12, color: Colors.indigoAccent,
-              ),
-            ),
-            Text(_fmtSec(secondsLeft), style: const TextStyle(color: Colors.white, fontSize: 52, fontWeight: FontWeight.w300)),
-          ]),
-          const SizedBox(height: 28),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: accent.withValues(alpha: 0.28)),
-              ),
-              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Icon(Icons.arrow_forward, size: 16, color: accent),
-                const SizedBox(width: 10),
-                Text(nextLabel, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: accent)),
-              ]),
-            ),
-          ),
-          const SizedBox(height: 24),
-          OutlinedButton.icon(
-            onPressed: onSkip,
-            icon: const Icon(Icons.skip_next),
-            label: const Text('Skip Rest'),
-            style: OutlinedButton.styleFrom(foregroundColor: Colors.white70, side: const BorderSide(color: Colors.white24)),
-          ),
-        ]),
+    final progress = totalSeconds > 0 ? secondsLeft / totalSeconds : 0.0;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.82),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
       ),
+      child: Row(children: [
+        SizedBox(
+          width: 36, height: 36,
+          child: Stack(alignment: Alignment.center, children: [
+            CircularProgressIndicator(
+              value: progress,
+              strokeWidth: 2.5,
+              backgroundColor: Colors.white12,
+              color: accent,
+            ),
+            Text(
+              _fmtSec(secondsLeft),
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: accent),
+            ),
+          ]),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            nextLabel,
+            style: const TextStyle(fontSize: 12, color: Colors.white60, fontWeight: FontWeight.w500),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        TextButton.icon(
+          onPressed: onSkip,
+          icon: const Icon(Icons.skip_next, size: 14),
+          label: const Text('Skip', style: TextStyle(fontSize: 12)),
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.white54,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        ),
+      ]),
     );
   }
 }
