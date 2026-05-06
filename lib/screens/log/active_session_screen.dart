@@ -14,6 +14,7 @@ import '../../models/next_wod_result.dart';
 import '../../models/weight_suggestion.dart';
 import '../../models/wod_item.dart';
 import '../../providers/database_provider.dart';
+import '../../providers/home_providers.dart';
 import '../../providers/next_workout_provider.dart';
 import '../../providers/program_providers.dart';
 import '../../widgets/celebration_overlay.dart';
@@ -594,6 +595,18 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     );
   }
 
+  /// What the user is about to do after the current rest (shown as primary in the pill).
+  String _getCurrentRestLabel() {
+    if (_sessionItems.isEmpty || _currentItemIdx >= _sessionItems.length) return '';
+    final circuit = _currentCircuit;
+    if (circuit != null) {
+      return _circuitContext ?? 'Round ${_currentSetIdx + 1}/${circuit.rounds}';
+    }
+    final entry = _currentEntry;
+    return '${entry.exercise.name}  ·  Set ${_currentSetIdx + 1}/${entry.templateExercise.targetSets}';
+  }
+
+  /// What comes AFTER the upcoming set — shown as secondary hint in the pill.
   String _getNextLabel() {
     final circuit = _currentCircuit;
     final isLastItem = _currentItemIdx >= _sessionItems.length - 1;
@@ -601,14 +614,14 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     if (circuit != null) {
       final isLastInRound = _circuitExerciseIdx >= circuit.exercises.length - 1;
       final isLastRound = _currentSetIdx >= circuit.rounds - 1;
-      if (isLastInRound && isLastRound && isLastItem) return 'Last exercise!';
-      if (!isLastInRound) return 'Next: ${circuit.exercises[_circuitExerciseIdx + 1].exercise.name}';
-      if (!isLastRound) return 'Next: Round ${_currentSetIdx + 2}';
+      if (isLastInRound && isLastRound && isLastItem) return '';
+      if (!isLastInRound) return 'Then: ${circuit.exercises[_circuitExerciseIdx + 1].exercise.name}';
+      if (!isLastRound) return 'Then: Round ${_currentSetIdx + 2}';
     } else {
       final targetSets = _currentEntry.templateExercise.targetSets;
       final isLastSet = _currentSetIdx >= targetSets - 1;
-      if (isLastSet && isLastItem) return 'Last set!';
-      if (!isLastSet) return 'Next: Set ${_currentSetIdx + 2}';
+      if (isLastSet && isLastItem) return '';
+      if (!isLastSet) return 'Then: Set ${_currentSetIdx + 2}/$targetSets';
     }
 
     if (!isLastItem) {
@@ -617,9 +630,9 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
         StandaloneWodExercise(:final entry) => entry.exercise.name,
         WodCircuit(:final exercises) => 'Circuit (${exercises.length} exercises)',
       };
-      return 'Next: $name';
+      return 'Then: $name';
     }
-    return 'Last set!';
+    return '';
   }
 
   // ── Save / restore ────────────────────────────────────────────────────────────
@@ -761,6 +774,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     ref.invalidate(nextWodProvider);
     ref.invalidate(activeProgramProvider);
     ref.invalidate(currentProgramWeekProvider);
+    ref.invalidate(pointsScoreProvider);
     if (mounted) {
       await showWorkoutCompleteOverlay(context, wod.name);
       if (mounted) Navigator.of(context).pop();
@@ -1019,7 +1033,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(exercise.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
             const SizedBox(height: 4),
-            const Text('Configure for this session', style: TextStyle(color: Colors.white54, fontSize: 12)),
+            Text('Configure for this session', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5), fontSize: 12)),
             const SizedBox(height: 20),
             Row(children: [
               Expanded(child: _ConfigStepper(label: 'Sets', value: sets, min: 1, max: 10, onChanged: (v) => setM(() => sets = v))),
@@ -1058,7 +1072,9 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       _setData[exercise.id] = List.generate(sets, (_) => _SetData(weightKg: 0, reps: 0));
       _lastSets[exercise.id] = [];
       _prData[exercise.id] = null;
-      if (insertAt <= _currentItemIdx) _currentItemIdx++;
+      // Use strict less-than: inserting AT or AFTER the current position
+      // should make the new item active, not push currentItemIdx past it.
+      if (insertAt < _currentItemIdx) _currentItemIdx++;
     });
     _saveProgress();
   }
@@ -1197,6 +1213,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                 child: _RestPill(
                   secondsLeft: _restSecondsLeft,
                   totalSeconds: _restTotalSeconds,
+                  currentLabel: _getCurrentRestLabel(),
                   nextLabel: _getNextLabel(),
                   onSkip: _skipRest,
                 ),
@@ -1899,23 +1916,26 @@ class _ConfigStepper extends StatelessWidget {
   const _ConfigStepper({required this.label, required this.value, required this.min, required this.max, required this.onChanged});
 
   @override
-  Widget build(BuildContext context) => Column(children: [
-    Text(label, style: const TextStyle(fontSize: 10, color: Colors.white54)),
-    const SizedBox(height: 6),
-    Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-      IconButton(
-        onPressed: value > min ? () => onChanged(value - 1) : null,
-        icon: const Icon(Icons.remove, size: 16),
-        style: IconButton.styleFrom(minimumSize: const Size(32, 32), backgroundColor: Colors.white.withValues(alpha: 0.07), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-      ),
-      SizedBox(width: 32, child: Text('$value', textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700))),
-      IconButton(
-        onPressed: value < max ? () => onChanged(value + 1) : null,
-        icon: const Icon(Icons.add, size: 16),
-        style: IconButton.styleFrom(minimumSize: const Size(32, 32), backgroundColor: Colors.white.withValues(alpha: 0.07), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-      ),
-    ]),
-  ]);
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Column(children: [
+      Text(label, style: TextStyle(fontSize: 10, color: cs.onSurface.withValues(alpha: 0.55))),
+      const SizedBox(height: 6),
+      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        IconButton(
+          onPressed: value > min ? () => onChanged(value - 1) : null,
+          icon: const Icon(Icons.remove, size: 16),
+          style: IconButton.styleFrom(minimumSize: const Size(32, 32), backgroundColor: cs.onSurface.withValues(alpha: 0.08), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+        ),
+        SizedBox(width: 32, child: Text('$value', textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700))),
+        IconButton(
+          onPressed: value < max ? () => onChanged(value + 1) : null,
+          icon: const Icon(Icons.add, size: 16),
+          style: IconButton.styleFrom(minimumSize: const Size(32, 32), backgroundColor: cs.onSurface.withValues(alpha: 0.08), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+        ),
+      ]),
+    ]);
+  }
 }
 
 // ─── _ExerciseLibrarySheet ────────────────────────────────────────────────────
@@ -2074,12 +2094,14 @@ class _TimedSetInput extends StatelessWidget {
 class _RestPill extends StatelessWidget {
   final int secondsLeft;
   final int totalSeconds;
+  final String currentLabel;
   final String nextLabel;
   final VoidCallback onSkip;
 
   const _RestPill({
     required this.secondsLeft,
     required this.totalSeconds,
+    required this.currentLabel,
     required this.nextLabel,
     required this.onSkip,
   });
@@ -2114,10 +2136,24 @@ class _RestPill extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: Text(
-            nextLabel,
-            style: const TextStyle(fontSize: 12, color: Colors.white60, fontWeight: FontWeight.w500),
-            overflow: TextOverflow.ellipsis,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                currentLabel,
+                style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600),
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (nextLabel.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  nextLabel,
+                  style: const TextStyle(fontSize: 10, color: Colors.white38, fontWeight: FontWeight.w500),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ],
           ),
         ),
         TextButton.icon(
