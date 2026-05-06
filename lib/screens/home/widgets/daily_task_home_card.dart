@@ -16,12 +16,15 @@ class DailyTaskHomeCard extends ConsumerWidget {
     final completions = completionsAsync.valueOrNull ?? {};
     final isDone = completions.contains(task.id);
 
+    final cs = Theme.of(context).colorScheme;
+    final textColor = cs.onSurface.withValues(alpha: isDone ? 0.38 : 0.9);
+
     return LiquidGlassContainer(
-      borderRadius: 20,
-      blurSigma: 12,
+      borderRadius: 22,
+      blurSigma: 14,
       padding: EdgeInsets.zero,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         child: Row(
           children: [
             Expanded(
@@ -31,21 +34,20 @@ class DailyTaskHomeCard extends ConsumerWidget {
                 children: [
                   Text(
                     task.name,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: Colors.white.withValues(alpha: isDone ? 0.5 : 0.9),
-                          decoration:
-                              isDone ? TextDecoration.lineThrough : null,
-                          decorationColor: Colors.white.withValues(alpha: 0.4),
+                          color: textColor,
+                          decoration: isDone ? TextDecoration.lineThrough : null,
+                          decorationColor: cs.onSurface.withValues(alpha: 0.3),
                         ),
                   ),
                   if (task.reminderHour != null &&
                       task.reminderMinute != null) ...[
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Text(
                       '${task.reminderHour.toString().padLeft(2, '0')}:${task.reminderMinute.toString().padLeft(2, '0')}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.white.withValues(alpha: 0.35),
+                            color: cs.onSurface.withValues(alpha: 0.35),
                           ),
                     ),
                   ],
@@ -64,22 +66,22 @@ class DailyTaskHomeCard extends ConsumerWidget {
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                width: 28,
-                height: 28,
+                width: 34,
+                height: 34,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isDone
-                      ? Colors.green.withValues(alpha: 0.25)
-                      : Colors.white.withValues(alpha: 0.08),
+                      ? Colors.green.withValues(alpha: 0.2)
+                      : cs.onSurface.withValues(alpha: 0.06),
                   border: Border.all(
                     color: isDone
                         ? Colors.green.withValues(alpha: 0.7)
-                        : Colors.white.withValues(alpha: 0.25),
+                        : cs.onSurface.withValues(alpha: 0.2),
                     width: 1.5,
                   ),
                 ),
                 child: isDone
-                    ? const Icon(Icons.check, size: 16, color: Colors.green)
+                    ? const Icon(Icons.check_rounded, size: 18, color: Colors.green)
                     : const SizedBox.shrink(),
               ),
             ),

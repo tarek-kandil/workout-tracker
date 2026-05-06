@@ -118,16 +118,17 @@ class HomeScreen extends ConsumerWidget {
         const NextWorkoutCard(),
 
         // ── Stat row ─────────────────────────────────────────────────────
+        const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(child: _StatChip(label: 'Streak', value: '${streak}wk')),
-            const SizedBox(width: 8),
+            Expanded(child: _StatChip(label: 'Streak', value: '$streak', unit: 'wk')),
+            const SizedBox(width: 10),
             Expanded(child: _StatChip(label: 'Sessions', value: '$sessions')),
-            const SizedBox(width: 8),
-            Expanded(child: _StatChip(label: 'Week', value: 'W$week')),
+            const SizedBox(width: 10),
+            Expanded(child: _StatChip(label: 'Week', value: '$week', prefix: 'W')),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
 
         // ── Daily tasks ──────────────────────────────────────────────────
         if (enabledTasks.isNotEmpty) ...[
@@ -149,28 +150,53 @@ class HomeScreen extends ConsumerWidget {
 class _StatChip extends StatelessWidget {
   final String label;
   final String value;
-  const _StatChip({required this.label, required this.value});
+  final String? unit;
+  final String? prefix;
+  const _StatChip({required this.label, required this.value, this.unit, this.prefix});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return GlassCard(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 18),
       child: Column(
         children: [
-          Text(
-            value,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: cs.onSurface,
-                ),
+          RichText(
+            text: TextSpan(
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: cs.onSurface,
+                  ),
+              children: [
+                if (prefix != null)
+                  TextSpan(
+                    text: prefix,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: cs.onSurface.withValues(alpha: 0.5),
+                    ),
+                  ),
+                TextSpan(text: value),
+                if (unit != null)
+                  TextSpan(
+                    text: unit,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurface.withValues(alpha: 0.5),
+                    ),
+                  ),
+              ],
+            ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           Text(
-            label,
+            label.toUpperCase(),
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: cs.onSurface.withValues(alpha: 0.55),
-                  letterSpacing: 0.4,
+                  color: cs.onSurface.withValues(alpha: 0.45),
+                  letterSpacing: 0.8,
+                  fontWeight: FontWeight.w600,
                 ),
           ),
         ],

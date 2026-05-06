@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../models/next_wod_result.dart';
-import '../../../models/weight_suggestion.dart';
 import '../../../providers/next_workout_provider.dart';
 import '../../../widgets/liquid_glass_container.dart';
 import '../../../widgets/glass_route.dart';
@@ -21,6 +20,11 @@ String _lastDoneLabel(DateTime? date) {
   return 'Last done: ${diff}d ago';
 }
 
+String _exerciseMeta(NextWodResult result) {
+  final count = result.allExercises.length;
+  return '$count exercise${count == 1 ? '' : 's'}';
+}
+
 class NextWorkoutCard extends ConsumerWidget {
   const NextWorkoutCard({super.key});
 
@@ -30,15 +34,15 @@ class NextWorkoutCard extends ConsumerWidget {
 
     return nextWodAsync.when(
       loading: () => LiquidGlassContainer(
-        borderRadius: 32,
+        borderRadius: 28,
         enableBlur: false,
         child: const SizedBox(
-          height: 80,
+          height: 160,
           child: Center(child: CircularProgressIndicator()),
         ),
       ),
       error: (e, _) => LiquidGlassContainer(
-        borderRadius: 32,
+        borderRadius: 28,
         enableBlur: false,
         child: Text('Could not load next workout: $e'),
       ),
@@ -61,8 +65,7 @@ class _NextWodContent extends ConsumerStatefulWidget {
 class _NextWodContentState extends ConsumerState<_NextWodContent> {
   bool _hasProgress = false;
 
-  String get _prefsKey =>
-      'workout_progress_${widget.result.wodTemplate.id}';
+  String get _prefsKey => 'workout_progress_${widget.result.wodTemplate.id}';
 
   @override
   void initState() {
@@ -137,239 +140,187 @@ class _NextWodContentState extends ConsumerState<_NextWodContent> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final lastDone = _lastDoneLabel(widget.result.lastSessionDate);
-
+    final meta = _exerciseMeta(widget.result);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final neutralTint = isDark
+    final tint = isDark
         ? Colors.white.withValues(alpha: 0.05)
         : Colors.white.withValues(alpha: 0.78);
 
     return LiquidGlassContainer(
-      borderRadius: 22,
+      borderRadius: 28,
       blurSigma: 18,
-      tintColor: neutralTint,
-      padding: EdgeInsets.zero,
+      tintColor: tint,
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Header ────────────────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      'NEXT UP',
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.0,
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.35),
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      'Week ${widget.result.weekNumberInProgram}',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.35),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: () => Navigator.of(context).push(
-                        glassRoute(const WeekWodsScreen()),
-                      ),
-                      child: Icon(
-                        Icons.swap_vert_rounded,
-                        size: 20,
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.35),
-                      ),
-                    ),
-                  ],
+          // ── Label row ─────────────────────────────────────────────────────
+          Row(
+            children: [
+              Text(
+                'UP NEXT  ·  WEEK ${widget.result.weekNumberInProgram}',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.2,
+                  color: cs.onSurface.withValues(alpha: 0.38),
                 ),
-                const SizedBox(height: 6),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => Navigator.of(context)
+                    .push(glassRoute(const WeekWodsScreen())),
+                child: Icon(
+                  Icons.swap_vert_rounded,
+                  size: 20,
+                  color: cs.onSurface.withValues(alpha: 0.35),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // ── Workout name ──────────────────────────────────────────────────
+          Text(
+            widget.result.wodTemplate.name,
+            style: Theme.of(context).textTheme.headlineSmall!.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+          const SizedBox(height: 6),
+
+          // ── Meta row ──────────────────────────────────────────────────────
+          Row(
+            children: [
+              Text(
+                meta,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: cs.onSurface.withValues(alpha: 0.45),
+                ),
+              ),
+              if (lastDone.isNotEmpty) ...[
                 Text(
-                  widget.result.wodTemplate.name,
-                  style: Theme.of(context).textTheme.titleLarge!.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                  '  ·  ',
+                  style: TextStyle(color: cs.onSurface.withValues(alpha: 0.25)),
                 ),
-                if (lastDone.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    lastDone,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
-                    ),
+                Text(
+                  lastDone,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: cs.onSurface.withValues(alpha: 0.45),
                   ),
-                ],
+                ),
               ],
-            ),
+            ],
           ),
-          // ── Exercise list ───────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-            child: Column(
+          const SizedBox(height: 20),
+
+          // ── Action buttons ────────────────────────────────────────────────
+          if (_hasProgress) ...[
+            Row(
               children: [
-                ...widget.result.allExercises
-                    .map((entry) => _ExerciseTile(entry: entry)),
-                const SizedBox(height: 12),
-                if (_hasProgress) ...[
-                  // ── Resume row ─────────────────────────────────────────
-                  Row(
-                    children: [
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: () => _onStartOrResume(resume: true),
-                          icon: const Icon(Icons.play_arrow, size: 18),
-                          label: const Text('Resume Workout'),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      OutlinedButton(
-                        onPressed: _onRestart,
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.all(13),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          side: BorderSide(
-                              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.35)),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: const Tooltip(
-                          message: 'Restart',
-                          child: Icon(Icons.refresh, size: 18),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      OutlinedButton(
-                        onPressed: _onCancel,
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.all(13),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          foregroundColor:
-                              Theme.of(context).colorScheme.error,
-                          side: BorderSide(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .error
-                                  .withValues(alpha: 0.5)),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: const Tooltip(
-                          message: 'Discard',
-                          child: Icon(Icons.close, size: 18),
-                        ),
-                      ),
-                    ],
+                Expanded(
+                  child: _PillButton(
+                    onPressed: () => _onStartOrResume(resume: true),
+                    icon: Icons.play_arrow_rounded,
+                    label: 'Resume Workout',
                   ),
-                ] else ...[
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: () => _onStartOrResume(),
-                      icon: const Icon(Icons.fitness_center, size: 18),
-                      label: const Text('Start Workout'),
-                    ),
-                  ),
-                ],
+                ),
+                const SizedBox(width: 8),
+                _IconPillButton(
+                  onPressed: _onRestart,
+                  icon: Icons.refresh_rounded,
+                  tooltip: 'Restart',
+                ),
+                const SizedBox(width: 6),
+                _IconPillButton(
+                  onPressed: _onCancel,
+                  icon: Icons.close_rounded,
+                  tooltip: 'Discard',
+                  color: cs.error,
+                ),
               ],
             ),
-          ),
+          ] else ...[
+            _PillButton(
+              onPressed: () => _onStartOrResume(),
+              icon: Icons.fitness_center_rounded,
+              label: 'Start Workout',
+              fullWidth: true,
+            ),
+          ],
         ],
       ),
     );
   }
 }
 
-class _ExerciseTile extends StatelessWidget {
-  final WodExerciseEntry entry;
-  const _ExerciseTile({required this.entry});
+// ─── Shared button widgets ─────────────────────────────────────────────────────
+
+class _PillButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  final IconData icon;
+  final String label;
+  final bool fullWidth;
+
+  const _PillButton({
+    required this.onPressed,
+    required this.icon,
+    required this.label,
+    this.fullWidth = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final te = entry.templateExercise;
-    final suggestion = entry.suggestion;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(entry.exercise.name,
-                    style: const TextStyle(fontWeight: FontWeight.w500)),
-                Text(
-                  entry.exercise.isTimed
-                      ? '${te.targetSets} sets · ${te.repRangeMin} s'
-                      : '${te.targetSets} sets · ${te.repRangeMin}–${te.repRangeMax} reps',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ),
-          _SuggestionChip(suggestion: suggestion),
-        ],
+    final button = FilledButton.icon(
+      onPressed: onPressed,
+      style: FilledButton.styleFrom(
+        minimumSize: const Size(0, 52),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+        textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
       ),
+      icon: Icon(icon, size: 20),
+      label: Text(label),
     );
+    if (fullWidth) return SizedBox(width: double.infinity, child: button);
+    return button;
   }
 }
 
-class _SuggestionChip extends StatelessWidget {
-  final WeightSuggestion suggestion;
-  const _SuggestionChip({required this.suggestion});
+class _IconPillButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  final IconData icon;
+  final String tooltip;
+  final Color? color;
+
+  const _IconPillButton({
+    required this.onPressed,
+    required this.icon,
+    required this.tooltip,
+    this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
-    Color color;
-    IconData icon;
-
-    switch (suggestion.type) {
-      case SuggestionType.increase:
-        color = Colors.green;
-        icon = Icons.trending_up;
-      case SuggestionType.decrease:
-        color = Colors.orange;
-        icon = Icons.trending_down;
-      case SuggestionType.maintain:
-        color = Theme.of(context).colorScheme.secondary;
-        icon = Icons.trending_flat;
-      case SuggestionType.noHistory:
-        return Text('—', style: Theme.of(context).textTheme.bodySmall);
-    }
-
-    final label = suggestion.suggestedKg != null
-        ? '${suggestion.suggestedKg!.toStringAsFixed(1)}kg'
-        : '—';
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 4),
-          Text(label,
-              style: TextStyle(
-                  fontSize: 12,
-                  color: color,
-                  fontWeight: FontWeight.w600)),
-        ],
+    final cs = Theme.of(context).colorScheme;
+    final effectiveColor = color ?? cs.onSurface;
+    return Tooltip(
+      message: tooltip,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.all(14),
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          foregroundColor: effectiveColor,
+          side: BorderSide(color: effectiveColor.withValues(alpha: 0.35)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16)),
+        ),
+        child: Icon(icon, size: 20),
       ),
     );
   }
