@@ -17,11 +17,16 @@ class DailyTaskHomeCard extends ConsumerWidget {
     final isDone = completions.contains(task.id);
 
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = cs.onSurface.withValues(alpha: isDone ? 0.38 : 0.9);
+    final tint = isDark
+        ? Colors.white.withValues(alpha: 0.10)
+        : Colors.white.withValues(alpha: 0.80);
 
     return LiquidGlassContainer(
       borderRadius: 22,
       blurSigma: 10,
+      tintColor: tint,
       padding: EdgeInsets.zero,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),

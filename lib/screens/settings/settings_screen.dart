@@ -70,6 +70,9 @@ class SettingsScreen extends ConsumerWidget {
               LiquidGlassContainer(
                 borderRadius: 20,
                 blurSigma: 10,
+                tintColor: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white.withValues(alpha: 0.10)
+                    : Colors.white.withValues(alpha: 0.80),
                 padding: EdgeInsets.zero,
                 child: Column(
                   children: [
@@ -127,6 +130,9 @@ class SettingsScreen extends ConsumerWidget {
               LiquidGlassContainer(
                 borderRadius: 20,
                 blurSigma: 10,
+                tintColor: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white.withValues(alpha: 0.10)
+                    : Colors.white.withValues(alpha: 0.80),
                 padding: EdgeInsets.zero,
                 child: _SettingsTile(
                   icon: Icons.delete_sweep_outlined,
@@ -252,7 +258,7 @@ class _SettingsTile extends StatelessWidget {
             )
           : null,
       trailing: Icon(Icons.chevron_right,
-          size: 18, color: Colors.white.withValues(alpha: 0.25)),
+          size: 18, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.25)),
       onTap: onTap,
     );
   }
@@ -265,7 +271,7 @@ class _Divider extends StatelessWidget {
       height: 1,
       indent: 16,
       endIndent: 16,
-      color: Colors.white.withValues(alpha: 0.07),
+      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08),
     );
   }
 }

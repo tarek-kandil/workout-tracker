@@ -131,16 +131,18 @@ class _FloatingNavBar extends StatelessWidget {
           filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
           child: Container(
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.65),
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.75)
+                  : Colors.white.withValues(alpha: 0.88),
               borderRadius: BorderRadius.circular(40),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.13),
+                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.18),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.30),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
+                  color: Colors.black.withValues(alpha: 0.18),
+                  blurRadius: 20,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
@@ -200,7 +202,7 @@ class _NavItem extends StatelessWidget {
           child: Icon(
             selected ? selectedIcon : icon,
             key: ValueKey(selected),
-            color: selected ? accent : Colors.white.withValues(alpha: 0.45),
+            color: selected ? accent : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.40),
             size: 24,
           ),
         ),
