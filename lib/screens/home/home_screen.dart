@@ -164,7 +164,7 @@ class _StatChip extends StatelessWidget {
             value,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w800,
-                  color: cs.primary,
+                  color: cs.onSurface,
                 ),
           ),
           const SizedBox(height: 2),

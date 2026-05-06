@@ -54,9 +54,11 @@ class ActiveProgramCard extends ConsumerWidget {
             Navigator.of(context).push(glassRoute(const WeekWodsScreen()));
           },
           child: LiquidGlassContainer(
-          borderRadius: 32,
+          borderRadius: 22,
           blurSigma: 18,
-          tintColor: primary.withValues(alpha: 0.10),
+          tintColor: Theme.of(context).brightness == Brightness.dark
+              ? Colors.white.withValues(alpha: 0.05)
+              : Colors.white.withValues(alpha: 0.78),
           padding: EdgeInsets.zero,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

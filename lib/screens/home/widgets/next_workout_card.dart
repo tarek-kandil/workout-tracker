@@ -140,79 +140,53 @@ class _NextWodContentState extends ConsumerState<_NextWodContent> {
     final accent = Theme.of(context).colorScheme.primary;
     final lastDone = _lastDoneLabel(widget.result.lastSessionDate);
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final neutralTint = isDark
+        ? Colors.white.withValues(alpha: 0.05)
+        : Colors.white.withValues(alpha: 0.78);
+
     return LiquidGlassContainer(
-      borderRadius: 32,
+      borderRadius: 22,
       blurSigma: 18,
-      tintColor: accent.withValues(alpha: 0.10),
+      tintColor: neutralTint,
       padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Hero gradient header ────────────────────────────────────────
-          Container(
-            width: double.infinity,
+          // ── Header ────────────────────────────────────────────────────────
+          Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  accent.withValues(alpha: 0.22),
-                  Colors.transparent,
-                ],
-              ),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(32),
-                topRight: Radius.circular(32),
-              ),
-            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Builder(builder: (ctx) {
-                      final cs = Theme.of(ctx).colorScheme;
-                      return VibrantText(
-                        'NEXT UP',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.2,
-                        ),
-                        gradientColors: [cs.secondary, cs.primary],
-                      );
-                    }),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: accent.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          width: 0.8,
-                        ),
+                    Text(
+                      'NEXT UP',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.0,
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.35),
                       ),
-                      child: Text(
-                        'Week ${widget.result.weekNumberInProgram}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: accent,
-                        ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      'Week ${widget.result.weekNumberInProgram}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.35),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 6),
-                VibrantText(
+                Text(
                   widget.result.wodTemplate.name,
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineSmall!
-                      .copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                 ),
                 if (lastDone.isNotEmpty) ...[
                   const SizedBox(height: 4),
@@ -220,7 +194,7 @@ class _NextWodContentState extends ConsumerState<_NextWodContent> {
                     lastDone,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.white.withValues(alpha: 0.45),
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
                     ),
                   ),
                 ],
@@ -254,7 +228,7 @@ class _NextWodContentState extends ConsumerState<_NextWodContent> {
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           side: BorderSide(
-                              color: Colors.white.withValues(alpha: 0.25)),
+                              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.35)),
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12)),
                         ),

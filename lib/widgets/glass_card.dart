@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'liquid_glass_container.dart';
 
 /// Opinionated glass card surface. Wraps [LiquidGlassContainer] with
-/// defaults derived from the current theme — no parameters needed for the
-/// common case.
+/// defaults that match Option B: neutral white tint, no primary-colour bleed.
 class GlassCard extends StatelessWidget {
   final Widget child;
   final EdgeInsets padding;
   final double borderRadius;
-  final Color? tintColor; // defaults to Theme primary at 8% opacity
+  final Color? tintColor;
 
   const GlassCard({
     super.key,
@@ -20,8 +19,11 @@ class GlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final effectiveTint = tintColor ??
-        Theme.of(context).colorScheme.primary.withValues(alpha: 0.08);
+        (isDark
+            ? Colors.white.withValues(alpha: 0.05)
+            : Colors.white.withValues(alpha: 0.78));
     return LiquidGlassContainer(
       borderRadius: borderRadius,
       tintColor: effectiveTint,
