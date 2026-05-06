@@ -22,12 +22,12 @@ class GlassCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final effectiveTint = tintColor ??
         (isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : Colors.white.withValues(alpha: 0.78));
+            ? Colors.white.withValues(alpha: 0.10)
+            : Colors.white.withValues(alpha: 0.80));
     return LiquidGlassContainer(
       borderRadius: borderRadius,
       tintColor: effectiveTint,
-      blurSigma: 18,
+      blurSigma: 10,
       padding: padding,
       child: child,
     );

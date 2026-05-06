@@ -34,10 +34,10 @@ class LiquidGlassContainer extends StatelessWidget {
           borderRadius: BorderRadius.circular(borderRadius),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x33000000), // pure black 20%
-              blurRadius: 24,
-              spreadRadius: -4,
-              offset: Offset(0, 8),
+              color: Color(0x1A000000), // pure black 10%
+              blurRadius: 12,
+              spreadRadius: -2,
+              offset: Offset(0, 4),
             ),
           ],
         ),
@@ -83,7 +83,7 @@ class _RimLight extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rimColor =
-        Theme.of(context).colorScheme.secondary.withValues(alpha: 0.35);
+        Theme.of(context).colorScheme.secondary.withValues(alpha: 0.12);
     return DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -91,7 +91,7 @@ class _RimLight extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [
             rimColor,
-            Colors.white.withValues(alpha: 0.05),
+            Colors.white.withValues(alpha: 0.03),
           ],
         ),
         borderRadius: BorderRadius.circular(borderRadius),

@@ -21,7 +21,7 @@ class DailyTaskHomeCard extends ConsumerWidget {
 
     return LiquidGlassContainer(
       borderRadius: 22,
-      blurSigma: 14,
+      blurSigma: 10,
       padding: EdgeInsets.zero,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),

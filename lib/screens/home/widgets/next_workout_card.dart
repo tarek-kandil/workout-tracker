@@ -145,12 +145,12 @@ class _NextWodContentState extends ConsumerState<_NextWodContent> {
     final meta = _exerciseMeta(widget.result);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final tint = isDark
-        ? Colors.white.withValues(alpha: 0.05)
-        : Colors.white.withValues(alpha: 0.78);
+        ? Colors.white.withValues(alpha: 0.10)
+        : Colors.white.withValues(alpha: 0.80);
 
     return LiquidGlassContainer(
       borderRadius: 28,
-      blurSigma: 18,
+      blurSigma: 10,
       tintColor: tint,
       padding: const EdgeInsets.all(20),
       child: Column(
