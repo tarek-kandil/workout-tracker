@@ -6,6 +6,8 @@ import '../../../providers/daily_tasks_providers.dart';
 import '../../../widgets/liquid_glass_container.dart';
 import '../../../widgets/celebration_overlay.dart';
 
+const _dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
 class DailyTaskHomeCard extends ConsumerWidget {
   final DailyTask task;
   const DailyTaskHomeCard({super.key, required this.task});
@@ -56,6 +58,8 @@ class DailyTaskHomeCard extends ConsumerWidget {
                           ),
                     ),
                   ],
+                  const SizedBox(height: 8),
+                  _SevenDayDots(taskId: task.id),
                 ],
               ),
             ),
@@ -93,6 +97,60 @@ class DailyTaskHomeCard extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ─── 7-day dot strip ──────────────────────────────────────────────────────────
+
+class _SevenDayDots extends ConsumerWidget {
+  final int taskId;
+  const _SevenDayDots({required this.taskId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cs = Theme.of(context).colorScheme;
+    final daysAsync = ref.watch(taskLast7DaysProvider(taskId));
+    final days = daysAsync.valueOrNull ?? List.filled(7, false);
+
+    // Which index is today (rightmost)? Align day labels to the current weekday.
+    // weekday: Mon=1 … Sun=7. Index 6 = today.
+    final todayWeekday = DateTime.now().weekday; // 1=Mon, 7=Sun
+    // Add 70 (multiple of 7) before % to guarantee a non-negative result.
+    final labels = List.generate(
+        7, (i) => _dayLabels[(todayWeekday - 1 - (6 - i) + 70) % 7]);
+
+    return Row(
+      children: List.generate(7, (i) {
+        final done = days[i];
+        return Padding(
+          padding: const EdgeInsets.only(right: 6),
+          child: Column(
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                width: 7,
+                height: 7,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: done
+                      ? cs.primary
+                      : cs.onSurface.withValues(alpha: 0.12),
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                labels[i],
+                style: TextStyle(
+                  fontSize: 8,
+                  fontWeight: FontWeight.w600,
+                  color: cs.onSurface.withValues(alpha: 0.3),
+                ),
+              ),
+            ],
+          ),
+        );
+      }),
     );
   }
 }

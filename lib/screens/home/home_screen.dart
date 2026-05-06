@@ -104,11 +104,11 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildDashboard(
       BuildContext context, WidgetRef ref, List enabledTasks) {
-    final streakAsync = ref.watch(workoutStreakProvider);
+    final scoreAsync = ref.watch(pointsScoreProvider);
     final sessionsAsync = ref.watch(recentSessionsProvider);
     final weekAsync = ref.watch(currentProgramWeekProvider);
 
-    final streak = streakAsync.valueOrNull ?? 0;
+    final score = scoreAsync.valueOrNull ?? 0;
     final sessions = sessionsAsync.valueOrNull?.length ?? 0;
     final week = weekAsync.valueOrNull ?? 1;
 
@@ -121,11 +121,11 @@ class HomeScreen extends ConsumerWidget {
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(child: _StatChip(label: 'Streak', value: '$streak', unit: 'wk')),
+            Expanded(child: _StatChip(label: 'Streak', value: '$score')),
             const SizedBox(width: 10),
             Expanded(child: _StatChip(label: 'Sessions', value: '$sessions')),
             const SizedBox(width: 10),
-            Expanded(child: _StatChip(label: 'Week', value: '$week', prefix: 'W')),
+            Expanded(child: _StatChip(label: 'Week', value: '$week')),
           ],
         ),
         const SizedBox(height: 20),
@@ -150,9 +150,7 @@ class HomeScreen extends ConsumerWidget {
 class _StatChip extends StatelessWidget {
   final String label;
   final String value;
-  final String? unit;
-  final String? prefix;
-  const _StatChip({required this.label, required this.value, this.unit, this.prefix});
+  const _StatChip({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -168,25 +166,7 @@ class _StatChip extends StatelessWidget {
                     color: cs.onSurface,
                   ),
               children: [
-                if (prefix != null)
-                  TextSpan(
-                    text: prefix,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: cs.onSurface.withValues(alpha: 0.5),
-                    ),
-                  ),
                 TextSpan(text: value),
-                if (unit != null)
-                  TextSpan(
-                    text: unit,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: cs.onSurface.withValues(alpha: 0.5),
-                    ),
-                  ),
               ],
             ),
           ),
