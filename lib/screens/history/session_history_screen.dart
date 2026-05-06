@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../database/daos/sessions_dao.dart';
+import '../../providers/database_provider.dart';
+import '../../providers/next_workout_provider.dart';
 import '../../providers/session_providers.dart';
 import '../../widgets/glass_background.dart';
 import '../../widgets/glass_route.dart';
@@ -149,16 +151,38 @@ class _WeekHeader extends StatelessWidget {
   }
 }
 
-class _SessionTile extends StatelessWidget {
+class _SessionTile extends ConsumerWidget {
   final SessionWithProgram entry;
   const _SessionTile({required this.entry});
 
+  Future<void> _delete(BuildContext context, WidgetRef ref) async {
+    final db = ref.read(databaseProvider);
+    final session = entry.session;
+
+    // Delete sets first (FK), then the session row
+    await db.setsDao.deleteSetsForSession(session.id);
+    await db.sessionsDao.deleteSession(session.id);
+
+    // Force the next-WOD calculation to re-run with the updated session count
+    ref.invalidate(nextWodProvider);
+    ref.invalidate(personalRecordsProvider);
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${session.workoutName} deleted'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final session = entry.session;
     final accent = Theme.of(context).colorScheme.primary;
+    final cs = Theme.of(context).colorScheme;
 
-    // Build subtitle: "Program Name · Week X" or just date
     final parts = <String>[];
     if (entry.programName != null) parts.add(entry.programName!);
     if (session.weekNumber != null) parts.add('Week ${session.weekNumber}');
@@ -168,54 +192,68 @@ class _SessionTile extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => Navigator.of(context).push(
-            glassRoute(SessionDetailScreen(session: session)),
+      child: Dismissible(
+        key: ValueKey(session.id),
+        direction: DismissDirection.endToStart,
+        onDismissed: (_) => _delete(context, ref),
+        background: Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 20),
+          decoration: BoxDecoration(
+            color: cs.error.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(16),
           ),
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.45),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.12),
-              ),
+          child: Icon(Icons.delete_outline, color: cs.error),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => Navigator.of(context).push(
+              glassRoute(SessionDetailScreen(session: session)),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(Icons.fitness_center, size: 18, color: accent),
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              decoration: BoxDecoration(
+                color: cs.surface.withValues(alpha: 0.45),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: cs.outline.withValues(alpha: 0.12),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        session.workoutName,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      Text(
-                        subtitle,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.white.withValues(alpha: 0.45),
-                            ),
-                      ),
-                    ],
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.fitness_center, size: 18, color: accent),
                   ),
-                ),
-                Icon(Icons.chevron_right,
-                    size: 18, color: Colors.white.withValues(alpha: 0.25)),
-              ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          session.workoutName,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        Text(
+                          subtitle,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: cs.onSurface.withValues(alpha: 0.45),
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right,
+                      size: 18, color: cs.onSurface.withValues(alpha: 0.25)),
+                ],
+              ),
             ),
           ),
         ),
