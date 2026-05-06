@@ -6,8 +6,6 @@ import '../../providers/home_providers.dart';
 import '../../providers/session_providers.dart';
 import '../../widgets/glass_background.dart';
 import '../../widgets/glass_card.dart';
-import '../../widgets/glass_route.dart';
-import 'week_wods_screen.dart';
 import 'widgets/daily_task_home_card.dart';
 import 'widgets/next_workout_card.dart';
 
@@ -118,20 +116,6 @@ class HomeScreen extends ConsumerWidget {
       delegate: SliverChildListDelegate([
         // ── Hero card ────────────────────────────────────────────────────
         const NextWorkoutCard(),
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton(
-            onPressed: () => Navigator.of(context)
-                .push(glassRoute(const WeekWodsScreen())),
-            child: Text(
-              'Browse all workouts',
-              style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-          ),
-        ),
 
         // ── Stat row ─────────────────────────────────────────────────────
         Row(

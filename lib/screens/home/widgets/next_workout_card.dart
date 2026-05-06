@@ -6,9 +6,9 @@ import '../../../models/next_wod_result.dart';
 import '../../../models/weight_suggestion.dart';
 import '../../../providers/next_workout_provider.dart';
 import '../../../widgets/liquid_glass_container.dart';
-import '../../../widgets/vibrant_text.dart';
 import '../../../widgets/glass_route.dart';
 import '../../log/active_session_screen.dart';
+import '../week_wods_screen.dart';
 
 String _lastDoneLabel(DateTime? date) {
   if (date == null) return '';
@@ -137,7 +137,6 @@ class _NextWodContentState extends ConsumerState<_NextWodContent> {
 
   @override
   Widget build(BuildContext context) {
-    final accent = Theme.of(context).colorScheme.primary;
     final lastDone = _lastDoneLabel(widget.result.lastSessionDate);
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -176,6 +175,17 @@ class _NextWodContentState extends ConsumerState<_NextWodContent> {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.35),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).push(
+                        glassRoute(const WeekWodsScreen()),
+                      ),
+                      child: Icon(
+                        Icons.swap_vert_rounded,
+                        size: 20,
                         color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.35),
                       ),
                     ),
