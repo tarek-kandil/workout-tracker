@@ -80,7 +80,7 @@ class SetsDao extends DatabaseAccessor<AppDatabase> with _$SetsDaoMixin {
     return results
         .map((r) => WeightHistoryPoint(
               date: DateTime.fromMillisecondsSinceEpoch(
-                  r.read<int>('date')),
+                  r.read<int>('date') * 1000),
               maxWeightKg: r.read<double>('max_weight'),
             ))
         .toList();
@@ -158,8 +158,8 @@ class SetsDao extends DatabaseAccessor<AppDatabase> with _$SetsDaoMixin {
       'JOIN workout_sessions s ON ws.session_id = s.id '
       'WHERE s.date >= ? AND s.date < ?',
       variables: [
-        Variable.withInt(from.millisecondsSinceEpoch),
-        Variable.withInt(to.millisecondsSinceEpoch),
+        Variable.withInt(from.millisecondsSinceEpoch ~/ 1000),
+        Variable.withInt(to.millisecondsSinceEpoch ~/ 1000),
       ],
       readsFrom: {workoutSets, workoutSessions},
     ).getSingle();
@@ -187,8 +187,8 @@ class SetsDao extends DatabaseAccessor<AppDatabase> with _$SetsDaoMixin {
       'WHERE s.date >= ? AND s.date < ? '
       'GROUP BY e.category',
       variables: [
-        Variable.withInt(from.millisecondsSinceEpoch),
-        Variable.withInt(to.millisecondsSinceEpoch),
+        Variable.withInt(from.millisecondsSinceEpoch ~/ 1000),
+        Variable.withInt(to.millisecondsSinceEpoch ~/ 1000),
       ],
       readsFrom: {workoutSets, workoutSessions},
     ).get();
@@ -245,11 +245,11 @@ class SetsDao extends DatabaseAccessor<AppDatabase> with _$SetsDaoMixin {
       '  WHERE ws2.exercise_id = ws.exercise_id AND s2.date < ?'
       '), -1)',
       variables: [
-        Variable.withInt(from.millisecondsSinceEpoch),
-        Variable.withInt(to.millisecondsSinceEpoch),
-        Variable.withInt(from.millisecondsSinceEpoch),
-        Variable.withInt(to.millisecondsSinceEpoch),
-        Variable.withInt(from.millisecondsSinceEpoch),
+        Variable.withInt(from.millisecondsSinceEpoch ~/ 1000),
+        Variable.withInt(to.millisecondsSinceEpoch ~/ 1000),
+        Variable.withInt(from.millisecondsSinceEpoch ~/ 1000),
+        Variable.withInt(to.millisecondsSinceEpoch ~/ 1000),
+        Variable.withInt(from.millisecondsSinceEpoch ~/ 1000),
       ],
       readsFrom: {workoutSets, workoutSessions},
     ).get();
