@@ -71,7 +71,7 @@ class SettingsScreen extends ConsumerWidget {
               _NavGrid(
                 items: [
                   _NavItem(
-                    emoji: '🏋️',
+                    icon: Icons.fitness_center,
                     color: const Color(0xFF6366F1),
                     title: 'Programs',
                     subtitle: 'Manage plans',
@@ -80,7 +80,7 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   ),
                   _NavItem(
-                    emoji: '✅',
+                    icon: Icons.task_alt,
                     color: const Color(0xFF34C759),
                     title: 'Daily Tasks',
                     subtitle: 'Your goals',
@@ -89,7 +89,7 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   ),
                   _NavItem(
-                    emoji: '📋',
+                    icon: Icons.history,
                     color: const Color(0xFF32ADE6),
                     title: 'History',
                     subtitle: 'Past sessions',
@@ -98,7 +98,7 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   ),
                   _NavItem(
-                    emoji: '📚',
+                    icon: Icons.menu_book,
                     color: const Color(0xFFFF9F0A),
                     title: 'Exercises',
                     subtitle: 'Library',
@@ -301,14 +301,14 @@ class _HeroBadge extends StatelessWidget {
 // ── Nav grid ──────────────────────────────────────────────────────────────────
 
 class _NavItem {
-  final String emoji;
+  final IconData icon;
   final Color color;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
 
   const _NavItem({
-    required this.emoji,
+    required this.icon,
     required this.color,
     required this.title,
     required this.subtitle,
@@ -349,8 +349,7 @@ class _NavGrid extends StatelessWidget {
                         borderRadius: BorderRadius.circular(11),
                       ),
                       child: Center(
-                        child: Text(item.emoji,
-                            style: const TextStyle(fontSize: 18)),
+                        child: Icon(item.icon, size: 20, color: item.color),
                       ),
                     ),
                     const Spacer(),
@@ -432,7 +431,7 @@ class _AppearanceTile extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
           ),
           child: const Center(
-            child: Text('🌙', style: TextStyle(fontSize: 17)),
+            child: Icon(Icons.dark_mode, size: 20, color: Color(0xFF6366F1)),
           ),
         ),
         const SizedBox(width: 12),
@@ -477,7 +476,7 @@ class _DangerCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(11),
             ),
             child: const Center(
-              child: Text('🗑️', style: TextStyle(fontSize: 18)),
+              child: Icon(Icons.delete, size: 20, color: Color(0xFFFF453A)),
             ),
           ),
           const SizedBox(width: 12),
