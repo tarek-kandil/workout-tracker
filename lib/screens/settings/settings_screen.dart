@@ -341,17 +341,7 @@ class _NavGrid extends StatelessWidget {
                 // Row + Spacer forces the Column to fill the full tile width
                 Row(
                   children: [
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: item.color.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(11),
-                      ),
-                      child: Center(
-                        child: Icon(item.icon, size: 20, color: item.color),
-                      ),
-                    ),
+                    Icon(item.icon, size: 26, color: item.color),
                     const Spacer(),
                   ],
                 ),
@@ -423,17 +413,7 @@ class _AppearanceTile extends StatelessWidget {
           : Colors.white.withValues(alpha: 0.80),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: const Color(0xFF6366F1).withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: const Center(
-            child: Icon(Icons.dark_mode, size: 20, color: Color(0xFF6366F1)),
-          ),
-        ),
+        const Icon(Icons.dark_mode, size: 26, color: Color(0xFF6366F1)),
         const SizedBox(width: 12),
         Expanded(
           child: Text('Dark Mode',
@@ -468,17 +448,7 @@ class _DangerCard extends StatelessWidget {
           border: Border.all(color: red.withValues(alpha: 0.28)),
         ),
         child: Row(children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: red.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(11),
-            ),
-            child: const Center(
-              child: Icon(Icons.delete, size: 20, color: Color(0xFFFF453A)),
-            ),
-          ),
+          const Icon(Icons.delete, size: 26, color: Color(0xFFFF453A)),
           const SizedBox(width: 12),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
