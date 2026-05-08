@@ -343,6 +343,7 @@ class _MuscleBar extends StatelessWidget {
           ),
         ),
         Expanded(
+          flex: 3,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(3),
             child: SizedBox(
@@ -353,10 +354,11 @@ class _MuscleBar extends StatelessWidget {
                     color: Colors.white.withValues(alpha: 0.06),
                     child: const SizedBox.expand(),
                   ),
-                  FractionallySizedBox(
-                    widthFactor: fraction.clamp(0.02, 1.0),
-                    child: ColoredBox(color: color),
-                  ),
+                  if (fraction > 0)
+                    FractionallySizedBox(
+                      widthFactor: fraction.clamp(0.0, 1.0),
+                      child: ColoredBox(color: color),
+                    ),
                 ],
               ),
             ),
@@ -364,9 +366,9 @@ class _MuscleBar extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         SizedBox(
-          width: 58,
+          width: 72,
           child: Text(
-            '${_formatTonnageStatic(tonnageKg)} kg',
+            '${tonnageKg.toStringAsFixed(0)} kg',
             textAlign: TextAlign.right,
             style: TextStyle(
               fontSize: 11,
@@ -377,7 +379,7 @@ class _MuscleBar extends StatelessWidget {
         ),
         const SizedBox(width: 6),
         SizedBox(
-          width: 34,
+          width: 38,
           child: Text(
             '$sets sets',
             textAlign: TextAlign.right,
