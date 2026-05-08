@@ -9,8 +9,8 @@ import '../../widgets/glass_background.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/glass_route.dart';
 import '../../widgets/liquid_glass_container.dart';
-import 'bodyweight_screen.dart';
 import 'exercise_library_screen.dart';
+import 'profile_screen.dart';
 import 'program_list_screen.dart';
 import '../tasks/daily_tasks_screen.dart';
 import '../history/session_history_screen.dart';
@@ -26,7 +26,7 @@ class SettingsScreen extends ConsumerWidget {
         children: [
           const Positioned.fill(child: GlassBackground()),
           ListView(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+            padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).padding.bottom + 50),
             children: [
               // ── Appearance group ────────────────────────────────────────
               _SectionLabel(label: 'APPEARANCE'),
@@ -77,6 +77,15 @@ class SettingsScreen extends ConsumerWidget {
                 child: Column(
                   children: [
                     _SettingsTile(
+                      icon: Icons.person_outline_rounded,
+                      title: 'Set Profile',
+                      subtitle: 'BMI, calories & macros',
+                      onTap: () => Navigator.of(context).push(
+                        glassRoute(const ProfileScreen()),
+                      ),
+                    ),
+                    _Divider(),
+                    _SettingsTile(
                       icon: Icons.fitness_center,
                       title: 'Manage Programs',
                       onTap: () => Navigator.of(context).push(
@@ -108,15 +117,6 @@ class SettingsScreen extends ConsumerWidget {
                       subtitle: 'View and manage exercises',
                       onTap: () => Navigator.of(context).push(
                         glassRoute(const ExerciseLibraryScreen()),
-                      ),
-                    ),
-                    _Divider(),
-                    _SettingsTile(
-                      icon: Icons.monitor_weight_outlined,
-                      title: 'Log Body Weight',
-                      subtitle: 'Track your weight over time',
-                      onTap: () => Navigator.of(context).push(
-                        glassRoute(const BodyweightScreen()),
                       ),
                     ),
                   ],

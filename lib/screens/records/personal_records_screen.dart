@@ -36,7 +36,7 @@ class PersonalRecordsScreen extends ConsumerWidget {
               }
               final grouped = _groupByCategory(records);
               return ListView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                padding: EdgeInsets.fromLTRB(16, 8, 16, MediaQuery.of(context).padding.bottom + 50),
                 itemCount: grouped.length,
                 itemBuilder: (_, i) {
                   final item = grouped[i];

@@ -63,6 +63,7 @@ class _ShellScreenState extends ConsumerState<ShellScreen> {
             ref.read(shellIndexProvider.notifier).state = index;
           },
         ),
+
       ),
     );
   }
@@ -120,18 +121,18 @@ class _FloatingNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = Theme.of(context).colorScheme.primary;
     final bottomPad = MediaQuery.of(context).padding.bottom;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(48, 0, 48, max(bottomPad, 12) + 8),
+      padding: EdgeInsets.fromLTRB(20, 0, 20, max(bottomPad, 12) + 8),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(40),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
           child: Container(
             decoration: BoxDecoration(
-              color: Theme.of(context).brightness == Brightness.dark
+              color: isDark
                   ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.75)
                   : Colors.white.withValues(alpha: 0.88),
               borderRadius: BorderRadius.circular(40),
@@ -146,19 +147,68 @@ class _FloatingNavBar extends StatelessWidget {
                 ),
               ],
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                for (int i = 0; i < navItems.length; i++)
-                  _NavItem(
-                    icon: navItems[i].$1,
-                    selectedIcon: navItems[i].$2,
-                    selected: selectedIndex == i,
-                    accent: accent,
-                    onTap: () => onTap(i),
-                  ),
-              ],
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: SizedBox(
+              height: 52,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final accent = Theme.of(context).colorScheme.primary;
+                  final dimColor = Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.38);
+                  final itemWidth = constraints.maxWidth / navItems.length;
+                  const pillInset = 6.0;
+
+                  return Stack(
+                    children: [
+                      // ── Sliding pill ──────────────────────────────────
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 320),
+                        curve: Curves.easeOutCubic,
+                        left: selectedIndex * itemWidth + pillInset,
+                        width: itemWidth - pillInset * 2,
+                        top: pillInset,
+                        bottom: pillInset,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: accent,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                        ),
+                      ),
+                      // ── Icons ─────────────────────────────────────────
+                      Row(
+                        children: [
+                          for (int i = 0; i < navItems.length; i++)
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => onTap(i),
+                                behavior: HitTestBehavior.opaque,
+                                child: Center(
+                                  child: AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 200),
+                                    child: Icon(
+                                      selectedIndex == i
+                                          ? navItems[i].$2
+                                          : navItems[i].$1,
+                                      key: ValueKey(
+                                          '${i}_${selectedIndex == i}'),
+                                      size: 22,
+                                      color: selectedIndex == i
+                                          ? Colors.white
+                                          : dimColor,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  );
+                },
+              ),
             ),
           ),
         ),
@@ -167,46 +217,3 @@ class _FloatingNavBar extends StatelessWidget {
   }
 }
 
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final IconData selectedIcon;
-  final bool selected;
-  final Color accent;
-  final VoidCallback onTap;
-
-  const _NavItem({
-    required this.icon,
-    required this.selectedIcon,
-    required this.selected,
-    required this.accent,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
-        decoration: BoxDecoration(
-          color: selected
-              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.22)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(28),
-        ),
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 180),
-          child: Icon(
-            selected ? selectedIcon : icon,
-            key: ValueKey(selected),
-            color: selected ? accent : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.40),
-            size: 24,
-          ),
-        ),
-      ),
-    );
-  }
-}

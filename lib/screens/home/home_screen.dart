@@ -30,7 +30,7 @@ class HomeScreen extends ConsumerWidget {
               surfaceTintColor: Colors.transparent,
             ),
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+              padding: EdgeInsets.fromLTRB(16, 8, 16, MediaQuery.of(context).padding.bottom + 50),
               sliver: activeProgramAsync.when(
                 loading: () => const SliverFillRemaining(
                   child: Center(child: CircularProgressIndicator()),
@@ -121,11 +121,11 @@ class HomeScreen extends ConsumerWidget {
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(child: _StatChip(label: 'Streak', value: '$score')),
+            Expanded(child: _StatChip(label: 'Streak', value: '$score', icon: Icons.local_fire_department_rounded, iconColor: const Color(0xFFFF7A00))),
             const SizedBox(width: 10),
-            Expanded(child: _StatChip(label: 'Sessions', value: '$sessions')),
+            Expanded(child: _StatChip(label: 'Sessions', value: '$sessions', icon: Icons.calendar_month_rounded, iconColor: null)),
             const SizedBox(width: 10),
-            Expanded(child: _StatChip(label: 'Week', value: '$week')),
+            Expanded(child: _StatChip(label: 'Week', value: '$week', icon: Icons.trending_up_rounded, iconColor: const Color(0xFF34C759))),
           ],
         ),
         const SizedBox(height: 20),
@@ -150,36 +150,43 @@ class HomeScreen extends ConsumerWidget {
 class _StatChip extends StatelessWidget {
   final String label;
   final String value;
-  const _StatChip({required this.label, required this.value});
+  final IconData icon;
+  final Color? iconColor;
+  const _StatChip({required this.label, required this.value, required this.icon, required this.iconColor});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final resolvedIconColor = iconColor ?? cs.primary;
     return GlassCard(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 18),
-      child: Column(
-        children: [
-          RichText(
-            text: TextSpan(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(icon, size: 28, color: resolvedIconColor),
+            const SizedBox(height: 6),
+            Text(
+              value,
+              textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                     color: cs.onSurface,
                   ),
-              children: [
-                TextSpan(text: value),
-              ],
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label.toUpperCase(),
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: cs.onSurface.withValues(alpha: 0.45),
-                  letterSpacing: 0.8,
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-        ],
+            const SizedBox(height: 2),
+            Text(
+              label.toUpperCase(),
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: cs.onSurface.withValues(alpha: 0.45),
+                    letterSpacing: 0.8,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+          ],
+        ),
       ),
     );
   }

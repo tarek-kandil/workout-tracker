@@ -6,6 +6,7 @@ import '../../database/app_database.dart';
 import '../../providers/daily_tasks_providers.dart';
 import '../../providers/database_provider.dart';
 import '../../services/notification_service.dart';
+import '../../utils/task_icons.dart';
 import '../../widgets/celebration_overlay.dart';
 import '../../widgets/glass_background.dart';
 import '../../widgets/liquid_glass_container.dart';
@@ -191,6 +192,7 @@ class _TaskDialogState extends State<_TaskDialog> {
   late final TextEditingController _minuteCtrl;
   bool _reminderEnabled = false;
   String? _timeError;
+  String? _selectedIcon;
 
   bool get _isEditing => widget.existingTask != null;
 
@@ -209,6 +211,7 @@ class _TaskDialogState extends State<_TaskDialog> {
           ? task!.reminderMinute!.toString().padLeft(2, '0')
           : '',
     );
+    _selectedIcon = task?.iconName;
     if (task?.reminderHour != null && task?.reminderMinute != null) {
       _reminderEnabled = true;
     }
@@ -244,6 +247,7 @@ class _TaskDialogState extends State<_TaskDialog> {
     if (!_isEditing) {
       final id = await dao.insertTask(DailyTasksCompanion.insert(
         name: name,
+        iconName: Value(_selectedIcon),
         reminderHour: Value(hour),
         reminderMinute: Value(minute),
       ));
@@ -257,6 +261,7 @@ class _TaskDialogState extends State<_TaskDialog> {
       await dao.updateTask(DailyTasksCompanion(
         id: Value(task.id),
         name: Value(name),
+        iconName: Value(_selectedIcon),
         reminderHour: Value(hour),
         reminderMinute: Value(minute),
       ));
@@ -287,7 +292,8 @@ class _TaskDialogState extends State<_TaskDialog> {
 
     return AlertDialog(
       title: Text(_isEditing ? 'Edit Task' : 'Add Task'),
-      content: Column(
+      content: SingleChildScrollView(
+        child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -298,6 +304,43 @@ class _TaskDialogState extends State<_TaskDialog> {
             decoration: const InputDecoration(
               labelText: 'Task name',
               hintText: 'e.g. Morning vitamins',
+            ),
+          ),
+          const SizedBox(height: 20),
+          // ── Icon picker ───────────────────────────────────────────────
+          Text('Icon', style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: scheme.onSurface.withValues(alpha: 0.6),
+          )),
+          const SizedBox(height: 10),
+          StatefulBuilder(
+            builder: (ctx, setIcon) => Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: kTaskIcons.entries.map((entry) {
+                final key = entry.key;
+                final def = entry.value;
+                final selected = _selectedIcon == key;
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedIcon = selected ? null : key),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? def.color.withValues(alpha: 0.18)
+                          : scheme.onSurface.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: selected ? def.color : Colors.transparent,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Icon(def.icon, size: 22,
+                        color: selected ? def.color : scheme.onSurface.withValues(alpha: 0.45)),
+                  ),
+                );
+              }).toList(),
             ),
           ),
           const SizedBox(height: 20),
@@ -367,6 +410,7 @@ class _TaskDialogState extends State<_TaskDialog> {
           ],
         ],
       ),
+      ),
       actions: [
         TextButton(
             onPressed: () => Navigator.pop(context),
@@ -380,7 +424,7 @@ class _TaskDialogState extends State<_TaskDialog> {
 
 // ─── Task tile ─────────────────────────────────────────────────────────────────
 
-class _TaskTile extends StatelessWidget {
+class _TaskTile extends ConsumerWidget {
   final DailyTask task;
   final bool isCompleted;
   final ValueChanged<bool> onToggle;
@@ -400,9 +444,10 @@ class _TaskTile extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final dimmed = theme.colorScheme.onSurface.withValues(alpha: 0.38);
+    final consistency = ref.watch(taskConsistencyProvider(task.id)).valueOrNull;
 
     final accentColor = isCompleted ? Colors.green : theme.colorScheme.primary;
     return Padding(
@@ -423,11 +468,7 @@ class _TaskTile extends StatelessWidget {
           child: ListTile(
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-            leading: Checkbox(
-              value: isCompleted,
-              onChanged:
-                  task.isEnabled ? (val) => onToggle(val ?? false) : null,
-            ),
+            leading: _TaskIconBadge(task: task, isCompleted: isCompleted, onToggle: onToggle),
             title: Text(
               task.name,
               style: isCompleted && task.isEnabled
@@ -435,7 +476,7 @@ class _TaskTile extends StatelessWidget {
                       decoration: TextDecoration.lineThrough, color: dimmed)
                   : null,
             ),
-            subtitle: _buildSubtitle(context, theme),
+            subtitle: _buildSubtitle(context, theme, consistency),
             trailing: PopupMenuButton<_Action>(
               icon: const Icon(Icons.more_vert),
               onSelected: (action) {
@@ -497,7 +538,11 @@ class _TaskTile extends StatelessWidget {
     );
   }
 
-  Widget? _buildSubtitle(BuildContext context, ThemeData theme) {
+  Widget? _buildSubtitle(
+      BuildContext context, ThemeData theme, (int, int)? consistency) {
+    final cs = theme.colorScheme;
+    final parts = <String>[];
+
     if (!task.isEnabled) {
       return Text('Paused',
           style: theme.textTheme.bodySmall?.copyWith(color: Colors.amber));
@@ -505,13 +550,50 @@ class _TaskTile extends StatelessWidget {
     if (task.reminderHour != null && task.reminderMinute != null) {
       final h = task.reminderHour!.toString().padLeft(2, '0');
       final m = task.reminderMinute!.toString().padLeft(2, '0');
-      return Text(
-        'Repeats daily at $h:$m',
-        style: theme.textTheme.bodySmall
-            ?.copyWith(color: Colors.white.withValues(alpha: 0.55)),
-      );
+      parts.add('Daily at $h:$m');
     }
-    return null;
+    if (consistency != null) {
+      final (done, outOf) = consistency;
+      final pct = outOf > 0 ? (done / outOf * 100).round() : 0;
+      parts.add('$done/$outOf days · $pct%');
+    }
+
+    if (parts.isEmpty) return null;
+    return Text(
+      parts.join('  ·  '),
+      style: theme.textTheme.bodySmall
+          ?.copyWith(color: cs.onSurface.withValues(alpha: 0.5)),
+    );
+  }
+}
+
+// ─── Task icon badge ──────────────────────────────────────────────────────────
+
+class _TaskIconBadge extends StatelessWidget {
+  final DailyTask task;
+  final bool isCompleted;
+  final ValueChanged<bool> onToggle;
+  const _TaskIconBadge({required this.task, required this.isCompleted, required this.onToggle});
+
+  @override
+  Widget build(BuildContext context) {
+    final def = resolveTaskIcon(task.iconName);
+    final color = isCompleted ? Colors.green : def.color;
+    return GestureDetector(
+      onTap: task.isEnabled ? () => onToggle(!isCompleted) : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: isCompleted ? 0.18 : 0.10),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: isCompleted
+            ? Icon(Icons.check_rounded, size: 20, color: Colors.green)
+            : Icon(def.icon, size: 20, color: color),
+      ),
+    );
   }
 }
 

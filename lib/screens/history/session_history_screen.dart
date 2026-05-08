@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../database/daos/sessions_dao.dart';
 import '../../providers/database_provider.dart';
+import '../../providers/home_providers.dart';
 import '../../providers/next_workout_provider.dart';
 import '../../providers/session_providers.dart';
 import '../../widgets/glass_background.dart';
@@ -36,7 +37,7 @@ class SessionHistoryScreen extends ConsumerWidget {
               }
               final grouped = _groupByWeek(entries);
               return ListView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                padding: EdgeInsets.fromLTRB(16, 8, 16, MediaQuery.of(context).padding.bottom + 50),
                 itemCount: grouped.length,
                 itemBuilder: (_, i) {
                   final group = grouped[i];
@@ -166,6 +167,7 @@ class _SessionTile extends ConsumerWidget {
     // Force the next-WOD calculation to re-run with the updated session count
     ref.invalidate(nextWodProvider);
     ref.invalidate(personalRecordsProvider);
+    ref.invalidate(pointsScoreProvider);
 
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

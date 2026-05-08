@@ -135,6 +135,9 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   int _currentItemIdx = 0;
   int _currentSetIdx = 0;
   int _circuitExerciseIdx = 0;
+  /// True once the last set of the last planned exercise has been marked done.
+  /// Used so that ad-hoc exercises added afterwards become immediately active.
+  bool _allExercisesDone = false;
 
   // ── Rest timer ─────────────────────────────────────────────────────────────────
   Timer? _restTimer;
@@ -387,7 +390,10 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
           _timedElapsed = 0;
           _exerciseTicker?.cancel();
         });
-        if (isLastSet && isLastItem) startRestAfter = false;
+        if (isLastSet && isLastItem) {
+          startRestAfter = false;
+          _allExercisesDone = true;
+        }
         restDuration = restSeconds ?? widget.result.wodTemplate.restSeconds;
 
       case WodCircuit():
@@ -1022,7 +1028,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   }
 
   void _showAddExerciseConfig(int insertAt, Exercise exercise) {
-    int sets = 3, repMin = 8, repMax = 12;
+    int sets = 3, repMin = 8, repMax = 12, durationSecs = 30;
+    final isTimed = exercise.isTimed;
     showModalBottomSheet(
       context: context, isScrollControlled: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -1035,16 +1042,30 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
             const SizedBox(height: 4),
             Text('Configure for this session', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5), fontSize: 12)),
             const SizedBox(height: 20),
-            Row(children: [
-              Expanded(child: _ConfigStepper(label: 'Sets', value: sets, min: 1, max: 10, onChanged: (v) => setM(() => sets = v))),
-              const SizedBox(width: 12),
-              Expanded(child: _ConfigStepper(label: 'Min reps', value: repMin, min: 1, max: 100, onChanged: (v) => setM(() => repMin = v))),
-              const SizedBox(width: 12),
-              Expanded(child: _ConfigStepper(label: 'Max reps', value: repMax, min: 1, max: 100, onChanged: (v) => setM(() => repMax = v))),
-            ]),
+            if (isTimed)
+              Row(children: [
+                Expanded(child: _ConfigStepper(label: 'Sets', value: sets, min: 1, max: 10, onChanged: (v) => setM(() => sets = v))),
+                const SizedBox(width: 12),
+                Expanded(child: _ConfigStepper(label: 'Duration (s)', value: durationSecs, min: 5, max: 600, step: 5, onChanged: (v) => setM(() => durationSecs = v))),
+              ])
+            else
+              Row(children: [
+                Expanded(child: _ConfigStepper(label: 'Sets', value: sets, min: 1, max: 10, onChanged: (v) => setM(() => sets = v))),
+                const SizedBox(width: 12),
+                Expanded(child: _ConfigStepper(label: 'Min reps', value: repMin, min: 1, max: 100, onChanged: (v) => setM(() => repMin = v))),
+                const SizedBox(width: 12),
+                Expanded(child: _ConfigStepper(label: 'Max reps', value: repMax, min: 1, max: 100, onChanged: (v) => setM(() => repMax = v))),
+              ]),
             const SizedBox(height: 20),
             SizedBox(width: double.infinity, child: FilledButton(
-              onPressed: () { Navigator.pop(ctx); _insertAdHocExercise(insertAt, exercise, sets, repMin, repMax); },
+              onPressed: () {
+                Navigator.pop(ctx);
+                _insertAdHocExercise(
+                  insertAt, exercise, sets,
+                  isTimed ? durationSecs : repMin,
+                  isTimed ? durationSecs : repMax,
+                );
+              },
               child: const Text('Add to Workout'),
             )),
           ]),
@@ -1072,9 +1093,17 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       _setData[exercise.id] = List.generate(sets, (_) => _SetData(weightKg: 0, reps: 0));
       _lastSets[exercise.id] = [];
       _prData[exercise.id] = null;
-      // Use strict less-than: inserting AT or AFTER the current position
-      // should make the new item active, not push currentItemIdx past it.
-      if (insertAt < _currentItemIdx) _currentItemIdx++;
+      if (_allExercisesDone) {
+        // All previous exercises were finished — make the new item active.
+        _currentItemIdx = insertAt;
+        _currentSetIdx = 0;
+        _allExercisesDone = false;
+      } else if (insertAt < _currentItemIdx) {
+        // Inserting before the current item shifts it forward.
+        _currentItemIdx++;
+      }
+      // insertAt >= _currentItemIdx and not all done → new item is upcoming,
+      // current item stays active (user will reach it naturally).
     });
     _saveProgress();
   }
@@ -1905,6 +1934,26 @@ class _ActionTile extends StatelessWidget {
   }
 }
 
+// ─── _cfgBtn helper ──────────────────────────────────────────────────────────
+
+Widget _cfgBtn(ColorScheme cs, bool enabled, IconData icon, VoidCallback cb) =>
+    SizedBox(
+      width: 28,
+      height: 28,
+      child: Material(
+        color: cs.onSurface.withValues(alpha: enabled ? 0.09 : 0.04),
+        borderRadius: BorderRadius.circular(7),
+        child: InkWell(
+          onTap: enabled ? cb : null,
+          borderRadius: BorderRadius.circular(7),
+          child: Center(
+            child: Icon(icon, size: 14,
+                color: cs.onSurface.withValues(alpha: enabled ? 0.8 : 0.25)),
+          ),
+        ),
+      ),
+    );
+
 // ─── _ConfigStepper ───────────────────────────────────────────────────────────
 
 class _ConfigStepper extends StatelessWidget {
@@ -1912,8 +1961,9 @@ class _ConfigStepper extends StatelessWidget {
   final int value;
   final int min;
   final int max;
+  final int step;
   final void Function(int) onChanged;
-  const _ConfigStepper({required this.label, required this.value, required this.min, required this.max, required this.onChanged});
+  const _ConfigStepper({required this.label, required this.value, required this.min, required this.max, required this.onChanged, this.step = 1});
 
   @override
   Widget build(BuildContext context) {
@@ -1922,17 +1972,9 @@ class _ConfigStepper extends StatelessWidget {
       Text(label, style: TextStyle(fontSize: 10, color: cs.onSurface.withValues(alpha: 0.55))),
       const SizedBox(height: 6),
       Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-        IconButton(
-          onPressed: value > min ? () => onChanged(value - 1) : null,
-          icon: const Icon(Icons.remove, size: 16),
-          style: IconButton.styleFrom(minimumSize: const Size(32, 32), backgroundColor: cs.onSurface.withValues(alpha: 0.08), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-        ),
-        SizedBox(width: 32, child: Text('$value', textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700))),
-        IconButton(
-          onPressed: value < max ? () => onChanged(value + 1) : null,
-          icon: const Icon(Icons.add, size: 16),
-          style: IconButton.styleFrom(minimumSize: const Size(32, 32), backgroundColor: cs.onSurface.withValues(alpha: 0.08), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-        ),
+        _cfgBtn(cs, value > min, Icons.remove, () => onChanged((value - step).clamp(min, max))),
+        SizedBox(width: 36, child: Text('$value', textAlign: TextAlign.center, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700))),
+        _cfgBtn(cs, value < max, Icons.add, () => onChanged((value + step).clamp(min, max))),
       ]),
     ]);
   }

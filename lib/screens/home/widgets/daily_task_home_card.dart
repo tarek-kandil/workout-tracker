@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../database/app_database.dart';
 import '../../../providers/database_provider.dart';
 import '../../../providers/daily_tasks_providers.dart';
+import '../../../utils/task_icons.dart';
 import '../../../widgets/liquid_glass_container.dart';
 import '../../../widgets/celebration_overlay.dart';
 
@@ -34,6 +35,9 @@ class DailyTaskHomeCard extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         child: Row(
           children: [
+            // ── Icon badge ──────────────────────────────────────────────
+            _buildIconBadge(context, cs, isDone),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -96,6 +100,25 @@ class DailyTaskHomeCard extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildIconBadge(BuildContext context, ColorScheme cs, bool isDone) {
+    final def = resolveTaskIcon(task.iconName);
+    final color = isDone ? Colors.green : def.color;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDone ? 0.18 : 0.12),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Icon(
+        isDone ? Icons.check_rounded : def.icon,
+        size: 22,
+        color: color,
       ),
     );
   }

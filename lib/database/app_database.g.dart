@@ -2693,6 +2693,491 @@ class BodyweightEntriesCompanion extends UpdateCompanion<BodyweightEntry> {
   }
 }
 
+class $WodExerciseGroupsTable extends WodExerciseGroups
+    with TableInfo<$WodExerciseGroupsTable, WodExerciseGroup> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $WodExerciseGroupsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _wodTemplateIdMeta = const VerificationMeta(
+    'wodTemplateId',
+  );
+  @override
+  late final GeneratedColumn<int> wodTemplateId = GeneratedColumn<int>(
+    'wod_template_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES wod_templates (id)',
+    ),
+  );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _roundsMeta = const VerificationMeta('rounds');
+  @override
+  late final GeneratedColumn<int> rounds = GeneratedColumn<int>(
+    'rounds',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(3),
+  );
+  static const VerificationMeta _restBetweenExercisesSecondsMeta =
+      const VerificationMeta('restBetweenExercisesSeconds');
+  @override
+  late final GeneratedColumn<int> restBetweenExercisesSeconds =
+      GeneratedColumn<int>(
+        'rest_between_exercises_seconds',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0),
+      );
+  static const VerificationMeta _restBetweenRoundsSecondsMeta =
+      const VerificationMeta('restBetweenRoundsSeconds');
+  @override
+  late final GeneratedColumn<int> restBetweenRoundsSeconds =
+      GeneratedColumn<int>(
+        'rest_between_rounds_seconds',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(90),
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    wodTemplateId,
+    sortOrder,
+    name,
+    rounds,
+    restBetweenExercisesSeconds,
+    restBetweenRoundsSeconds,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'wod_exercise_groups';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<WodExerciseGroup> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('wod_template_id')) {
+      context.handle(
+        _wodTemplateIdMeta,
+        wodTemplateId.isAcceptableOrUnknown(
+          data['wod_template_id']!,
+          _wodTemplateIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_wodTemplateIdMeta);
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sortOrderMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    }
+    if (data.containsKey('rounds')) {
+      context.handle(
+        _roundsMeta,
+        rounds.isAcceptableOrUnknown(data['rounds']!, _roundsMeta),
+      );
+    }
+    if (data.containsKey('rest_between_exercises_seconds')) {
+      context.handle(
+        _restBetweenExercisesSecondsMeta,
+        restBetweenExercisesSeconds.isAcceptableOrUnknown(
+          data['rest_between_exercises_seconds']!,
+          _restBetweenExercisesSecondsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('rest_between_rounds_seconds')) {
+      context.handle(
+        _restBetweenRoundsSecondsMeta,
+        restBetweenRoundsSeconds.isAcceptableOrUnknown(
+          data['rest_between_rounds_seconds']!,
+          _restBetweenRoundsSecondsMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  WodExerciseGroup map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return WodExerciseGroup(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      wodTemplateId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}wod_template_id'],
+      )!,
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort_order'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      ),
+      rounds: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}rounds'],
+      )!,
+      restBetweenExercisesSeconds: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}rest_between_exercises_seconds'],
+      )!,
+      restBetweenRoundsSeconds: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}rest_between_rounds_seconds'],
+      )!,
+    );
+  }
+
+  @override
+  $WodExerciseGroupsTable createAlias(String alias) {
+    return $WodExerciseGroupsTable(attachedDatabase, alias);
+  }
+}
+
+class WodExerciseGroup extends DataClass
+    implements Insertable<WodExerciseGroup> {
+  final int id;
+  final int wodTemplateId;
+  final int sortOrder;
+  final String? name;
+  final int rounds;
+  final int restBetweenExercisesSeconds;
+  final int restBetweenRoundsSeconds;
+  const WodExerciseGroup({
+    required this.id,
+    required this.wodTemplateId,
+    required this.sortOrder,
+    this.name,
+    required this.rounds,
+    required this.restBetweenExercisesSeconds,
+    required this.restBetweenRoundsSeconds,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['wod_template_id'] = Variable<int>(wodTemplateId);
+    map['sort_order'] = Variable<int>(sortOrder);
+    if (!nullToAbsent || name != null) {
+      map['name'] = Variable<String>(name);
+    }
+    map['rounds'] = Variable<int>(rounds);
+    map['rest_between_exercises_seconds'] = Variable<int>(
+      restBetweenExercisesSeconds,
+    );
+    map['rest_between_rounds_seconds'] = Variable<int>(
+      restBetweenRoundsSeconds,
+    );
+    return map;
+  }
+
+  WodExerciseGroupsCompanion toCompanion(bool nullToAbsent) {
+    return WodExerciseGroupsCompanion(
+      id: Value(id),
+      wodTemplateId: Value(wodTemplateId),
+      sortOrder: Value(sortOrder),
+      name: name == null && nullToAbsent ? const Value.absent() : Value(name),
+      rounds: Value(rounds),
+      restBetweenExercisesSeconds: Value(restBetweenExercisesSeconds),
+      restBetweenRoundsSeconds: Value(restBetweenRoundsSeconds),
+    );
+  }
+
+  factory WodExerciseGroup.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return WodExerciseGroup(
+      id: serializer.fromJson<int>(json['id']),
+      wodTemplateId: serializer.fromJson<int>(json['wodTemplateId']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
+      name: serializer.fromJson<String?>(json['name']),
+      rounds: serializer.fromJson<int>(json['rounds']),
+      restBetweenExercisesSeconds: serializer.fromJson<int>(
+        json['restBetweenExercisesSeconds'],
+      ),
+      restBetweenRoundsSeconds: serializer.fromJson<int>(
+        json['restBetweenRoundsSeconds'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'wodTemplateId': serializer.toJson<int>(wodTemplateId),
+      'sortOrder': serializer.toJson<int>(sortOrder),
+      'name': serializer.toJson<String?>(name),
+      'rounds': serializer.toJson<int>(rounds),
+      'restBetweenExercisesSeconds': serializer.toJson<int>(
+        restBetweenExercisesSeconds,
+      ),
+      'restBetweenRoundsSeconds': serializer.toJson<int>(
+        restBetweenRoundsSeconds,
+      ),
+    };
+  }
+
+  WodExerciseGroup copyWith({
+    int? id,
+    int? wodTemplateId,
+    int? sortOrder,
+    Value<String?> name = const Value.absent(),
+    int? rounds,
+    int? restBetweenExercisesSeconds,
+    int? restBetweenRoundsSeconds,
+  }) => WodExerciseGroup(
+    id: id ?? this.id,
+    wodTemplateId: wodTemplateId ?? this.wodTemplateId,
+    sortOrder: sortOrder ?? this.sortOrder,
+    name: name.present ? name.value : this.name,
+    rounds: rounds ?? this.rounds,
+    restBetweenExercisesSeconds:
+        restBetweenExercisesSeconds ?? this.restBetweenExercisesSeconds,
+    restBetweenRoundsSeconds:
+        restBetweenRoundsSeconds ?? this.restBetweenRoundsSeconds,
+  );
+  WodExerciseGroup copyWithCompanion(WodExerciseGroupsCompanion data) {
+    return WodExerciseGroup(
+      id: data.id.present ? data.id.value : this.id,
+      wodTemplateId: data.wodTemplateId.present
+          ? data.wodTemplateId.value
+          : this.wodTemplateId,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      name: data.name.present ? data.name.value : this.name,
+      rounds: data.rounds.present ? data.rounds.value : this.rounds,
+      restBetweenExercisesSeconds: data.restBetweenExercisesSeconds.present
+          ? data.restBetweenExercisesSeconds.value
+          : this.restBetweenExercisesSeconds,
+      restBetweenRoundsSeconds: data.restBetweenRoundsSeconds.present
+          ? data.restBetweenRoundsSeconds.value
+          : this.restBetweenRoundsSeconds,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WodExerciseGroup(')
+          ..write('id: $id, ')
+          ..write('wodTemplateId: $wodTemplateId, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('name: $name, ')
+          ..write('rounds: $rounds, ')
+          ..write('restBetweenExercisesSeconds: $restBetweenExercisesSeconds, ')
+          ..write('restBetweenRoundsSeconds: $restBetweenRoundsSeconds')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    wodTemplateId,
+    sortOrder,
+    name,
+    rounds,
+    restBetweenExercisesSeconds,
+    restBetweenRoundsSeconds,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is WodExerciseGroup &&
+          other.id == this.id &&
+          other.wodTemplateId == this.wodTemplateId &&
+          other.sortOrder == this.sortOrder &&
+          other.name == this.name &&
+          other.rounds == this.rounds &&
+          other.restBetweenExercisesSeconds ==
+              this.restBetweenExercisesSeconds &&
+          other.restBetweenRoundsSeconds == this.restBetweenRoundsSeconds);
+}
+
+class WodExerciseGroupsCompanion extends UpdateCompanion<WodExerciseGroup> {
+  final Value<int> id;
+  final Value<int> wodTemplateId;
+  final Value<int> sortOrder;
+  final Value<String?> name;
+  final Value<int> rounds;
+  final Value<int> restBetweenExercisesSeconds;
+  final Value<int> restBetweenRoundsSeconds;
+  const WodExerciseGroupsCompanion({
+    this.id = const Value.absent(),
+    this.wodTemplateId = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.name = const Value.absent(),
+    this.rounds = const Value.absent(),
+    this.restBetweenExercisesSeconds = const Value.absent(),
+    this.restBetweenRoundsSeconds = const Value.absent(),
+  });
+  WodExerciseGroupsCompanion.insert({
+    this.id = const Value.absent(),
+    required int wodTemplateId,
+    required int sortOrder,
+    this.name = const Value.absent(),
+    this.rounds = const Value.absent(),
+    this.restBetweenExercisesSeconds = const Value.absent(),
+    this.restBetweenRoundsSeconds = const Value.absent(),
+  }) : wodTemplateId = Value(wodTemplateId),
+       sortOrder = Value(sortOrder);
+  static Insertable<WodExerciseGroup> custom({
+    Expression<int>? id,
+    Expression<int>? wodTemplateId,
+    Expression<int>? sortOrder,
+    Expression<String>? name,
+    Expression<int>? rounds,
+    Expression<int>? restBetweenExercisesSeconds,
+    Expression<int>? restBetweenRoundsSeconds,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (wodTemplateId != null) 'wod_template_id': wodTemplateId,
+      if (sortOrder != null) 'sort_order': sortOrder,
+      if (name != null) 'name': name,
+      if (rounds != null) 'rounds': rounds,
+      if (restBetweenExercisesSeconds != null)
+        'rest_between_exercises_seconds': restBetweenExercisesSeconds,
+      if (restBetweenRoundsSeconds != null)
+        'rest_between_rounds_seconds': restBetweenRoundsSeconds,
+    });
+  }
+
+  WodExerciseGroupsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? wodTemplateId,
+    Value<int>? sortOrder,
+    Value<String?>? name,
+    Value<int>? rounds,
+    Value<int>? restBetweenExercisesSeconds,
+    Value<int>? restBetweenRoundsSeconds,
+  }) {
+    return WodExerciseGroupsCompanion(
+      id: id ?? this.id,
+      wodTemplateId: wodTemplateId ?? this.wodTemplateId,
+      sortOrder: sortOrder ?? this.sortOrder,
+      name: name ?? this.name,
+      rounds: rounds ?? this.rounds,
+      restBetweenExercisesSeconds:
+          restBetweenExercisesSeconds ?? this.restBetweenExercisesSeconds,
+      restBetweenRoundsSeconds:
+          restBetweenRoundsSeconds ?? this.restBetweenRoundsSeconds,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (wodTemplateId.present) {
+      map['wod_template_id'] = Variable<int>(wodTemplateId.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (rounds.present) {
+      map['rounds'] = Variable<int>(rounds.value);
+    }
+    if (restBetweenExercisesSeconds.present) {
+      map['rest_between_exercises_seconds'] = Variable<int>(
+        restBetweenExercisesSeconds.value,
+      );
+    }
+    if (restBetweenRoundsSeconds.present) {
+      map['rest_between_rounds_seconds'] = Variable<int>(
+        restBetweenRoundsSeconds.value,
+      );
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WodExerciseGroupsCompanion(')
+          ..write('id: $id, ')
+          ..write('wodTemplateId: $wodTemplateId, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('name: $name, ')
+          ..write('rounds: $rounds, ')
+          ..write('restBetweenExercisesSeconds: $restBetweenExercisesSeconds, ')
+          ..write('restBetweenRoundsSeconds: $restBetweenRoundsSeconds')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $WodTemplateExercisesTable extends WodTemplateExercises
     with TableInfo<$WodTemplateExercisesTable, WodTemplateExercise> {
   @override
@@ -2751,6 +3236,20 @@ class $WodTemplateExercisesTable extends WodTemplateExercises
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _groupIdMeta = const VerificationMeta(
+    'groupId',
+  );
+  @override
+  late final GeneratedColumn<int> groupId = GeneratedColumn<int>(
+    'group_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES wod_exercise_groups (id)',
+    ),
+  );
   static const VerificationMeta _targetSetsMeta = const VerificationMeta(
     'targetSets',
   );
@@ -2796,16 +3295,29 @@ class $WodTemplateExercisesTable extends WodTemplateExercises
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _restSecondsMeta = const VerificationMeta(
+    'restSeconds',
+  );
+  @override
+  late final GeneratedColumn<int> restSeconds = GeneratedColumn<int>(
+    'rest_seconds',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
     wodTemplateId,
     exerciseId,
     sortOrder,
+    groupId,
     targetSets,
     repRangeMin,
     repRangeMax,
     notes,
+    restSeconds,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2849,6 +3361,12 @@ class $WodTemplateExercisesTable extends WodTemplateExercises
     } else if (isInserting) {
       context.missing(_sortOrderMeta);
     }
+    if (data.containsKey('group_id')) {
+      context.handle(
+        _groupIdMeta,
+        groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta),
+      );
+    }
     if (data.containsKey('target_sets')) {
       context.handle(
         _targetSetsMeta,
@@ -2879,6 +3397,15 @@ class $WodTemplateExercisesTable extends WodTemplateExercises
         notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
       );
     }
+    if (data.containsKey('rest_seconds')) {
+      context.handle(
+        _restSecondsMeta,
+        restSeconds.isAcceptableOrUnknown(
+          data['rest_seconds']!,
+          _restSecondsMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2904,6 +3431,10 @@ class $WodTemplateExercisesTable extends WodTemplateExercises
         DriftSqlType.int,
         data['${effectivePrefix}sort_order'],
       )!,
+      groupId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}group_id'],
+      ),
       targetSets: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}target_sets'],
@@ -2920,6 +3451,10 @@ class $WodTemplateExercisesTable extends WodTemplateExercises
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
       ),
+      restSeconds: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}rest_seconds'],
+      ),
     );
   }
 
@@ -2935,19 +3470,23 @@ class WodTemplateExercise extends DataClass
   final int wodTemplateId;
   final int exerciseId;
   final int sortOrder;
+  final int? groupId;
   final int targetSets;
   final int repRangeMin;
   final int repRangeMax;
   final String? notes;
+  final int? restSeconds;
   const WodTemplateExercise({
     required this.id,
     required this.wodTemplateId,
     required this.exerciseId,
     required this.sortOrder,
+    this.groupId,
     required this.targetSets,
     required this.repRangeMin,
     required this.repRangeMax,
     this.notes,
+    this.restSeconds,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2956,11 +3495,17 @@ class WodTemplateExercise extends DataClass
     map['wod_template_id'] = Variable<int>(wodTemplateId);
     map['exercise_id'] = Variable<int>(exerciseId);
     map['sort_order'] = Variable<int>(sortOrder);
+    if (!nullToAbsent || groupId != null) {
+      map['group_id'] = Variable<int>(groupId);
+    }
     map['target_sets'] = Variable<int>(targetSets);
     map['rep_range_min'] = Variable<int>(repRangeMin);
     map['rep_range_max'] = Variable<int>(repRangeMax);
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
+    }
+    if (!nullToAbsent || restSeconds != null) {
+      map['rest_seconds'] = Variable<int>(restSeconds);
     }
     return map;
   }
@@ -2971,12 +3516,18 @@ class WodTemplateExercise extends DataClass
       wodTemplateId: Value(wodTemplateId),
       exerciseId: Value(exerciseId),
       sortOrder: Value(sortOrder),
+      groupId: groupId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(groupId),
       targetSets: Value(targetSets),
       repRangeMin: Value(repRangeMin),
       repRangeMax: Value(repRangeMax),
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
+      restSeconds: restSeconds == null && nullToAbsent
+          ? const Value.absent()
+          : Value(restSeconds),
     );
   }
 
@@ -2990,10 +3541,12 @@ class WodTemplateExercise extends DataClass
       wodTemplateId: serializer.fromJson<int>(json['wodTemplateId']),
       exerciseId: serializer.fromJson<int>(json['exerciseId']),
       sortOrder: serializer.fromJson<int>(json['sortOrder']),
+      groupId: serializer.fromJson<int?>(json['groupId']),
       targetSets: serializer.fromJson<int>(json['targetSets']),
       repRangeMin: serializer.fromJson<int>(json['repRangeMin']),
       repRangeMax: serializer.fromJson<int>(json['repRangeMax']),
       notes: serializer.fromJson<String?>(json['notes']),
+      restSeconds: serializer.fromJson<int?>(json['restSeconds']),
     );
   }
   @override
@@ -3004,10 +3557,12 @@ class WodTemplateExercise extends DataClass
       'wodTemplateId': serializer.toJson<int>(wodTemplateId),
       'exerciseId': serializer.toJson<int>(exerciseId),
       'sortOrder': serializer.toJson<int>(sortOrder),
+      'groupId': serializer.toJson<int?>(groupId),
       'targetSets': serializer.toJson<int>(targetSets),
       'repRangeMin': serializer.toJson<int>(repRangeMin),
       'repRangeMax': serializer.toJson<int>(repRangeMax),
       'notes': serializer.toJson<String?>(notes),
+      'restSeconds': serializer.toJson<int?>(restSeconds),
     };
   }
 
@@ -3016,19 +3571,23 @@ class WodTemplateExercise extends DataClass
     int? wodTemplateId,
     int? exerciseId,
     int? sortOrder,
+    Value<int?> groupId = const Value.absent(),
     int? targetSets,
     int? repRangeMin,
     int? repRangeMax,
     Value<String?> notes = const Value.absent(),
+    Value<int?> restSeconds = const Value.absent(),
   }) => WodTemplateExercise(
     id: id ?? this.id,
     wodTemplateId: wodTemplateId ?? this.wodTemplateId,
     exerciseId: exerciseId ?? this.exerciseId,
     sortOrder: sortOrder ?? this.sortOrder,
+    groupId: groupId.present ? groupId.value : this.groupId,
     targetSets: targetSets ?? this.targetSets,
     repRangeMin: repRangeMin ?? this.repRangeMin,
     repRangeMax: repRangeMax ?? this.repRangeMax,
     notes: notes.present ? notes.value : this.notes,
+    restSeconds: restSeconds.present ? restSeconds.value : this.restSeconds,
   );
   WodTemplateExercise copyWithCompanion(WodTemplateExercisesCompanion data) {
     return WodTemplateExercise(
@@ -3040,6 +3599,7 @@ class WodTemplateExercise extends DataClass
           ? data.exerciseId.value
           : this.exerciseId,
       sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
       targetSets: data.targetSets.present
           ? data.targetSets.value
           : this.targetSets,
@@ -3050,6 +3610,9 @@ class WodTemplateExercise extends DataClass
           ? data.repRangeMax.value
           : this.repRangeMax,
       notes: data.notes.present ? data.notes.value : this.notes,
+      restSeconds: data.restSeconds.present
+          ? data.restSeconds.value
+          : this.restSeconds,
     );
   }
 
@@ -3060,10 +3623,12 @@ class WodTemplateExercise extends DataClass
           ..write('wodTemplateId: $wodTemplateId, ')
           ..write('exerciseId: $exerciseId, ')
           ..write('sortOrder: $sortOrder, ')
+          ..write('groupId: $groupId, ')
           ..write('targetSets: $targetSets, ')
           ..write('repRangeMin: $repRangeMin, ')
           ..write('repRangeMax: $repRangeMax, ')
-          ..write('notes: $notes')
+          ..write('notes: $notes, ')
+          ..write('restSeconds: $restSeconds')
           ..write(')'))
         .toString();
   }
@@ -3074,10 +3639,12 @@ class WodTemplateExercise extends DataClass
     wodTemplateId,
     exerciseId,
     sortOrder,
+    groupId,
     targetSets,
     repRangeMin,
     repRangeMax,
     notes,
+    restSeconds,
   );
   @override
   bool operator ==(Object other) =>
@@ -3087,10 +3654,12 @@ class WodTemplateExercise extends DataClass
           other.wodTemplateId == this.wodTemplateId &&
           other.exerciseId == this.exerciseId &&
           other.sortOrder == this.sortOrder &&
+          other.groupId == this.groupId &&
           other.targetSets == this.targetSets &&
           other.repRangeMin == this.repRangeMin &&
           other.repRangeMax == this.repRangeMax &&
-          other.notes == this.notes);
+          other.notes == this.notes &&
+          other.restSeconds == this.restSeconds);
 }
 
 class WodTemplateExercisesCompanion
@@ -3099,29 +3668,35 @@ class WodTemplateExercisesCompanion
   final Value<int> wodTemplateId;
   final Value<int> exerciseId;
   final Value<int> sortOrder;
+  final Value<int?> groupId;
   final Value<int> targetSets;
   final Value<int> repRangeMin;
   final Value<int> repRangeMax;
   final Value<String?> notes;
+  final Value<int?> restSeconds;
   const WodTemplateExercisesCompanion({
     this.id = const Value.absent(),
     this.wodTemplateId = const Value.absent(),
     this.exerciseId = const Value.absent(),
     this.sortOrder = const Value.absent(),
+    this.groupId = const Value.absent(),
     this.targetSets = const Value.absent(),
     this.repRangeMin = const Value.absent(),
     this.repRangeMax = const Value.absent(),
     this.notes = const Value.absent(),
+    this.restSeconds = const Value.absent(),
   });
   WodTemplateExercisesCompanion.insert({
     this.id = const Value.absent(),
     required int wodTemplateId,
     required int exerciseId,
     required int sortOrder,
+    this.groupId = const Value.absent(),
     this.targetSets = const Value.absent(),
     this.repRangeMin = const Value.absent(),
     this.repRangeMax = const Value.absent(),
     this.notes = const Value.absent(),
+    this.restSeconds = const Value.absent(),
   }) : wodTemplateId = Value(wodTemplateId),
        exerciseId = Value(exerciseId),
        sortOrder = Value(sortOrder);
@@ -3130,20 +3705,24 @@ class WodTemplateExercisesCompanion
     Expression<int>? wodTemplateId,
     Expression<int>? exerciseId,
     Expression<int>? sortOrder,
+    Expression<int>? groupId,
     Expression<int>? targetSets,
     Expression<int>? repRangeMin,
     Expression<int>? repRangeMax,
     Expression<String>? notes,
+    Expression<int>? restSeconds,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (wodTemplateId != null) 'wod_template_id': wodTemplateId,
       if (exerciseId != null) 'exercise_id': exerciseId,
       if (sortOrder != null) 'sort_order': sortOrder,
+      if (groupId != null) 'group_id': groupId,
       if (targetSets != null) 'target_sets': targetSets,
       if (repRangeMin != null) 'rep_range_min': repRangeMin,
       if (repRangeMax != null) 'rep_range_max': repRangeMax,
       if (notes != null) 'notes': notes,
+      if (restSeconds != null) 'rest_seconds': restSeconds,
     });
   }
 
@@ -3152,20 +3731,24 @@ class WodTemplateExercisesCompanion
     Value<int>? wodTemplateId,
     Value<int>? exerciseId,
     Value<int>? sortOrder,
+    Value<int?>? groupId,
     Value<int>? targetSets,
     Value<int>? repRangeMin,
     Value<int>? repRangeMax,
     Value<String?>? notes,
+    Value<int?>? restSeconds,
   }) {
     return WodTemplateExercisesCompanion(
       id: id ?? this.id,
       wodTemplateId: wodTemplateId ?? this.wodTemplateId,
       exerciseId: exerciseId ?? this.exerciseId,
       sortOrder: sortOrder ?? this.sortOrder,
+      groupId: groupId ?? this.groupId,
       targetSets: targetSets ?? this.targetSets,
       repRangeMin: repRangeMin ?? this.repRangeMin,
       repRangeMax: repRangeMax ?? this.repRangeMax,
       notes: notes ?? this.notes,
+      restSeconds: restSeconds ?? this.restSeconds,
     );
   }
 
@@ -3184,6 +3767,9 @@ class WodTemplateExercisesCompanion
     if (sortOrder.present) {
       map['sort_order'] = Variable<int>(sortOrder.value);
     }
+    if (groupId.present) {
+      map['group_id'] = Variable<int>(groupId.value);
+    }
     if (targetSets.present) {
       map['target_sets'] = Variable<int>(targetSets.value);
     }
@@ -3196,6 +3782,9 @@ class WodTemplateExercisesCompanion
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
+    if (restSeconds.present) {
+      map['rest_seconds'] = Variable<int>(restSeconds.value);
+    }
     return map;
   }
 
@@ -3206,10 +3795,12 @@ class WodTemplateExercisesCompanion
           ..write('wodTemplateId: $wodTemplateId, ')
           ..write('exerciseId: $exerciseId, ')
           ..write('sortOrder: $sortOrder, ')
+          ..write('groupId: $groupId, ')
           ..write('targetSets: $targetSets, ')
           ..write('repRangeMin: $repRangeMin, ')
           ..write('repRangeMax: $repRangeMax, ')
-          ..write('notes: $notes')
+          ..write('notes: $notes, ')
+          ..write('restSeconds: $restSeconds')
           ..write(')'))
         .toString();
   }
@@ -3242,6 +3833,17 @@ class $DailyTasksTable extends DailyTasks
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+  );
+  static const VerificationMeta _iconNameMeta = const VerificationMeta(
+    'iconName',
+  );
+  @override
+  late final GeneratedColumn<String> iconName = GeneratedColumn<String>(
+    'icon_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _reminderHourMeta = const VerificationMeta(
     'reminderHour',
@@ -3296,6 +3898,7 @@ class $DailyTasksTable extends DailyTasks
   List<GeneratedColumn> get $columns => [
     id,
     name,
+    iconName,
     reminderHour,
     reminderMinute,
     isEnabled,
@@ -3323,6 +3926,12 @@ class $DailyTasksTable extends DailyTasks
       );
     } else if (isInserting) {
       context.missing(_nameMeta);
+    }
+    if (data.containsKey('icon_name')) {
+      context.handle(
+        _iconNameMeta,
+        iconName.isAcceptableOrUnknown(data['icon_name']!, _iconNameMeta),
+      );
     }
     if (data.containsKey('reminder_hour')) {
       context.handle(
@@ -3371,6 +3980,10 @@ class $DailyTasksTable extends DailyTasks
         DriftSqlType.string,
         data['${effectivePrefix}name'],
       )!,
+      iconName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}icon_name'],
+      ),
       reminderHour: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}reminder_hour'],
@@ -3399,6 +4012,7 @@ class $DailyTasksTable extends DailyTasks
 class DailyTask extends DataClass implements Insertable<DailyTask> {
   final int id;
   final String name;
+  final String? iconName;
   final int? reminderHour;
   final int? reminderMinute;
   final bool isEnabled;
@@ -3406,6 +4020,7 @@ class DailyTask extends DataClass implements Insertable<DailyTask> {
   const DailyTask({
     required this.id,
     required this.name,
+    this.iconName,
     this.reminderHour,
     this.reminderMinute,
     required this.isEnabled,
@@ -3416,6 +4031,9 @@ class DailyTask extends DataClass implements Insertable<DailyTask> {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['name'] = Variable<String>(name);
+    if (!nullToAbsent || iconName != null) {
+      map['icon_name'] = Variable<String>(iconName);
+    }
     if (!nullToAbsent || reminderHour != null) {
       map['reminder_hour'] = Variable<int>(reminderHour);
     }
@@ -3431,6 +4049,9 @@ class DailyTask extends DataClass implements Insertable<DailyTask> {
     return DailyTasksCompanion(
       id: Value(id),
       name: Value(name),
+      iconName: iconName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(iconName),
       reminderHour: reminderHour == null && nullToAbsent
           ? const Value.absent()
           : Value(reminderHour),
@@ -3450,6 +4071,7 @@ class DailyTask extends DataClass implements Insertable<DailyTask> {
     return DailyTask(
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
+      iconName: serializer.fromJson<String?>(json['iconName']),
       reminderHour: serializer.fromJson<int?>(json['reminderHour']),
       reminderMinute: serializer.fromJson<int?>(json['reminderMinute']),
       isEnabled: serializer.fromJson<bool>(json['isEnabled']),
@@ -3462,6 +4084,7 @@ class DailyTask extends DataClass implements Insertable<DailyTask> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
+      'iconName': serializer.toJson<String?>(iconName),
       'reminderHour': serializer.toJson<int?>(reminderHour),
       'reminderMinute': serializer.toJson<int?>(reminderMinute),
       'isEnabled': serializer.toJson<bool>(isEnabled),
@@ -3472,6 +4095,7 @@ class DailyTask extends DataClass implements Insertable<DailyTask> {
   DailyTask copyWith({
     int? id,
     String? name,
+    Value<String?> iconName = const Value.absent(),
     Value<int?> reminderHour = const Value.absent(),
     Value<int?> reminderMinute = const Value.absent(),
     bool? isEnabled,
@@ -3479,6 +4103,7 @@ class DailyTask extends DataClass implements Insertable<DailyTask> {
   }) => DailyTask(
     id: id ?? this.id,
     name: name ?? this.name,
+    iconName: iconName.present ? iconName.value : this.iconName,
     reminderHour: reminderHour.present ? reminderHour.value : this.reminderHour,
     reminderMinute: reminderMinute.present
         ? reminderMinute.value
@@ -3490,6 +4115,7 @@ class DailyTask extends DataClass implements Insertable<DailyTask> {
     return DailyTask(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
+      iconName: data.iconName.present ? data.iconName.value : this.iconName,
       reminderHour: data.reminderHour.present
           ? data.reminderHour.value
           : this.reminderHour,
@@ -3506,6 +4132,7 @@ class DailyTask extends DataClass implements Insertable<DailyTask> {
     return (StringBuffer('DailyTask(')
           ..write('id: $id, ')
           ..write('name: $name, ')
+          ..write('iconName: $iconName, ')
           ..write('reminderHour: $reminderHour, ')
           ..write('reminderMinute: $reminderMinute, ')
           ..write('isEnabled: $isEnabled, ')
@@ -3515,14 +4142,22 @@ class DailyTask extends DataClass implements Insertable<DailyTask> {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, reminderHour, reminderMinute, isEnabled, sortOrder);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    iconName,
+    reminderHour,
+    reminderMinute,
+    isEnabled,
+    sortOrder,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is DailyTask &&
           other.id == this.id &&
           other.name == this.name &&
+          other.iconName == this.iconName &&
           other.reminderHour == this.reminderHour &&
           other.reminderMinute == this.reminderMinute &&
           other.isEnabled == this.isEnabled &&
@@ -3532,6 +4167,7 @@ class DailyTask extends DataClass implements Insertable<DailyTask> {
 class DailyTasksCompanion extends UpdateCompanion<DailyTask> {
   final Value<int> id;
   final Value<String> name;
+  final Value<String?> iconName;
   final Value<int?> reminderHour;
   final Value<int?> reminderMinute;
   final Value<bool> isEnabled;
@@ -3539,6 +4175,7 @@ class DailyTasksCompanion extends UpdateCompanion<DailyTask> {
   const DailyTasksCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
+    this.iconName = const Value.absent(),
     this.reminderHour = const Value.absent(),
     this.reminderMinute = const Value.absent(),
     this.isEnabled = const Value.absent(),
@@ -3547,6 +4184,7 @@ class DailyTasksCompanion extends UpdateCompanion<DailyTask> {
   DailyTasksCompanion.insert({
     this.id = const Value.absent(),
     required String name,
+    this.iconName = const Value.absent(),
     this.reminderHour = const Value.absent(),
     this.reminderMinute = const Value.absent(),
     this.isEnabled = const Value.absent(),
@@ -3555,6 +4193,7 @@ class DailyTasksCompanion extends UpdateCompanion<DailyTask> {
   static Insertable<DailyTask> custom({
     Expression<int>? id,
     Expression<String>? name,
+    Expression<String>? iconName,
     Expression<int>? reminderHour,
     Expression<int>? reminderMinute,
     Expression<bool>? isEnabled,
@@ -3563,6 +4202,7 @@ class DailyTasksCompanion extends UpdateCompanion<DailyTask> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
+      if (iconName != null) 'icon_name': iconName,
       if (reminderHour != null) 'reminder_hour': reminderHour,
       if (reminderMinute != null) 'reminder_minute': reminderMinute,
       if (isEnabled != null) 'is_enabled': isEnabled,
@@ -3573,6 +4213,7 @@ class DailyTasksCompanion extends UpdateCompanion<DailyTask> {
   DailyTasksCompanion copyWith({
     Value<int>? id,
     Value<String>? name,
+    Value<String?>? iconName,
     Value<int?>? reminderHour,
     Value<int?>? reminderMinute,
     Value<bool>? isEnabled,
@@ -3581,6 +4222,7 @@ class DailyTasksCompanion extends UpdateCompanion<DailyTask> {
     return DailyTasksCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
+      iconName: iconName ?? this.iconName,
       reminderHour: reminderHour ?? this.reminderHour,
       reminderMinute: reminderMinute ?? this.reminderMinute,
       isEnabled: isEnabled ?? this.isEnabled,
@@ -3596,6 +4238,9 @@ class DailyTasksCompanion extends UpdateCompanion<DailyTask> {
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
+    }
+    if (iconName.present) {
+      map['icon_name'] = Variable<String>(iconName.value);
     }
     if (reminderHour.present) {
       map['reminder_hour'] = Variable<int>(reminderHour.value);
@@ -3617,6 +4262,7 @@ class DailyTasksCompanion extends UpdateCompanion<DailyTask> {
     return (StringBuffer('DailyTasksCompanion(')
           ..write('id: $id, ')
           ..write('name: $name, ')
+          ..write('iconName: $iconName, ')
           ..write('reminderHour: $reminderHour, ')
           ..write('reminderMinute: $reminderMinute, ')
           ..write('isEnabled: $isEnabled, ')
@@ -3887,6 +4533,616 @@ class DailyTaskCompletionsCompanion
   }
 }
 
+class $UserProfilesTable extends UserProfiles
+    with TableInfo<$UserProfilesTable, UserProfile> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $UserProfilesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _genderMeta = const VerificationMeta('gender');
+  @override
+  late final GeneratedColumn<String> gender = GeneratedColumn<String>(
+    'gender',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('male'),
+  );
+  static const VerificationMeta _ageMeta = const VerificationMeta('age');
+  @override
+  late final GeneratedColumn<int> age = GeneratedColumn<int>(
+    'age',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _heightCmMeta = const VerificationMeta(
+    'heightCm',
+  );
+  @override
+  late final GeneratedColumn<double> heightCm = GeneratedColumn<double>(
+    'height_cm',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _weightKgMeta = const VerificationMeta(
+    'weightKg',
+  );
+  @override
+  late final GeneratedColumn<double> weightKg = GeneratedColumn<double>(
+    'weight_kg',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _targetWeightKgMeta = const VerificationMeta(
+    'targetWeightKg',
+  );
+  @override
+  late final GeneratedColumn<double> targetWeightKg = GeneratedColumn<double>(
+    'target_weight_kg',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fitnessGoalMeta = const VerificationMeta(
+    'fitnessGoal',
+  );
+  @override
+  late final GeneratedColumn<String> fitnessGoal = GeneratedColumn<String>(
+    'fitness_goal',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('maintain'),
+  );
+  static const VerificationMeta _activityLevelMeta = const VerificationMeta(
+    'activityLevel',
+  );
+  @override
+  late final GeneratedColumn<String> activityLevel = GeneratedColumn<String>(
+    'activity_level',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('moderate'),
+  );
+  static const VerificationMeta _weeklyRateKgMeta = const VerificationMeta(
+    'weeklyRateKg',
+  );
+  @override
+  late final GeneratedColumn<double> weeklyRateKg = GeneratedColumn<double>(
+    'weekly_rate_kg',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    gender,
+    age,
+    heightCm,
+    weightKg,
+    targetWeightKg,
+    fitnessGoal,
+    activityLevel,
+    weeklyRateKg,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'user_profiles';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<UserProfile> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    }
+    if (data.containsKey('gender')) {
+      context.handle(
+        _genderMeta,
+        gender.isAcceptableOrUnknown(data['gender']!, _genderMeta),
+      );
+    }
+    if (data.containsKey('age')) {
+      context.handle(
+        _ageMeta,
+        age.isAcceptableOrUnknown(data['age']!, _ageMeta),
+      );
+    }
+    if (data.containsKey('height_cm')) {
+      context.handle(
+        _heightCmMeta,
+        heightCm.isAcceptableOrUnknown(data['height_cm']!, _heightCmMeta),
+      );
+    }
+    if (data.containsKey('weight_kg')) {
+      context.handle(
+        _weightKgMeta,
+        weightKg.isAcceptableOrUnknown(data['weight_kg']!, _weightKgMeta),
+      );
+    }
+    if (data.containsKey('target_weight_kg')) {
+      context.handle(
+        _targetWeightKgMeta,
+        targetWeightKg.isAcceptableOrUnknown(
+          data['target_weight_kg']!,
+          _targetWeightKgMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fitness_goal')) {
+      context.handle(
+        _fitnessGoalMeta,
+        fitnessGoal.isAcceptableOrUnknown(
+          data['fitness_goal']!,
+          _fitnessGoalMeta,
+        ),
+      );
+    }
+    if (data.containsKey('activity_level')) {
+      context.handle(
+        _activityLevelMeta,
+        activityLevel.isAcceptableOrUnknown(
+          data['activity_level']!,
+          _activityLevelMeta,
+        ),
+      );
+    }
+    if (data.containsKey('weekly_rate_kg')) {
+      context.handle(
+        _weeklyRateKgMeta,
+        weeklyRateKg.isAcceptableOrUnknown(
+          data['weekly_rate_kg']!,
+          _weeklyRateKgMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  UserProfile map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return UserProfile(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      gender: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gender'],
+      )!,
+      age: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}age'],
+      ),
+      heightCm: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}height_cm'],
+      ),
+      weightKg: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}weight_kg'],
+      ),
+      targetWeightKg: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}target_weight_kg'],
+      ),
+      fitnessGoal: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}fitness_goal'],
+      )!,
+      activityLevel: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}activity_level'],
+      )!,
+      weeklyRateKg: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}weekly_rate_kg'],
+      ),
+    );
+  }
+
+  @override
+  $UserProfilesTable createAlias(String alias) {
+    return $UserProfilesTable(attachedDatabase, alias);
+  }
+}
+
+class UserProfile extends DataClass implements Insertable<UserProfile> {
+  final int id;
+  final String name;
+  final String gender;
+  final int? age;
+  final double? heightCm;
+  final double? weightKg;
+  final double? targetWeightKg;
+  final String fitnessGoal;
+  final String activityLevel;
+  final double? weeklyRateKg;
+  const UserProfile({
+    required this.id,
+    required this.name,
+    required this.gender,
+    this.age,
+    this.heightCm,
+    this.weightKg,
+    this.targetWeightKg,
+    required this.fitnessGoal,
+    required this.activityLevel,
+    this.weeklyRateKg,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    map['gender'] = Variable<String>(gender);
+    if (!nullToAbsent || age != null) {
+      map['age'] = Variable<int>(age);
+    }
+    if (!nullToAbsent || heightCm != null) {
+      map['height_cm'] = Variable<double>(heightCm);
+    }
+    if (!nullToAbsent || weightKg != null) {
+      map['weight_kg'] = Variable<double>(weightKg);
+    }
+    if (!nullToAbsent || targetWeightKg != null) {
+      map['target_weight_kg'] = Variable<double>(targetWeightKg);
+    }
+    map['fitness_goal'] = Variable<String>(fitnessGoal);
+    map['activity_level'] = Variable<String>(activityLevel);
+    if (!nullToAbsent || weeklyRateKg != null) {
+      map['weekly_rate_kg'] = Variable<double>(weeklyRateKg);
+    }
+    return map;
+  }
+
+  UserProfilesCompanion toCompanion(bool nullToAbsent) {
+    return UserProfilesCompanion(
+      id: Value(id),
+      name: Value(name),
+      gender: Value(gender),
+      age: age == null && nullToAbsent ? const Value.absent() : Value(age),
+      heightCm: heightCm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(heightCm),
+      weightKg: weightKg == null && nullToAbsent
+          ? const Value.absent()
+          : Value(weightKg),
+      targetWeightKg: targetWeightKg == null && nullToAbsent
+          ? const Value.absent()
+          : Value(targetWeightKg),
+      fitnessGoal: Value(fitnessGoal),
+      activityLevel: Value(activityLevel),
+      weeklyRateKg: weeklyRateKg == null && nullToAbsent
+          ? const Value.absent()
+          : Value(weeklyRateKg),
+    );
+  }
+
+  factory UserProfile.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return UserProfile(
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      gender: serializer.fromJson<String>(json['gender']),
+      age: serializer.fromJson<int?>(json['age']),
+      heightCm: serializer.fromJson<double?>(json['heightCm']),
+      weightKg: serializer.fromJson<double?>(json['weightKg']),
+      targetWeightKg: serializer.fromJson<double?>(json['targetWeightKg']),
+      fitnessGoal: serializer.fromJson<String>(json['fitnessGoal']),
+      activityLevel: serializer.fromJson<String>(json['activityLevel']),
+      weeklyRateKg: serializer.fromJson<double?>(json['weeklyRateKg']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+      'gender': serializer.toJson<String>(gender),
+      'age': serializer.toJson<int?>(age),
+      'heightCm': serializer.toJson<double?>(heightCm),
+      'weightKg': serializer.toJson<double?>(weightKg),
+      'targetWeightKg': serializer.toJson<double?>(targetWeightKg),
+      'fitnessGoal': serializer.toJson<String>(fitnessGoal),
+      'activityLevel': serializer.toJson<String>(activityLevel),
+      'weeklyRateKg': serializer.toJson<double?>(weeklyRateKg),
+    };
+  }
+
+  UserProfile copyWith({
+    int? id,
+    String? name,
+    String? gender,
+    Value<int?> age = const Value.absent(),
+    Value<double?> heightCm = const Value.absent(),
+    Value<double?> weightKg = const Value.absent(),
+    Value<double?> targetWeightKg = const Value.absent(),
+    String? fitnessGoal,
+    String? activityLevel,
+    Value<double?> weeklyRateKg = const Value.absent(),
+  }) => UserProfile(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    gender: gender ?? this.gender,
+    age: age.present ? age.value : this.age,
+    heightCm: heightCm.present ? heightCm.value : this.heightCm,
+    weightKg: weightKg.present ? weightKg.value : this.weightKg,
+    targetWeightKg: targetWeightKg.present
+        ? targetWeightKg.value
+        : this.targetWeightKg,
+    fitnessGoal: fitnessGoal ?? this.fitnessGoal,
+    activityLevel: activityLevel ?? this.activityLevel,
+    weeklyRateKg: weeklyRateKg.present ? weeklyRateKg.value : this.weeklyRateKg,
+  );
+  UserProfile copyWithCompanion(UserProfilesCompanion data) {
+    return UserProfile(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      gender: data.gender.present ? data.gender.value : this.gender,
+      age: data.age.present ? data.age.value : this.age,
+      heightCm: data.heightCm.present ? data.heightCm.value : this.heightCm,
+      weightKg: data.weightKg.present ? data.weightKg.value : this.weightKg,
+      targetWeightKg: data.targetWeightKg.present
+          ? data.targetWeightKg.value
+          : this.targetWeightKg,
+      fitnessGoal: data.fitnessGoal.present
+          ? data.fitnessGoal.value
+          : this.fitnessGoal,
+      activityLevel: data.activityLevel.present
+          ? data.activityLevel.value
+          : this.activityLevel,
+      weeklyRateKg: data.weeklyRateKg.present
+          ? data.weeklyRateKg.value
+          : this.weeklyRateKg,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UserProfile(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('gender: $gender, ')
+          ..write('age: $age, ')
+          ..write('heightCm: $heightCm, ')
+          ..write('weightKg: $weightKg, ')
+          ..write('targetWeightKg: $targetWeightKg, ')
+          ..write('fitnessGoal: $fitnessGoal, ')
+          ..write('activityLevel: $activityLevel, ')
+          ..write('weeklyRateKg: $weeklyRateKg')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    name,
+    gender,
+    age,
+    heightCm,
+    weightKg,
+    targetWeightKg,
+    fitnessGoal,
+    activityLevel,
+    weeklyRateKg,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is UserProfile &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.gender == this.gender &&
+          other.age == this.age &&
+          other.heightCm == this.heightCm &&
+          other.weightKg == this.weightKg &&
+          other.targetWeightKg == this.targetWeightKg &&
+          other.fitnessGoal == this.fitnessGoal &&
+          other.activityLevel == this.activityLevel &&
+          other.weeklyRateKg == this.weeklyRateKg);
+}
+
+class UserProfilesCompanion extends UpdateCompanion<UserProfile> {
+  final Value<int> id;
+  final Value<String> name;
+  final Value<String> gender;
+  final Value<int?> age;
+  final Value<double?> heightCm;
+  final Value<double?> weightKg;
+  final Value<double?> targetWeightKg;
+  final Value<String> fitnessGoal;
+  final Value<String> activityLevel;
+  final Value<double?> weeklyRateKg;
+  const UserProfilesCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.gender = const Value.absent(),
+    this.age = const Value.absent(),
+    this.heightCm = const Value.absent(),
+    this.weightKg = const Value.absent(),
+    this.targetWeightKg = const Value.absent(),
+    this.fitnessGoal = const Value.absent(),
+    this.activityLevel = const Value.absent(),
+    this.weeklyRateKg = const Value.absent(),
+  });
+  UserProfilesCompanion.insert({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.gender = const Value.absent(),
+    this.age = const Value.absent(),
+    this.heightCm = const Value.absent(),
+    this.weightKg = const Value.absent(),
+    this.targetWeightKg = const Value.absent(),
+    this.fitnessGoal = const Value.absent(),
+    this.activityLevel = const Value.absent(),
+    this.weeklyRateKg = const Value.absent(),
+  });
+  static Insertable<UserProfile> custom({
+    Expression<int>? id,
+    Expression<String>? name,
+    Expression<String>? gender,
+    Expression<int>? age,
+    Expression<double>? heightCm,
+    Expression<double>? weightKg,
+    Expression<double>? targetWeightKg,
+    Expression<String>? fitnessGoal,
+    Expression<String>? activityLevel,
+    Expression<double>? weeklyRateKg,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (gender != null) 'gender': gender,
+      if (age != null) 'age': age,
+      if (heightCm != null) 'height_cm': heightCm,
+      if (weightKg != null) 'weight_kg': weightKg,
+      if (targetWeightKg != null) 'target_weight_kg': targetWeightKg,
+      if (fitnessGoal != null) 'fitness_goal': fitnessGoal,
+      if (activityLevel != null) 'activity_level': activityLevel,
+      if (weeklyRateKg != null) 'weekly_rate_kg': weeklyRateKg,
+    });
+  }
+
+  UserProfilesCompanion copyWith({
+    Value<int>? id,
+    Value<String>? name,
+    Value<String>? gender,
+    Value<int?>? age,
+    Value<double?>? heightCm,
+    Value<double?>? weightKg,
+    Value<double?>? targetWeightKg,
+    Value<String>? fitnessGoal,
+    Value<String>? activityLevel,
+    Value<double?>? weeklyRateKg,
+  }) {
+    return UserProfilesCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      gender: gender ?? this.gender,
+      age: age ?? this.age,
+      heightCm: heightCm ?? this.heightCm,
+      weightKg: weightKg ?? this.weightKg,
+      targetWeightKg: targetWeightKg ?? this.targetWeightKg,
+      fitnessGoal: fitnessGoal ?? this.fitnessGoal,
+      activityLevel: activityLevel ?? this.activityLevel,
+      weeklyRateKg: weeklyRateKg ?? this.weeklyRateKg,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (gender.present) {
+      map['gender'] = Variable<String>(gender.value);
+    }
+    if (age.present) {
+      map['age'] = Variable<int>(age.value);
+    }
+    if (heightCm.present) {
+      map['height_cm'] = Variable<double>(heightCm.value);
+    }
+    if (weightKg.present) {
+      map['weight_kg'] = Variable<double>(weightKg.value);
+    }
+    if (targetWeightKg.present) {
+      map['target_weight_kg'] = Variable<double>(targetWeightKg.value);
+    }
+    if (fitnessGoal.present) {
+      map['fitness_goal'] = Variable<String>(fitnessGoal.value);
+    }
+    if (activityLevel.present) {
+      map['activity_level'] = Variable<String>(activityLevel.value);
+    }
+    if (weeklyRateKg.present) {
+      map['weekly_rate_kg'] = Variable<double>(weeklyRateKg.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UserProfilesCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('gender: $gender, ')
+          ..write('age: $age, ')
+          ..write('heightCm: $heightCm, ')
+          ..write('weightKg: $weightKg, ')
+          ..write('targetWeightKg: $targetWeightKg, ')
+          ..write('fitnessGoal: $fitnessGoal, ')
+          ..write('activityLevel: $activityLevel, ')
+          ..write('weeklyRateKg: $weeklyRateKg')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3900,17 +5156,23 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $WorkoutSetsTable workoutSets = $WorkoutSetsTable(this);
   late final $BodyweightEntriesTable bodyweightEntries =
       $BodyweightEntriesTable(this);
+  late final $WodExerciseGroupsTable wodExerciseGroups =
+      $WodExerciseGroupsTable(this);
   late final $WodTemplateExercisesTable wodTemplateExercises =
       $WodTemplateExercisesTable(this);
   late final $DailyTasksTable dailyTasks = $DailyTasksTable(this);
   late final $DailyTaskCompletionsTable dailyTaskCompletions =
       $DailyTaskCompletionsTable(this);
+  late final $UserProfilesTable userProfiles = $UserProfilesTable(this);
   late final ExercisesDao exercisesDao = ExercisesDao(this as AppDatabase);
   late final ProgramsDao programsDao = ProgramsDao(this as AppDatabase);
   late final SessionsDao sessionsDao = SessionsDao(this as AppDatabase);
   late final SetsDao setsDao = SetsDao(this as AppDatabase);
   late final BodyweightDao bodyweightDao = BodyweightDao(this as AppDatabase);
   late final DailyTasksDao dailyTasksDao = DailyTasksDao(this as AppDatabase);
+  late final UserProfileDao userProfileDao = UserProfileDao(
+    this as AppDatabase,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3923,9 +5185,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     workoutSessions,
     workoutSets,
     bodyweightEntries,
+    wodExerciseGroups,
     wodTemplateExercises,
     dailyTasks,
     dailyTaskCompletions,
+    userProfiles,
   ];
 }
 
@@ -5097,6 +6361,30 @@ final class $$WodTemplatesTableReferences
     );
   }
 
+  static MultiTypedResultKey<$WodExerciseGroupsTable, List<WodExerciseGroup>>
+  _wodExerciseGroupsRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.wodExerciseGroups,
+        aliasName: $_aliasNameGenerator(
+          db.wodTemplates.id,
+          db.wodExerciseGroups.wodTemplateId,
+        ),
+      );
+
+  $$WodExerciseGroupsTableProcessedTableManager get wodExerciseGroupsRefs {
+    final manager = $$WodExerciseGroupsTableTableManager(
+      $_db,
+      $_db.wodExerciseGroups,
+    ).filter((f) => f.wodTemplateId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _wodExerciseGroupsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
   static MultiTypedResultKey<
     $WodTemplateExercisesTable,
     List<WodTemplateExercise>
@@ -5199,6 +6487,31 @@ class $$WodTemplatesTableFilterComposer
           }) => $$WorkoutSessionsTableFilterComposer(
             $db: $db,
             $table: $db.workoutSessions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> wodExerciseGroupsRefs(
+    Expression<bool> Function($$WodExerciseGroupsTableFilterComposer f) f,
+  ) {
+    final $$WodExerciseGroupsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.wodExerciseGroups,
+      getReferencedColumn: (t) => t.wodTemplateId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WodExerciseGroupsTableFilterComposer(
+            $db: $db,
+            $table: $db.wodExerciseGroups,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -5366,6 +6679,32 @@ class $$WodTemplatesTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> wodExerciseGroupsRefs<T extends Object>(
+    Expression<T> Function($$WodExerciseGroupsTableAnnotationComposer a) f,
+  ) {
+    final $$WodExerciseGroupsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.wodExerciseGroups,
+          getReferencedColumn: (t) => t.wodTemplateId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$WodExerciseGroupsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.wodExerciseGroups,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
   Expression<T> wodTemplateExercisesRefs<T extends Object>(
     Expression<T> Function($$WodTemplateExercisesTableAnnotationComposer a) f,
   ) {
@@ -5409,6 +6748,7 @@ class $$WodTemplatesTableTableManager
           PrefetchHooks Function({
             bool phaseId,
             bool workoutSessionsRefs,
+            bool wodExerciseGroupsRefs,
             bool wodTemplateExercisesRefs,
           })
         > {
@@ -5467,12 +6807,14 @@ class $$WodTemplatesTableTableManager
               ({
                 phaseId = false,
                 workoutSessionsRefs = false,
+                wodExerciseGroupsRefs = false,
                 wodTemplateExercisesRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (workoutSessionsRefs) db.workoutSessions,
+                    if (wodExerciseGroupsRefs) db.wodExerciseGroups,
                     if (wodTemplateExercisesRefs) db.wodTemplateExercises,
                   ],
                   addJoins:
@@ -5532,6 +6874,27 @@ class $$WodTemplatesTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (wodExerciseGroupsRefs)
+                        await $_getPrefetchedData<
+                          WodTemplate,
+                          $WodTemplatesTable,
+                          WodExerciseGroup
+                        >(
+                          currentTable: table,
+                          referencedTable: $$WodTemplatesTableReferences
+                              ._wodExerciseGroupsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$WodTemplatesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).wodExerciseGroupsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.wodTemplateId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                       if (wodTemplateExercisesRefs)
                         await $_getPrefetchedData<
                           WodTemplate,
@@ -5576,6 +6939,7 @@ typedef $$WodTemplatesTableProcessedTableManager =
       PrefetchHooks Function({
         bool phaseId,
         bool workoutSessionsRefs,
+        bool wodExerciseGroupsRefs,
         bool wodTemplateExercisesRefs,
       })
     >;
@@ -6686,16 +8050,502 @@ typedef $$BodyweightEntriesTableProcessedTableManager =
       BodyweightEntry,
       PrefetchHooks Function()
     >;
+typedef $$WodExerciseGroupsTableCreateCompanionBuilder =
+    WodExerciseGroupsCompanion Function({
+      Value<int> id,
+      required int wodTemplateId,
+      required int sortOrder,
+      Value<String?> name,
+      Value<int> rounds,
+      Value<int> restBetweenExercisesSeconds,
+      Value<int> restBetweenRoundsSeconds,
+    });
+typedef $$WodExerciseGroupsTableUpdateCompanionBuilder =
+    WodExerciseGroupsCompanion Function({
+      Value<int> id,
+      Value<int> wodTemplateId,
+      Value<int> sortOrder,
+      Value<String?> name,
+      Value<int> rounds,
+      Value<int> restBetweenExercisesSeconds,
+      Value<int> restBetweenRoundsSeconds,
+    });
+
+final class $$WodExerciseGroupsTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $WodExerciseGroupsTable,
+          WodExerciseGroup
+        > {
+  $$WodExerciseGroupsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $WodTemplatesTable _wodTemplateIdTable(_$AppDatabase db) =>
+      db.wodTemplates.createAlias(
+        $_aliasNameGenerator(
+          db.wodExerciseGroups.wodTemplateId,
+          db.wodTemplates.id,
+        ),
+      );
+
+  $$WodTemplatesTableProcessedTableManager get wodTemplateId {
+    final $_column = $_itemColumn<int>('wod_template_id')!;
+
+    final manager = $$WodTemplatesTableTableManager(
+      $_db,
+      $_db.wodTemplates,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_wodTemplateIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $WodTemplateExercisesTable,
+    List<WodTemplateExercise>
+  >
+  _wodTemplateExercisesRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.wodTemplateExercises,
+        aliasName: $_aliasNameGenerator(
+          db.wodExerciseGroups.id,
+          db.wodTemplateExercises.groupId,
+        ),
+      );
+
+  $$WodTemplateExercisesTableProcessedTableManager
+  get wodTemplateExercisesRefs {
+    final manager = $$WodTemplateExercisesTableTableManager(
+      $_db,
+      $_db.wodTemplateExercises,
+    ).filter((f) => f.groupId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _wodTemplateExercisesRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$WodExerciseGroupsTableFilterComposer
+    extends Composer<_$AppDatabase, $WodExerciseGroupsTable> {
+  $$WodExerciseGroupsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get rounds => $composableBuilder(
+    column: $table.rounds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get restBetweenExercisesSeconds => $composableBuilder(
+    column: $table.restBetweenExercisesSeconds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get restBetweenRoundsSeconds => $composableBuilder(
+    column: $table.restBetweenRoundsSeconds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$WodTemplatesTableFilterComposer get wodTemplateId {
+    final $$WodTemplatesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.wodTemplateId,
+      referencedTable: $db.wodTemplates,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WodTemplatesTableFilterComposer(
+            $db: $db,
+            $table: $db.wodTemplates,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> wodTemplateExercisesRefs(
+    Expression<bool> Function($$WodTemplateExercisesTableFilterComposer f) f,
+  ) {
+    final $$WodTemplateExercisesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.wodTemplateExercises,
+      getReferencedColumn: (t) => t.groupId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WodTemplateExercisesTableFilterComposer(
+            $db: $db,
+            $table: $db.wodTemplateExercises,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$WodExerciseGroupsTableOrderingComposer
+    extends Composer<_$AppDatabase, $WodExerciseGroupsTable> {
+  $$WodExerciseGroupsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get rounds => $composableBuilder(
+    column: $table.rounds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get restBetweenExercisesSeconds => $composableBuilder(
+    column: $table.restBetweenExercisesSeconds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get restBetweenRoundsSeconds => $composableBuilder(
+    column: $table.restBetweenRoundsSeconds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$WodTemplatesTableOrderingComposer get wodTemplateId {
+    final $$WodTemplatesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.wodTemplateId,
+      referencedTable: $db.wodTemplates,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WodTemplatesTableOrderingComposer(
+            $db: $db,
+            $table: $db.wodTemplates,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$WodExerciseGroupsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $WodExerciseGroupsTable> {
+  $$WodExerciseGroupsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<int> get rounds =>
+      $composableBuilder(column: $table.rounds, builder: (column) => column);
+
+  GeneratedColumn<int> get restBetweenExercisesSeconds => $composableBuilder(
+    column: $table.restBetweenExercisesSeconds,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get restBetweenRoundsSeconds => $composableBuilder(
+    column: $table.restBetweenRoundsSeconds,
+    builder: (column) => column,
+  );
+
+  $$WodTemplatesTableAnnotationComposer get wodTemplateId {
+    final $$WodTemplatesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.wodTemplateId,
+      referencedTable: $db.wodTemplates,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WodTemplatesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.wodTemplates,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> wodTemplateExercisesRefs<T extends Object>(
+    Expression<T> Function($$WodTemplateExercisesTableAnnotationComposer a) f,
+  ) {
+    final $$WodTemplateExercisesTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.wodTemplateExercises,
+          getReferencedColumn: (t) => t.groupId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$WodTemplateExercisesTableAnnotationComposer(
+                $db: $db,
+                $table: $db.wodTemplateExercises,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$WodExerciseGroupsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $WodExerciseGroupsTable,
+          WodExerciseGroup,
+          $$WodExerciseGroupsTableFilterComposer,
+          $$WodExerciseGroupsTableOrderingComposer,
+          $$WodExerciseGroupsTableAnnotationComposer,
+          $$WodExerciseGroupsTableCreateCompanionBuilder,
+          $$WodExerciseGroupsTableUpdateCompanionBuilder,
+          (WodExerciseGroup, $$WodExerciseGroupsTableReferences),
+          WodExerciseGroup,
+          PrefetchHooks Function({
+            bool wodTemplateId,
+            bool wodTemplateExercisesRefs,
+          })
+        > {
+  $$WodExerciseGroupsTableTableManager(
+    _$AppDatabase db,
+    $WodExerciseGroupsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$WodExerciseGroupsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$WodExerciseGroupsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$WodExerciseGroupsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> wodTemplateId = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+                Value<String?> name = const Value.absent(),
+                Value<int> rounds = const Value.absent(),
+                Value<int> restBetweenExercisesSeconds = const Value.absent(),
+                Value<int> restBetweenRoundsSeconds = const Value.absent(),
+              }) => WodExerciseGroupsCompanion(
+                id: id,
+                wodTemplateId: wodTemplateId,
+                sortOrder: sortOrder,
+                name: name,
+                rounds: rounds,
+                restBetweenExercisesSeconds: restBetweenExercisesSeconds,
+                restBetweenRoundsSeconds: restBetweenRoundsSeconds,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int wodTemplateId,
+                required int sortOrder,
+                Value<String?> name = const Value.absent(),
+                Value<int> rounds = const Value.absent(),
+                Value<int> restBetweenExercisesSeconds = const Value.absent(),
+                Value<int> restBetweenRoundsSeconds = const Value.absent(),
+              }) => WodExerciseGroupsCompanion.insert(
+                id: id,
+                wodTemplateId: wodTemplateId,
+                sortOrder: sortOrder,
+                name: name,
+                rounds: rounds,
+                restBetweenExercisesSeconds: restBetweenExercisesSeconds,
+                restBetweenRoundsSeconds: restBetweenRoundsSeconds,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$WodExerciseGroupsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({wodTemplateId = false, wodTemplateExercisesRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (wodTemplateExercisesRefs) db.wodTemplateExercises,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (wodTemplateId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.wodTemplateId,
+                                    referencedTable:
+                                        $$WodExerciseGroupsTableReferences
+                                            ._wodTemplateIdTable(db),
+                                    referencedColumn:
+                                        $$WodExerciseGroupsTableReferences
+                                            ._wodTemplateIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (wodTemplateExercisesRefs)
+                        await $_getPrefetchedData<
+                          WodExerciseGroup,
+                          $WodExerciseGroupsTable,
+                          WodTemplateExercise
+                        >(
+                          currentTable: table,
+                          referencedTable: $$WodExerciseGroupsTableReferences
+                              ._wodTemplateExercisesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$WodExerciseGroupsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).wodTemplateExercisesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.groupId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$WodExerciseGroupsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $WodExerciseGroupsTable,
+      WodExerciseGroup,
+      $$WodExerciseGroupsTableFilterComposer,
+      $$WodExerciseGroupsTableOrderingComposer,
+      $$WodExerciseGroupsTableAnnotationComposer,
+      $$WodExerciseGroupsTableCreateCompanionBuilder,
+      $$WodExerciseGroupsTableUpdateCompanionBuilder,
+      (WodExerciseGroup, $$WodExerciseGroupsTableReferences),
+      WodExerciseGroup,
+      PrefetchHooks Function({
+        bool wodTemplateId,
+        bool wodTemplateExercisesRefs,
+      })
+    >;
 typedef $$WodTemplateExercisesTableCreateCompanionBuilder =
     WodTemplateExercisesCompanion Function({
       Value<int> id,
       required int wodTemplateId,
       required int exerciseId,
       required int sortOrder,
+      Value<int?> groupId,
       Value<int> targetSets,
       Value<int> repRangeMin,
       Value<int> repRangeMax,
       Value<String?> notes,
+      Value<int?> restSeconds,
     });
 typedef $$WodTemplateExercisesTableUpdateCompanionBuilder =
     WodTemplateExercisesCompanion Function({
@@ -6703,10 +8553,12 @@ typedef $$WodTemplateExercisesTableUpdateCompanionBuilder =
       Value<int> wodTemplateId,
       Value<int> exerciseId,
       Value<int> sortOrder,
+      Value<int?> groupId,
       Value<int> targetSets,
       Value<int> repRangeMin,
       Value<int> repRangeMax,
       Value<String?> notes,
+      Value<int?> restSeconds,
     });
 
 final class $$WodTemplateExercisesTableReferences
@@ -6765,6 +8617,28 @@ final class $$WodTemplateExercisesTableReferences
       manager.$state.copyWith(prefetchedData: [item]),
     );
   }
+
+  static $WodExerciseGroupsTable _groupIdTable(_$AppDatabase db) =>
+      db.wodExerciseGroups.createAlias(
+        $_aliasNameGenerator(
+          db.wodTemplateExercises.groupId,
+          db.wodExerciseGroups.id,
+        ),
+      );
+
+  $$WodExerciseGroupsTableProcessedTableManager? get groupId {
+    final $_column = $_itemColumn<int>('group_id');
+    if ($_column == null) return null;
+    final manager = $$WodExerciseGroupsTableTableManager(
+      $_db,
+      $_db.wodExerciseGroups,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_groupIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
 }
 
 class $$WodTemplateExercisesTableFilterComposer
@@ -6806,6 +8680,11 @@ class $$WodTemplateExercisesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get restSeconds => $composableBuilder(
+    column: $table.restSeconds,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$WodTemplatesTableFilterComposer get wodTemplateId {
     final $$WodTemplatesTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -6843,6 +8722,29 @@ class $$WodTemplateExercisesTableFilterComposer
           }) => $$ExercisesTableFilterComposer(
             $db: $db,
             $table: $db.exercises,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$WodExerciseGroupsTableFilterComposer get groupId {
+    final $$WodExerciseGroupsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.groupId,
+      referencedTable: $db.wodExerciseGroups,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WodExerciseGroupsTableFilterComposer(
+            $db: $db,
+            $table: $db.wodExerciseGroups,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -6892,6 +8794,11 @@ class $$WodTemplateExercisesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get restSeconds => $composableBuilder(
+    column: $table.restSeconds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$WodTemplatesTableOrderingComposer get wodTemplateId {
     final $$WodTemplatesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -6937,6 +8844,29 @@ class $$WodTemplateExercisesTableOrderingComposer
     );
     return composer;
   }
+
+  $$WodExerciseGroupsTableOrderingComposer get groupId {
+    final $$WodExerciseGroupsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.groupId,
+      referencedTable: $db.wodExerciseGroups,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WodExerciseGroupsTableOrderingComposer(
+            $db: $db,
+            $table: $db.wodExerciseGroups,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$WodTemplateExercisesTableAnnotationComposer
@@ -6971,6 +8901,11 @@ class $$WodTemplateExercisesTableAnnotationComposer
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<int> get restSeconds => $composableBuilder(
+    column: $table.restSeconds,
+    builder: (column) => column,
+  );
 
   $$WodTemplatesTableAnnotationComposer get wodTemplateId {
     final $$WodTemplatesTableAnnotationComposer composer = $composerBuilder(
@@ -7017,6 +8952,30 @@ class $$WodTemplateExercisesTableAnnotationComposer
     );
     return composer;
   }
+
+  $$WodExerciseGroupsTableAnnotationComposer get groupId {
+    final $$WodExerciseGroupsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.groupId,
+          referencedTable: $db.wodExerciseGroups,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$WodExerciseGroupsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.wodExerciseGroups,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
 }
 
 class $$WodTemplateExercisesTableTableManager
@@ -7032,7 +8991,11 @@ class $$WodTemplateExercisesTableTableManager
           $$WodTemplateExercisesTableUpdateCompanionBuilder,
           (WodTemplateExercise, $$WodTemplateExercisesTableReferences),
           WodTemplateExercise,
-          PrefetchHooks Function({bool wodTemplateId, bool exerciseId})
+          PrefetchHooks Function({
+            bool wodTemplateId,
+            bool exerciseId,
+            bool groupId,
+          })
         > {
   $$WodTemplateExercisesTableTableManager(
     _$AppDatabase db,
@@ -7059,19 +9022,23 @@ class $$WodTemplateExercisesTableTableManager
                 Value<int> wodTemplateId = const Value.absent(),
                 Value<int> exerciseId = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
+                Value<int?> groupId = const Value.absent(),
                 Value<int> targetSets = const Value.absent(),
                 Value<int> repRangeMin = const Value.absent(),
                 Value<int> repRangeMax = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<int?> restSeconds = const Value.absent(),
               }) => WodTemplateExercisesCompanion(
                 id: id,
                 wodTemplateId: wodTemplateId,
                 exerciseId: exerciseId,
                 sortOrder: sortOrder,
+                groupId: groupId,
                 targetSets: targetSets,
                 repRangeMin: repRangeMin,
                 repRangeMax: repRangeMax,
                 notes: notes,
+                restSeconds: restSeconds,
               ),
           createCompanionCallback:
               ({
@@ -7079,19 +9046,23 @@ class $$WodTemplateExercisesTableTableManager
                 required int wodTemplateId,
                 required int exerciseId,
                 required int sortOrder,
+                Value<int?> groupId = const Value.absent(),
                 Value<int> targetSets = const Value.absent(),
                 Value<int> repRangeMin = const Value.absent(),
                 Value<int> repRangeMax = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<int?> restSeconds = const Value.absent(),
               }) => WodTemplateExercisesCompanion.insert(
                 id: id,
                 wodTemplateId: wodTemplateId,
                 exerciseId: exerciseId,
                 sortOrder: sortOrder,
+                groupId: groupId,
                 targetSets: targetSets,
                 repRangeMin: repRangeMin,
                 repRangeMax: repRangeMax,
                 notes: notes,
+                restSeconds: restSeconds,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -7101,64 +9072,80 @@ class $$WodTemplateExercisesTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({wodTemplateId = false, exerciseId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (wodTemplateId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.wodTemplateId,
-                                referencedTable:
-                                    $$WodTemplateExercisesTableReferences
-                                        ._wodTemplateIdTable(db),
-                                referencedColumn:
-                                    $$WodTemplateExercisesTableReferences
-                                        ._wodTemplateIdTable(db)
-                                        .id,
-                              )
-                              as T;
-                    }
-                    if (exerciseId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.exerciseId,
-                                referencedTable:
-                                    $$WodTemplateExercisesTableReferences
-                                        ._exerciseIdTable(db),
-                                referencedColumn:
-                                    $$WodTemplateExercisesTableReferences
-                                        ._exerciseIdTable(db)
-                                        .id,
-                              )
-                              as T;
-                    }
+          prefetchHooksCallback:
+              ({wodTemplateId = false, exerciseId = false, groupId = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (wodTemplateId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.wodTemplateId,
+                                    referencedTable:
+                                        $$WodTemplateExercisesTableReferences
+                                            ._wodTemplateIdTable(db),
+                                    referencedColumn:
+                                        $$WodTemplateExercisesTableReferences
+                                            ._wodTemplateIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (exerciseId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.exerciseId,
+                                    referencedTable:
+                                        $$WodTemplateExercisesTableReferences
+                                            ._exerciseIdTable(db),
+                                    referencedColumn:
+                                        $$WodTemplateExercisesTableReferences
+                                            ._exerciseIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (groupId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.groupId,
+                                    referencedTable:
+                                        $$WodTemplateExercisesTableReferences
+                                            ._groupIdTable(db),
+                                    referencedColumn:
+                                        $$WodTemplateExercisesTableReferences
+                                            ._groupIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
 
-                    return state;
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [];
                   },
-              getPrefetchedDataCallback: (items) async {
-                return [];
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -7175,12 +9162,17 @@ typedef $$WodTemplateExercisesTableProcessedTableManager =
       $$WodTemplateExercisesTableUpdateCompanionBuilder,
       (WodTemplateExercise, $$WodTemplateExercisesTableReferences),
       WodTemplateExercise,
-      PrefetchHooks Function({bool wodTemplateId, bool exerciseId})
+      PrefetchHooks Function({
+        bool wodTemplateId,
+        bool exerciseId,
+        bool groupId,
+      })
     >;
 typedef $$DailyTasksTableCreateCompanionBuilder =
     DailyTasksCompanion Function({
       Value<int> id,
       required String name,
+      Value<String?> iconName,
       Value<int?> reminderHour,
       Value<int?> reminderMinute,
       Value<bool> isEnabled,
@@ -7190,6 +9182,7 @@ typedef $$DailyTasksTableUpdateCompanionBuilder =
     DailyTasksCompanion Function({
       Value<int> id,
       Value<String> name,
+      Value<String?> iconName,
       Value<int?> reminderHour,
       Value<int?> reminderMinute,
       Value<bool> isEnabled,
@@ -7212,6 +9205,11 @@ class $$DailyTasksTableFilterComposer
 
   ColumnFilters<String> get name => $composableBuilder(
     column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get iconName => $composableBuilder(
+    column: $table.iconName,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7255,6 +9253,11 @@ class $$DailyTasksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get iconName => $composableBuilder(
+    column: $table.iconName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get reminderHour => $composableBuilder(
     column: $table.reminderHour,
     builder: (column) => ColumnOrderings(column),
@@ -7290,6 +9293,9 @@ class $$DailyTasksTableAnnotationComposer
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get iconName =>
+      $composableBuilder(column: $table.iconName, builder: (column) => column);
 
   GeneratedColumn<int> get reminderHour => $composableBuilder(
     column: $table.reminderHour,
@@ -7341,6 +9347,7 @@ class $$DailyTasksTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
+                Value<String?> iconName = const Value.absent(),
                 Value<int?> reminderHour = const Value.absent(),
                 Value<int?> reminderMinute = const Value.absent(),
                 Value<bool> isEnabled = const Value.absent(),
@@ -7348,6 +9355,7 @@ class $$DailyTasksTableTableManager
               }) => DailyTasksCompanion(
                 id: id,
                 name: name,
+                iconName: iconName,
                 reminderHour: reminderHour,
                 reminderMinute: reminderMinute,
                 isEnabled: isEnabled,
@@ -7357,6 +9365,7 @@ class $$DailyTasksTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 required String name,
+                Value<String?> iconName = const Value.absent(),
                 Value<int?> reminderHour = const Value.absent(),
                 Value<int?> reminderMinute = const Value.absent(),
                 Value<bool> isEnabled = const Value.absent(),
@@ -7364,6 +9373,7 @@ class $$DailyTasksTableTableManager
               }) => DailyTasksCompanion.insert(
                 id: id,
                 name: name,
+                iconName: iconName,
                 reminderHour: reminderHour,
                 reminderMinute: reminderMinute,
                 isEnabled: isEnabled,
@@ -7565,6 +9575,303 @@ typedef $$DailyTaskCompletionsTableProcessedTableManager =
       DailyTaskCompletion,
       PrefetchHooks Function()
     >;
+typedef $$UserProfilesTableCreateCompanionBuilder =
+    UserProfilesCompanion Function({
+      Value<int> id,
+      Value<String> name,
+      Value<String> gender,
+      Value<int?> age,
+      Value<double?> heightCm,
+      Value<double?> weightKg,
+      Value<double?> targetWeightKg,
+      Value<String> fitnessGoal,
+      Value<String> activityLevel,
+      Value<double?> weeklyRateKg,
+    });
+typedef $$UserProfilesTableUpdateCompanionBuilder =
+    UserProfilesCompanion Function({
+      Value<int> id,
+      Value<String> name,
+      Value<String> gender,
+      Value<int?> age,
+      Value<double?> heightCm,
+      Value<double?> weightKg,
+      Value<double?> targetWeightKg,
+      Value<String> fitnessGoal,
+      Value<String> activityLevel,
+      Value<double?> weeklyRateKg,
+    });
+
+class $$UserProfilesTableFilterComposer
+    extends Composer<_$AppDatabase, $UserProfilesTable> {
+  $$UserProfilesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gender => $composableBuilder(
+    column: $table.gender,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get age => $composableBuilder(
+    column: $table.age,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get heightCm => $composableBuilder(
+    column: $table.heightCm,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get weightKg => $composableBuilder(
+    column: $table.weightKg,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get targetWeightKg => $composableBuilder(
+    column: $table.targetWeightKg,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fitnessGoal => $composableBuilder(
+    column: $table.fitnessGoal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get activityLevel => $composableBuilder(
+    column: $table.activityLevel,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get weeklyRateKg => $composableBuilder(
+    column: $table.weeklyRateKg,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$UserProfilesTableOrderingComposer
+    extends Composer<_$AppDatabase, $UserProfilesTable> {
+  $$UserProfilesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gender => $composableBuilder(
+    column: $table.gender,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get age => $composableBuilder(
+    column: $table.age,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get heightCm => $composableBuilder(
+    column: $table.heightCm,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get weightKg => $composableBuilder(
+    column: $table.weightKg,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get targetWeightKg => $composableBuilder(
+    column: $table.targetWeightKg,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fitnessGoal => $composableBuilder(
+    column: $table.fitnessGoal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get activityLevel => $composableBuilder(
+    column: $table.activityLevel,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get weeklyRateKg => $composableBuilder(
+    column: $table.weeklyRateKg,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$UserProfilesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $UserProfilesTable> {
+  $$UserProfilesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get gender =>
+      $composableBuilder(column: $table.gender, builder: (column) => column);
+
+  GeneratedColumn<int> get age =>
+      $composableBuilder(column: $table.age, builder: (column) => column);
+
+  GeneratedColumn<double> get heightCm =>
+      $composableBuilder(column: $table.heightCm, builder: (column) => column);
+
+  GeneratedColumn<double> get weightKg =>
+      $composableBuilder(column: $table.weightKg, builder: (column) => column);
+
+  GeneratedColumn<double> get targetWeightKg => $composableBuilder(
+    column: $table.targetWeightKg,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get fitnessGoal => $composableBuilder(
+    column: $table.fitnessGoal,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get activityLevel => $composableBuilder(
+    column: $table.activityLevel,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get weeklyRateKg => $composableBuilder(
+    column: $table.weeklyRateKg,
+    builder: (column) => column,
+  );
+}
+
+class $$UserProfilesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $UserProfilesTable,
+          UserProfile,
+          $$UserProfilesTableFilterComposer,
+          $$UserProfilesTableOrderingComposer,
+          $$UserProfilesTableAnnotationComposer,
+          $$UserProfilesTableCreateCompanionBuilder,
+          $$UserProfilesTableUpdateCompanionBuilder,
+          (
+            UserProfile,
+            BaseReferences<_$AppDatabase, $UserProfilesTable, UserProfile>,
+          ),
+          UserProfile,
+          PrefetchHooks Function()
+        > {
+  $$UserProfilesTableTableManager(_$AppDatabase db, $UserProfilesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$UserProfilesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$UserProfilesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$UserProfilesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> gender = const Value.absent(),
+                Value<int?> age = const Value.absent(),
+                Value<double?> heightCm = const Value.absent(),
+                Value<double?> weightKg = const Value.absent(),
+                Value<double?> targetWeightKg = const Value.absent(),
+                Value<String> fitnessGoal = const Value.absent(),
+                Value<String> activityLevel = const Value.absent(),
+                Value<double?> weeklyRateKg = const Value.absent(),
+              }) => UserProfilesCompanion(
+                id: id,
+                name: name,
+                gender: gender,
+                age: age,
+                heightCm: heightCm,
+                weightKg: weightKg,
+                targetWeightKg: targetWeightKg,
+                fitnessGoal: fitnessGoal,
+                activityLevel: activityLevel,
+                weeklyRateKg: weeklyRateKg,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> gender = const Value.absent(),
+                Value<int?> age = const Value.absent(),
+                Value<double?> heightCm = const Value.absent(),
+                Value<double?> weightKg = const Value.absent(),
+                Value<double?> targetWeightKg = const Value.absent(),
+                Value<String> fitnessGoal = const Value.absent(),
+                Value<String> activityLevel = const Value.absent(),
+                Value<double?> weeklyRateKg = const Value.absent(),
+              }) => UserProfilesCompanion.insert(
+                id: id,
+                name: name,
+                gender: gender,
+                age: age,
+                heightCm: heightCm,
+                weightKg: weightKg,
+                targetWeightKg: targetWeightKg,
+                fitnessGoal: fitnessGoal,
+                activityLevel: activityLevel,
+                weeklyRateKg: weeklyRateKg,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$UserProfilesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $UserProfilesTable,
+      UserProfile,
+      $$UserProfilesTableFilterComposer,
+      $$UserProfilesTableOrderingComposer,
+      $$UserProfilesTableAnnotationComposer,
+      $$UserProfilesTableCreateCompanionBuilder,
+      $$UserProfilesTableUpdateCompanionBuilder,
+      (
+        UserProfile,
+        BaseReferences<_$AppDatabase, $UserProfilesTable, UserProfile>,
+      ),
+      UserProfile,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -7583,10 +9890,14 @@ class $AppDatabaseManager {
       $$WorkoutSetsTableTableManager(_db, _db.workoutSets);
   $$BodyweightEntriesTableTableManager get bodyweightEntries =>
       $$BodyweightEntriesTableTableManager(_db, _db.bodyweightEntries);
+  $$WodExerciseGroupsTableTableManager get wodExerciseGroups =>
+      $$WodExerciseGroupsTableTableManager(_db, _db.wodExerciseGroups);
   $$WodTemplateExercisesTableTableManager get wodTemplateExercises =>
       $$WodTemplateExercisesTableTableManager(_db, _db.wodTemplateExercises);
   $$DailyTasksTableTableManager get dailyTasks =>
       $$DailyTasksTableTableManager(_db, _db.dailyTasks);
   $$DailyTaskCompletionsTableTableManager get dailyTaskCompletions =>
       $$DailyTaskCompletionsTableTableManager(_db, _db.dailyTaskCompletions);
+  $$UserProfilesTableTableManager get userProfiles =>
+      $$UserProfilesTableTableManager(_db, _db.userProfiles);
 }

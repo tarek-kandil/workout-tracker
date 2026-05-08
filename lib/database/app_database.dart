@@ -11,15 +11,18 @@ import 'tables/bodyweight_table.dart';
 import 'tables/programs_table.dart';
 import 'tables/program_phases_table.dart';
 import 'tables/wod_templates_table.dart';
+import 'tables/wod_exercise_groups_table.dart';
 import 'tables/wod_template_exercises_table.dart';
 import 'tables/daily_tasks_table.dart';
 import 'tables/daily_task_completions_table.dart';
+import 'tables/user_profile_table.dart';
 import 'daos/exercises_dao.dart';
 import 'daos/programs_dao.dart';
 import 'daos/sessions_dao.dart';
 import 'daos/sets_dao.dart';
 import 'daos/bodyweight_dao.dart';
 import 'daos/daily_tasks_dao.dart';
+import 'daos/user_profile_dao.dart';
 
 part 'app_database.g.dart';
 
@@ -32,9 +35,11 @@ part 'app_database.g.dart';
     Programs,
     ProgramPhases,
     WodTemplates,
+    WodExerciseGroups,
     WodTemplateExercises,
     DailyTasks,
     DailyTaskCompletions,
+    UserProfiles,
   ],
   daos: [
     ExercisesDao,
@@ -43,24 +48,23 @@ part 'app_database.g.dart';
     SetsDao,
     BodyweightDao,
     DailyTasksDao,
+    UserProfileDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onUpgrade: (m, from, to) async {
           if (from < 2) {
-            // Create the 4 new program tables
             await m.createTable(programs);
             await m.createTable(programPhases);
             await m.createTable(wodTemplates);
             await m.createTable(wodTemplateExercises);
-            // Add program-linking columns to existing sessions — nullable so old rows are unaffected
             await m.addColumn(workoutSessions, workoutSessions.wodTemplateId);
             await m.addColumn(workoutSessions, workoutSessions.weekNumber);
           }
@@ -74,6 +78,39 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 5) {
             await m.addColumn(wodTemplates, wodTemplates.restSeconds);
+          }
+          if (from < 6) {
+            await m.createTable(wodExerciseGroups);
+            await m.addColumn(
+                wodTemplateExercises, wodTemplateExercises.groupId);
+            await m.addColumn(
+                wodTemplateExercises, wodTemplateExercises.restSeconds);
+          }
+          if (from < 7) {
+            await m.addColumn(wodExerciseGroups, wodExerciseGroups.name);
+          }
+          if (from < 9) {
+            await m.createTable(userProfiles);
+          }
+          if (from < 10) {
+            final cols = await customSelect(
+              'PRAGMA table_info(user_profiles)',
+            ).get();
+            final hasWeeklyRate =
+                cols.any((r) => r.read<String>('name') == 'weekly_rate_kg');
+            if (!hasWeeklyRate) {
+              await m.addColumn(userProfiles, userProfiles.weeklyRateKg);
+            }
+          }
+          if (from >= 3 && from < 8) {
+            final cols = await customSelect(
+              'PRAGMA table_info(daily_tasks)',
+            ).get();
+            final hasIconName =
+                cols.any((r) => r.read<String>('name') == 'icon_name');
+            if (!hasIconName) {
+              await m.addColumn(dailyTasks, dailyTasks.iconName);
+            }
           }
         },
       );
