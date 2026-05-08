@@ -230,7 +230,7 @@ class SetsDao extends DatabaseAccessor<AppDatabase> with _$SetsDaoMixin {
       '   JOIN workout_sessions s3 ON ws3.session_id = s3.id '
       '   WHERE ws3.exercise_id = ws.exercise_id '
       '     AND s3.date >= ? AND s3.date < ? '
-      '     AND ws3.weight_kg = MAX(ws.weight_kg) '
+      '   ORDER BY ws3.weight_kg DESC '
       '   LIMIT 1) AS reps '
       'FROM workout_sets ws '
       'JOIN workout_sessions s ON ws.session_id = s.id '
@@ -258,7 +258,7 @@ class SetsDao extends DatabaseAccessor<AppDatabase> with _$SetsDaoMixin {
         .map((r) => WeeklyPREntry(
               exerciseName: r.read<String>('name'),
               weightKg: r.read<double>('this_week_max'),
-              reps: r.read<int>('reps'),
+              reps: r.read<int?>('reps') ?? 0,
             ))
         .toList();
   }
