@@ -1,7 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../database/app_database.dart';
 import '../models/weight_history_point.dart';
+import '../models/weekly_progress_data.dart';
+import '../models/weekly_pr_entry.dart';
 import 'database_provider.dart';
+import 'daily_tasks_providers.dart';
 import 'program_providers.dart';
 
 /// Latest logged body weight entry.
@@ -18,6 +21,40 @@ final recentBodyweightsProvider =
 /// All body weight entries, most recent first — used in the log screen.
 final allBodyweightsProvider = StreamProvider<List<BodyweightEntry>>((ref) {
   return ref.watch(databaseProvider).bodyweightDao.watchAllBodyweights();
+});
+
+/// Cumulative points score:
+///   +1  per daily task completion (all time)
+///   +5  per completed workout session
+///   +10 per fully completed program week (all WODs done)
+///
+/// Reacts to task completions automatically; re-runs after sessions change
+/// when [pointsScoreProvider] is invalidated from the session screens.
+final pointsScoreProvider = FutureProvider<int>((ref) async {
+  // Watch completions stream so score updates the moment a task is ticked
+  ref.watch(todayCompletionsProvider);
+
+  final db = ref.read(databaseProvider);
+  final program = await ref.read(activeProgramProvider.future);
+
+  final taskPoints = await db.dailyTasksDao.getTotalCompletionCount();
+  final sessionCount = await db.sessionsDao.getTotalSessionCount();
+  final sessionPoints = sessionCount * 5;
+
+  int weekPoints = 0;
+  if (program != null) {
+    final phases = await db.programsDao.getPhasesForProgram(program.id);
+    if (phases.isNotEmpty) {
+      final wods =
+          await db.programsDao.getWodTemplatesForPhase(phases.first.id);
+      final wodsPerWeek = wods.isEmpty ? 1 : wods.length;
+      final completeWeeks = await db.sessionsDao
+          .getCompletedWeekCountForProgram(program.id, wodsPerWeek);
+      weekPoints = completeWeeks * 10;
+    }
+  }
+
+  return taskPoints + sessionPoints + weekPoints;
 });
 
 /// Consecutive complete weeks (all WODs done) immediately before the current week.
@@ -77,4 +114,63 @@ final chartExerciseProvider = FutureProvider<Exercise?>((ref) async {
   // Default to first Push exercise (likely Bench Press)
   return exercises.where((e) => e.category == 'Push').firstOrNull ??
       exercises.firstOrNull;
+});
+
+DateTime _weekStart(DateTime day) {
+  final d = DateTime(day.year, day.month, day.day);
+  return d.subtract(Duration(days: d.weekday - 1));
+}
+
+final weeklyProgressProvider = FutureProvider<WeeklyProgressData>((ref) async {
+  final db = ref.read(databaseProvider);
+  final now = DateTime.now();
+  final thisMonday = _weekStart(now);
+  final nextMonday = thisMonday.add(const Duration(days: 7));
+  final lastMonday = thisMonday.subtract(const Duration(days: 7));
+
+  final current = await db.setsDao.getWeeklyTonnageAndStats(thisMonday, nextMonday);
+  final last = await db.setsDao.getWeeklyTonnageAndStats(lastMonday, thisMonday);
+
+  final categories = await db.setsDao.getTonnageByCategory(thisMonday, nextMonday);
+  final push = categories['Push'] ?? (tonnageKg: 0.0, sets: 0);
+  final pull = categories['Pull'] ?? (tonnageKg: 0.0, sets: 0);
+  final legs = categories['Legs'] ?? (tonnageKg: 0.0, sets: 0);
+
+  final sparkline = await db.setsDao.getSparklineTonnage(nextMonday, 8);
+
+  int plannedSessions = 3;
+  final program = await ref.read(activeProgramProvider.future);
+  if (program != null) {
+    final phases = await db.programsDao.getPhasesForProgram(program.id);
+    if (phases.isNotEmpty) {
+      final wods = await db.programsDao.getWodTemplatesForPhase(phases.first.id);
+      if (wods.isNotEmpty) plannedSessions = wods.length;
+    }
+  }
+
+  return WeeklyProgressData(
+    tonnageKg: current.tonnageKg,
+    lastWeekTonnageKg: last.tonnageKg,
+    sparkline: sparkline,
+    sessionCount: current.sessionCount,
+    plannedSessions: plannedSessions,
+    avgRpe: current.avgRpe,
+    lastWeekAvgRpe: last.avgRpe,
+    totalSets: current.totalSets,
+    lastWeekTotalSets: last.totalSets,
+    pushTonnageKg: push.tonnageKg,
+    pullTonnageKg: pull.tonnageKg,
+    legsTonnageKg: legs.tonnageKg,
+    pushSets: push.sets,
+    pullSets: pull.sets,
+    legsSets: legs.sets,
+  );
+});
+
+final weeklyPRsProvider = FutureProvider<List<WeeklyPREntry>>((ref) async {
+  final db = ref.read(databaseProvider);
+  final now = DateTime.now();
+  final thisMonday = _weekStart(now);
+  final nextMonday = thisMonday.add(const Duration(days: 7));
+  return db.setsDao.getPRsBreakingThisWeek(thisMonday, nextMonday);
 });
