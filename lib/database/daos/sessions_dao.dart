@@ -107,6 +107,31 @@ class SessionsDao extends DatabaseAccessor<AppDatabase>
 
   Future<void> clearAllSessions() => delete(workoutSessions).go();
 
+  /// Total session count ever — used for points score.
+  Future<int> getTotalSessionCount() =>
+      select(workoutSessions).get().then((l) => l.length);
+
+  /// Number of weeks (by weekNumber) where the user completed all [wodsPerWeek]
+  /// WODs for [programId]. Used for the +10 bonus in the score.
+  Future<int> getCompletedWeekCountForProgram(
+      int programId, int wodsPerWeek) async {
+    final query = select(workoutSessions).join([
+      innerJoin(wodTemplates,
+          wodTemplates.id.equalsExp(workoutSessions.wodTemplateId)),
+      innerJoin(programPhases,
+          programPhases.id.equalsExp(wodTemplates.phaseId)),
+    ]);
+    query.where(programPhases.programId.equals(programId));
+    final results = await query.get();
+
+    final Map<int, int> perWeek = {};
+    for (final row in results) {
+      final wn = row.readTable(workoutSessions).weekNumber;
+      if (wn != null) perWeek[wn] = (perWeek[wn] ?? 0) + 1;
+    }
+    return perWeek.values.where((c) => c >= wodsPerWeek).length;
+  }
+
   /// Sessions joined with their program name — used by the history screen.
   Stream<List<SessionWithProgram>> watchSessionsWithProgram({int limit = 200}) {
     final query = (select(workoutSessions)

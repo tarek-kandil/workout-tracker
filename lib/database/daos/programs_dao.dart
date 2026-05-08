@@ -3,12 +3,13 @@ import '../app_database.dart';
 import '../tables/programs_table.dart';
 import '../tables/program_phases_table.dart';
 import '../tables/wod_templates_table.dart';
+import '../tables/wod_exercise_groups_table.dart';
 import '../tables/wod_template_exercises_table.dart';
 
 part 'programs_dao.g.dart';
 
 @DriftAccessor(
-    tables: [Programs, ProgramPhases, WodTemplates, WodTemplateExercises])
+    tables: [Programs, ProgramPhases, WodTemplates, WodExerciseGroups, WodTemplateExercises])
 class ProgramsDao extends DatabaseAccessor<AppDatabase>
     with _$ProgramsDaoMixin {
   ProgramsDao(super.db);
@@ -90,7 +91,18 @@ class ProgramsDao extends DatabaseAccessor<AppDatabase>
 
   // ── WOD Template Exercises ────────────────────────────────────────────────
 
+  /// Returns only standalone exercises (not part of any circuit).
   Future<List<WodTemplateExercise>> getTemplateExercises(
+          int wodTemplateId) =>
+      (select(wodTemplateExercises)
+            ..where((w) =>
+                w.wodTemplateId.equals(wodTemplateId) &
+                w.groupId.isNull())
+            ..orderBy([(w) => OrderingTerm(expression: w.sortOrder)]))
+          .get();
+
+  /// Returns ALL exercises for a WOD (standalone + circuit), used for duplication.
+  Future<List<WodTemplateExercise>> getAllTemplateExercises(
           int wodTemplateId) =>
       (select(wodTemplateExercises)
             ..where((w) => w.wodTemplateId.equals(wodTemplateId))
@@ -106,6 +118,36 @@ class ProgramsDao extends DatabaseAccessor<AppDatabase>
 
   Future<void> deleteWodTemplateExercise(int id) =>
       (delete(wodTemplateExercises)..where((w) => w.id.equals(id))).go();
+
+  // ── WOD Exercise Groups (Circuits) ────────────────────────────────────────
+
+  Future<List<WodExerciseGroup>> getGroupsForWod(int wodTemplateId) =>
+      (select(wodExerciseGroups)
+            ..where((g) => g.wodTemplateId.equals(wodTemplateId))
+            ..orderBy([(g) => OrderingTerm(expression: g.sortOrder)]))
+          .get();
+
+  Future<int> insertGroup(WodExerciseGroupsCompanion entry) =>
+      into(wodExerciseGroups).insert(entry);
+
+  Future<void> updateGroup(WodExerciseGroupsCompanion entry) =>
+      update(wodExerciseGroups).replace(entry);
+
+  Future<void> deleteGroup(int groupId) async {
+    // Detach any exercises that belonged to this group (make them standalone)
+    await (update(wodTemplateExercises)
+          ..where((e) => e.groupId.equals(groupId)))
+        .write(const WodTemplateExercisesCompanion(groupId: Value(null)));
+    await (delete(wodExerciseGroups)
+          ..where((g) => g.id.equals(groupId)))
+        .go();
+  }
+
+  Future<List<WodTemplateExercise>> getExercisesForGroup(int groupId) =>
+      (select(wodTemplateExercises)
+            ..where((e) => e.groupId.equals(groupId))
+            ..orderBy([(e) => OrderingTerm(expression: e.sortOrder)]))
+          .get();
 
   // ── Duplicate program as draft (for re-use after completion) ─────────────
 
@@ -131,16 +173,34 @@ class ProgramsDao extends DatabaseAccessor<AppDatabase>
           notes: Value(wod.notes),
           restSeconds: Value(wod.restSeconds),
         ));
-        final exercises = await getTemplateExercises(wod.id);
+        // Copy circuits first, then map old groupId → new groupId
+        final groups = await getGroupsForWod(wod.id);
+        final groupIdMap = <int, int>{};
+        for (final g in groups) {
+          final newGid = await insertGroup(WodExerciseGroupsCompanion(
+            wodTemplateId: Value(newWodId),
+            sortOrder: Value(g.sortOrder),
+            name: Value(g.name),
+            rounds: Value(g.rounds),
+            restBetweenExercisesSeconds: Value(g.restBetweenExercisesSeconds),
+            restBetweenRoundsSeconds: Value(g.restBetweenRoundsSeconds),
+          ));
+          groupIdMap[g.id] = newGid;
+        }
+        final exercises = await getAllTemplateExercises(wod.id);
         for (final ex in exercises) {
+          final newGid =
+              ex.groupId != null ? groupIdMap[ex.groupId!] : null;
           await insertWodTemplateExercise(WodTemplateExercisesCompanion(
             wodTemplateId: Value(newWodId),
             exerciseId: Value(ex.exerciseId),
             sortOrder: Value(ex.sortOrder),
+            groupId: Value(newGid),
             targetSets: Value(ex.targetSets),
             repRangeMin: Value(ex.repRangeMin),
             repRangeMax: Value(ex.repRangeMax),
             notes: Value(ex.notes),
+            restSeconds: Value(ex.restSeconds),
           ));
         }
       }

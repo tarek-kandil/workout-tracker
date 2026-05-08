@@ -526,6 +526,7 @@ class _WodTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final templateExercisesAsync =
         ref.watch(wodTemplateExercisesProvider(wod.id));
+    final circuitGroupsAsync = ref.watch(wodCircuitGroupsProvider(wod.id));
     final allExercisesAsync = ref.watch(exercisesProvider);
 
     final exerciseMap = <int, Exercise>{};
@@ -533,6 +534,32 @@ class _WodTile extends ConsumerWidget {
       exerciseMap[e.id] = e;
     }
     final templateExercises = templateExercisesAsync.valueOrNull ?? [];
+    final circuitGroups = circuitGroupsAsync.valueOrNull ?? [];
+
+    // Group exercises by groupId
+    final standaloneExercises =
+        templateExercises.where((te) => te.groupId == null).toList();
+    final circuitExMap = <int, List<WodTemplateExercise>>{};
+    for (final te in templateExercises) {
+      if (te.groupId != null) {
+        circuitExMap.putIfAbsent(te.groupId!, () => []).add(te);
+      }
+    }
+
+    final isLoading = templateExercisesAsync.isLoading && templateExercises.isEmpty;
+    final isEmpty = !isLoading && templateExercises.isEmpty && circuitGroups.isEmpty;
+
+    // Build sorted list of wod-level items (standalone + circuit) by sort order
+    final wodLevelItems = <({int sortOrder, bool isCircuit, dynamic data})>[];
+    for (final te in standaloneExercises) {
+      wodLevelItems.add((sortOrder: te.sortOrder, isCircuit: false, data: te));
+    }
+    for (final g in circuitGroups) {
+      wodLevelItems.add((sortOrder: g.sortOrder, isCircuit: true, data: g));
+    }
+    wodLevelItems.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
+    final accent = Theme.of(context).colorScheme.tertiary;
 
     final inner = Container(
       decoration: BoxDecoration(
@@ -571,12 +598,12 @@ class _WodTile extends ConsumerWidget {
           ),
 
           // Exercise summary
-          if (templateExercisesAsync.isLoading && templateExercises.isEmpty)
+          if (isLoading)
             const Padding(
               padding: EdgeInsets.only(top: 6),
               child: SizedBox(height: 2, child: LinearProgressIndicator()),
             )
-          else if (templateExercises.isEmpty)
+          else if (isEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
@@ -588,47 +615,141 @@ class _WodTile extends ConsumerWidget {
             )
           else ...[
             const SizedBox(height: 6),
-            ...templateExercises.map((te) {
-              final exercise = exerciseMap[te.exerciseId];
-              final name = exercise?.name ?? '…';
-              final isTimed = exercise?.isTimed ?? false;
-              final rangeStr = isTimed
-                  ? '${te.targetSets}×${te.repRangeMin}s'
-                  : '${te.targetSets}×${te.repRangeMin}–${te.repRangeMax}';
-              return Padding(
-                padding: const EdgeInsets.only(top: 3),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 3,
-                      height: 3,
-                      margin: const EdgeInsets.only(right: 7, top: 1),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withValues(alpha: 0.3),
+            ...wodLevelItems.map((item) {
+              if (!item.isCircuit) {
+                final te = item.data as WodTemplateExercise;
+                final exercise = exerciseMap[te.exerciseId];
+                final name = exercise?.name ?? '…';
+                final isTimed = exercise?.isTimed ?? false;
+                final rangeStr = isTimed
+                    ? '${te.targetSets}×${te.repRangeMin}s'
+                    : '${te.targetSets}×${te.repRangeMin}–${te.repRangeMax}';
+                return Padding(
+                  padding: const EdgeInsets.only(top: 3),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 3,
+                        height: 3,
+                        margin: const EdgeInsets.only(right: 7, top: 1),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withValues(alpha: 0.3),
+                        ),
                       ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        name,
-                        style:
-                            Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Colors.white.withValues(alpha: 0.55),
-                                ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      rangeStr,
-                      style:
-                          Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.white.withValues(alpha: 0.35),
+                      Expanded(
+                        child: Text(
+                          name,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Colors.white.withValues(alpha: 0.55),
                               ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        rangeStr,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.white.withValues(alpha: 0.35),
+                            ),
+                      ),
+                    ],
+                  ),
+                );
+              } else {
+                // Circuit block
+                final group = item.data as WodExerciseGroup;
+                final exercises = circuitExMap[group.id] ?? [];
+                final circuitName = (group.name != null && group.name!.isNotEmpty)
+                    ? group.name!
+                    : 'Circuit';
+                return Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: accent.withValues(alpha: 0.22)),
                     ),
-                  ],
-                ),
-              );
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(8, 7, 8, 5),
+                          child: Row(
+                            children: [
+                              Icon(Icons.loop, size: 11, color: accent),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  circuitName,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: accent,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                '${group.rounds}×',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: accent.withValues(alpha: 0.7),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (exercises.isNotEmpty) ...[
+                          Divider(height: 1, color: accent.withValues(alpha: 0.15)),
+                          ...exercises.map((te) {
+                            final exercise = exerciseMap[te.exerciseId];
+                            final name = exercise?.name ?? '…';
+                            final isTimed = exercise?.isTimed ?? false;
+                            final rangeStr = isTimed
+                                ? '${te.repRangeMin}s'
+                                : '${te.repRangeMin}–${te.repRangeMax}';
+                            return Padding(
+                              padding: const EdgeInsets.fromLTRB(12, 4, 8, 4),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      name,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color: Colors.white
+                                                .withValues(alpha: 0.55),
+                                          ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    rangeStr,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          color: Colors.white
+                                              .withValues(alpha: 0.35),
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
+                          const SizedBox(height: 3),
+                        ],
+                      ],
+                    ),
+                  ),
+                );
+              }
             }),
           ],
         ],

@@ -102,6 +102,47 @@ class DailyTasksDao extends DatabaseAccessor<AppDatabase>
   Stream<int> watchDailyTaskStreak() =>
       select(dailyTaskCompletions).watch().asyncMap((_) => getDailyTaskStreak());
 
+  // ── Per-task consistency ──────────────────────────────────────────────────
+
+  /// Total number of completion rows ever recorded.
+  Future<int> getTotalCompletionCount() =>
+      select(dailyTaskCompletions).get().then((l) => l.length);
+
+  /// Stream of 7 booleans — one per day, index 0 = 6 days ago, index 6 = today.
+  /// Reacts whenever a completion row for [taskId] changes.
+  Stream<List<bool>> watchLast7DaysForTask(int taskId) {
+    final today = _todayStart();
+    final start = today.subtract(const Duration(days: 6));
+    return (select(dailyTaskCompletions)
+          ..where((c) =>
+              c.taskId.equals(taskId) &
+              c.completedDate.isBiggerOrEqualValue(start)))
+        .watch()
+        .map((completions) {
+      final completedDays = completions
+          .map((c) => DateTime(
+              c.completedDate.year, c.completedDate.month, c.completedDate.day))
+          .toSet();
+      return List.generate(7, (i) {
+        final day = today.subtract(Duration(days: 6 - i));
+        return completedDays.contains(day);
+      });
+    });
+  }
+
+  /// (completed, outOf) for the last [days] calendar days.
+  Future<(int, int)> getConsistencyForTask(int taskId,
+      {int days = 30}) async {
+    final today = _todayStart();
+    final start = today.subtract(Duration(days: days - 1));
+    final completions = await (select(dailyTaskCompletions)
+          ..where((c) =>
+              c.taskId.equals(taskId) &
+              c.completedDate.isBiggerOrEqualValue(start)))
+        .get();
+    return (completions.length, days);
+  }
+
   DateTime _todayStart() {
     final now = DateTime.now();
     return DateTime(now.year, now.month, now.day);

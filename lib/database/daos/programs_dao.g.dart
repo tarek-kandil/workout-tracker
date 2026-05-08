@@ -7,6 +7,8 @@ mixin _$ProgramsDaoMixin on DatabaseAccessor<AppDatabase> {
   $ProgramsTable get programs => attachedDatabase.programs;
   $ProgramPhasesTable get programPhases => attachedDatabase.programPhases;
   $WodTemplatesTable get wodTemplates => attachedDatabase.wodTemplates;
+  $WodExerciseGroupsTable get wodExerciseGroups =>
+      attachedDatabase.wodExerciseGroups;
   $ExercisesTable get exercises => attachedDatabase.exercises;
   $WodTemplateExercisesTable get wodTemplateExercises =>
       attachedDatabase.wodTemplateExercises;

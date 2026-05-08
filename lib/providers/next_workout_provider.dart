@@ -3,8 +3,122 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../database/app_database.dart';
 import '../models/next_wod_result.dart';
 import '../models/weight_suggestion.dart';
+import '../models/wod_item.dart';
 import 'database_provider.dart';
 import 'program_providers.dart';
+
+// ── Shared helper ─────────────────────────────────────────────────────────────
+
+/// Builds the ordered [List<WodItem>] for a WOD template.
+/// Merges standalone exercises and circuits sorted by their WOD-level sortOrder.
+Future<List<WodItem>> _buildWodItems(
+  AppDatabase db,
+  int wodTemplateId,
+  Map<int, Exercise> exerciseMap,
+) async {
+  // Standalone exercises (groupId IS NULL)
+  final standaloneExercises =
+      await db.programsDao.getTemplateExercises(wodTemplateId);
+
+  // Circuits
+  final groups = await db.programsDao.getGroupsForWod(wodTemplateId);
+
+  // Build a merged list sorted by WOD-level position.
+  // Standalone → use exercise.sortOrder; Circuit → use group.sortOrder.
+  final items = <({int sortOrder, WodItem item})>[];
+
+  for (final te in standaloneExercises) {
+    final exercise = exerciseMap[te.exerciseId];
+    if (exercise == null) continue;
+    final lastSets =
+        await db.setsDao.getLastSetsForExerciseInWod(te.exerciseId, wodTemplateId);
+    items.add((
+      sortOrder: te.sortOrder,
+      item: StandaloneWodExercise(
+        entry: WodExerciseEntry(
+          templateExercise: te,
+          exercise: exercise,
+          suggestion: _computeSuggestion(
+            lastSets: lastSets,
+            repRangeMin: te.repRangeMin,
+            repRangeMax: te.repRangeMax,
+          ),
+        ),
+        restSeconds: te.restSeconds,
+      ),
+    ));
+  }
+
+  for (final group in groups) {
+    final groupExercises =
+        await db.programsDao.getExercisesForGroup(group.id);
+    final entries = <WodExerciseEntry>[];
+    for (final te in groupExercises) {
+      final exercise = exerciseMap[te.exerciseId];
+      if (exercise == null) continue;
+      final lastSets =
+          await db.setsDao.getLastSetsForExerciseInWod(te.exerciseId, wodTemplateId);
+      entries.add(WodExerciseEntry(
+        templateExercise: te,
+        exercise: exercise,
+        suggestion: _computeSuggestion(
+          lastSets: lastSets,
+          repRangeMin: te.repRangeMin,
+          repRangeMax: te.repRangeMax,
+        ),
+      ));
+    }
+    items.add((
+      sortOrder: group.sortOrder,
+      item: WodCircuit(
+        groupId: group.id,
+        name: group.name,
+        rounds: group.rounds,
+        restBetweenExercisesSeconds: group.restBetweenExercisesSeconds,
+        restBetweenRoundsSeconds: group.restBetweenRoundsSeconds,
+        exercises: entries,
+      ),
+    ));
+  }
+
+  items.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+  return items.map((e) => e.item).toList();
+}
+
+// ── Providers ─────────────────────────────────────────────────────────────────
+
+/// All WODs for the current phase, each with full exercise data and suggestions.
+/// Used by the WOD selection screen so the user can pick any WOD, not just the next one.
+final allCurrentPhaseWodsProvider =
+    FutureProvider<List<NextWodResult>>((ref) async {
+  final recommended = await ref.watch(nextWodProvider.future);
+  if (recommended == null) return [];
+
+  final db = ref.watch(databaseProvider);
+  final phaseWods =
+      await db.programsDao.getWodTemplatesForPhase(recommended.phase.id);
+  final allExercises = await db.exercisesDao.getAllExercises();
+  final exerciseMap = {for (final e in allExercises) e.id: e};
+
+  final results = <NextWodResult>[];
+  for (final wod in phaseWods) {
+    final wodItems = await _buildWodItems(db, wod.id, exerciseMap);
+    final wodSessions =
+        await db.sessionsDao.getSessionsForWodTemplate(wod.id);
+    results.add(NextWodResult(
+      program: recommended.program,
+      phase: recommended.phase,
+      phaseIndex: recommended.phaseIndex,
+      totalPhases: recommended.totalPhases,
+      wodTemplate: wod,
+      weekNumberInProgram: recommended.weekNumberInProgram,
+      totalProgramWeeks: recommended.totalProgramWeeks,
+      items: wodItems,
+      lastSessionDate: wodSessions.firstOrNull?.date,
+    ));
+  }
+  return results;
+});
 
 /// Computes the next WOD to perform and weight suggestions for each exercise.
 /// Returns null when there is no active program.
@@ -20,9 +134,6 @@ final nextWodProvider = FutureProvider<NextWodResult?>((ref) async {
       phases.fold(0, (sum, p) => sum + p.durationWeeks);
 
   // ── Session-count-based week + phase determination ───────────────────────
-  // One full rotation of all WODs in a phase = 1 week.
-  // Weeks advance when you complete sessions, NOT from calendar time.
-  // If you don't work out, the week doesn't advance automatically.
   int weekOffset = 0;
   ProgramPhase? currentPhase;
   int phaseIndex = 0;
@@ -32,15 +143,12 @@ final nextWodProvider = FutureProvider<NextWodResult?>((ref) async {
     final phase = phases[i];
     final phaseWodCount =
         (await db.programsDao.getWodTemplatesForPhase(phase.id)).length;
-
-    // If this phase has no WODs yet, treat it as a 1-WOD rotation to avoid ÷0
     final rotation = phaseWodCount > 0 ? phaseWodCount : 1;
     final phaseSessions =
         await db.sessionsDao.getSessionCountForPhase(phase.id);
-    final weeksUsed = phaseSessions ~/ rotation; // complete rotations done
+    final weeksUsed = phaseSessions ~/ rotation;
 
     if (weeksUsed < phase.durationWeeks) {
-      // Still in this phase
       currentPhase = phase;
       phaseIndex = i + 1;
       currentWeek = weekOffset + weeksUsed + 1;
@@ -50,7 +158,6 @@ final nextWodProvider = FutureProvider<NextWodResult?>((ref) async {
     }
   }
 
-  // All phases exhausted → program complete
   if (currentPhase == null) return null;
 
   final phaseWods =
@@ -58,59 +165,29 @@ final nextWodProvider = FutureProvider<NextWodResult?>((ref) async {
   if (phaseWods.isEmpty) return null;
 
   // ── Determine next WOD ───────────────────────────────────────────────────
-  // Query the most recent session for any WOD in the current phase directly.
-  // This avoids the deep join chain that could silently return null.
   final lastPhaseSession =
       await db.sessionsDao.getLastSessionForPhase(currentPhase.id);
   WodTemplate nextWod;
 
   if (lastPhaseSession == null || lastPhaseSession.wodTemplateId == null) {
-    // No sessions yet for this phase — start at WOD 1
     nextWod = phaseWods.first;
   } else {
     final lastWodIndex =
         phaseWods.indexWhere((w) => w.id == lastPhaseSession.wodTemplateId);
-    if (lastWodIndex == -1) {
-      // Last session's WOD was removed — restart from WOD 1
-      nextWod = phaseWods.first;
-    } else {
-      // Advance to the next WOD, wrapping around
-      nextWod = phaseWods[(lastWodIndex + 1) % phaseWods.length];
-    }
+    nextWod = lastWodIndex == -1
+        ? phaseWods.first
+        : phaseWods[(lastWodIndex + 1) % phaseWods.length];
   }
 
-  // ── Derive lastSessionDate for "Last done" label ──────────────────────────
-  // Use the last session for the specific next WOD, not the whole program.
+  // ── Derive lastSessionDate ────────────────────────────────────────────────
   final wodSessions =
       await db.sessionsDao.getSessionsForWodTemplate(nextWod.id);
   final lastSession = wodSessions.firstOrNull;
 
-  // ── Load exercises + weight suggestions ──────────────────────────────────
-  final templateExercises =
-      await db.programsDao.getTemplateExercises(nextWod.id);
+  // ── Load items ────────────────────────────────────────────────────────────
   final allExercises = await db.exercisesDao.getAllExercises();
   final exerciseMap = {for (final e in allExercises) e.id: e};
-
-  final entries = <WodExerciseEntry>[];
-  for (final te in templateExercises) {
-    final exercise = exerciseMap[te.exerciseId];
-    if (exercise == null) continue;
-
-    final lastSets = await db.setsDao
-        .getLastSetsForExerciseInWod(te.exerciseId, nextWod.id);
-
-    final suggestion = _computeSuggestion(
-      lastSets: lastSets,
-      repRangeMin: te.repRangeMin,
-      repRangeMax: te.repRangeMax,
-    );
-
-    entries.add(WodExerciseEntry(
-      templateExercise: te,
-      exercise: exercise,
-      suggestion: suggestion,
-    ));
-  }
+  final wodItems = await _buildWodItems(db, nextWod.id, exerciseMap);
 
   return NextWodResult(
     program: program,
@@ -120,7 +197,7 @@ final nextWodProvider = FutureProvider<NextWodResult?>((ref) async {
     wodTemplate: nextWod,
     weekNumberInProgram: currentWeek,
     totalProgramWeeks: totalProgramWeeks,
-    exercises: entries,
+    items: wodItems,
     lastSessionDate: lastSession?.date,
   );
 });
@@ -131,7 +208,6 @@ WeightSuggestion _computeSuggestion({
   required int repRangeMax,
   double incrementKg = 2.5,
 }) {
-  // Ignore any accidentally-stored 0-rep sets
   final validSets = lastSets.where((s) => s.reps > 0).toList();
   if (validSets.isEmpty) return WeightSuggestion.noHistory;
 
