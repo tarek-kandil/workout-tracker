@@ -151,7 +151,7 @@ class SetsDao extends DatabaseAccessor<AppDatabase> with _$SetsDaoMixin {
     final result = await customSelect(
       'SELECT '
       '  COALESCE(SUM(CASE WHEN ws.weight_kg > 0 THEN ws.reps * ws.weight_kg ELSE 0 END), 0.0) AS tonnage, '
-      '  AVG(CASE WHEN ws.rpe IS NOT NULL THEN ws.rpe ELSE NULL END) AS avg_rpe, '
+      '  AVG(ws.rpe) AS avg_rpe, '
       '  COUNT(*) AS total_sets, '
       '  COUNT(DISTINCT ws.session_id) AS session_count '
       'FROM workout_sets ws '
@@ -206,6 +206,7 @@ class SetsDao extends DatabaseAccessor<AppDatabase> with _$SetsDaoMixin {
   /// Index 0 = oldest week, index [weekCount-1] = the week containing [weekEnd].
   Future<List<double>> getSparklineTonnage(
       DateTime weekEnd, int weekCount) async {
+    assert(weekCount > 0 && weekCount <= 52, 'weekCount must be between 1 and 52');
     final results = <double>[];
     for (int i = weekCount - 1; i >= 0; i--) {
       final to = weekEnd.subtract(Duration(days: i * 7));
@@ -224,7 +225,13 @@ class SetsDao extends DatabaseAccessor<AppDatabase> with _$SetsDaoMixin {
     final results = await customSelect(
       'SELECT e.name, '
       '  MAX(ws.weight_kg) AS this_week_max, '
-      '  ws.reps '
+      '  (SELECT ws3.reps '
+      '   FROM workout_sets ws3 '
+      '   JOIN workout_sessions s3 ON ws3.session_id = s3.id '
+      '   WHERE ws3.exercise_id = ws.exercise_id '
+      '     AND s3.date >= ? AND s3.date < ? '
+      '     AND ws3.weight_kg = MAX(ws.weight_kg) '
+      '   LIMIT 1) AS reps '
       'FROM workout_sets ws '
       'JOIN workout_sessions s ON ws.session_id = s.id '
       'JOIN exercises e ON ws.exercise_id = e.id '
@@ -236,17 +243,12 @@ class SetsDao extends DatabaseAccessor<AppDatabase> with _$SetsDaoMixin {
       '  FROM workout_sets ws2 '
       '  JOIN workout_sessions s2 ON ws2.session_id = s2.id '
       '  WHERE ws2.exercise_id = ws.exercise_id AND s2.date < ?'
-      '), -1) '
-      'AND ('
-      '  SELECT MAX(ws2.weight_kg) '
-      '  FROM workout_sets ws2 '
-      '  JOIN workout_sessions s2 ON ws2.session_id = s2.id '
-      '  WHERE ws2.exercise_id = ws.exercise_id AND s2.date < ?'
-      ') IS NOT NULL',
+      '), -1)',
       variables: [
         Variable.withInt(from.millisecondsSinceEpoch),
         Variable.withInt(to.millisecondsSinceEpoch),
         Variable.withInt(from.millisecondsSinceEpoch),
+        Variable.withInt(to.millisecondsSinceEpoch),
         Variable.withInt(from.millisecondsSinceEpoch),
       ],
       readsFrom: {workoutSets, workoutSessions},
