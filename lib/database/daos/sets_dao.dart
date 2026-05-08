@@ -4,6 +4,7 @@ import '../tables/sets_table.dart';
 import '../tables/sessions_table.dart';
 import '../../models/weight_history_point.dart';
 import '../../models/personal_record_entry.dart';
+import '../../models/weekly_pr_entry.dart';
 
 part 'sets_dao.g.dart';
 
@@ -139,5 +140,124 @@ class SetsDao extends DatabaseAccessor<AppDatabase> with _$SetsDaoMixin {
       readsFrom: {workoutSets},
     ).getSingleOrNull();
     return result?.read<int?>('pr');
+  }
+
+  /// Returns tonnage (kg), average RPE, total sets, and session count
+  /// for sessions whose date falls within [from, to) (exclusive upper bound).
+  /// Sets with null/zero weightKg are excluded from tonnage.
+  /// Sets with null RPE are excluded from the RPE average.
+  Future<({double tonnageKg, double? avgRpe, int totalSets, int sessionCount})>
+      getWeeklyTonnageAndStats(DateTime from, DateTime to) async {
+    final result = await customSelect(
+      'SELECT '
+      '  COALESCE(SUM(CASE WHEN ws.weight_kg > 0 THEN ws.reps * ws.weight_kg ELSE 0 END), 0.0) AS tonnage, '
+      '  AVG(CASE WHEN ws.rpe IS NOT NULL THEN ws.rpe ELSE NULL END) AS avg_rpe, '
+      '  COUNT(*) AS total_sets, '
+      '  COUNT(DISTINCT ws.session_id) AS session_count '
+      'FROM workout_sets ws '
+      'JOIN workout_sessions s ON ws.session_id = s.id '
+      'WHERE s.date >= ? AND s.date < ?',
+      variables: [
+        Variable.withInt(from.millisecondsSinceEpoch),
+        Variable.withInt(to.millisecondsSinceEpoch),
+      ],
+      readsFrom: {workoutSets, workoutSessions},
+    ).getSingle();
+
+    return (
+      tonnageKg: result.read<double>('tonnage'),
+      avgRpe: result.read<double?>('avg_rpe'),
+      totalSets: result.read<int>('total_sets'),
+      sessionCount: result.read<int>('session_count'),
+    );
+  }
+
+  /// Returns tonnage and set count grouped by exercise category
+  /// for sessions within [from, to).
+  /// Only counts sets with weight_kg > 0 for tonnage.
+  Future<Map<String, ({double tonnageKg, int sets})>> getTonnageByCategory(
+      DateTime from, DateTime to) async {
+    final results = await customSelect(
+      'SELECT e.category, '
+      '  COALESCE(SUM(CASE WHEN ws.weight_kg > 0 THEN ws.reps * ws.weight_kg ELSE 0 END), 0.0) AS tonnage, '
+      '  COUNT(*) AS sets '
+      'FROM workout_sets ws '
+      'JOIN workout_sessions s ON ws.session_id = s.id '
+      'JOIN exercises e ON ws.exercise_id = e.id '
+      'WHERE s.date >= ? AND s.date < ? '
+      'GROUP BY e.category',
+      variables: [
+        Variable.withInt(from.millisecondsSinceEpoch),
+        Variable.withInt(to.millisecondsSinceEpoch),
+      ],
+      readsFrom: {workoutSets, workoutSessions},
+    ).get();
+
+    return {
+      for (final r in results)
+        r.read<String>('category'): (
+          tonnageKg: r.read<double>('tonnage'),
+          sets: r.read<int>('sets'),
+        ),
+    };
+  }
+
+  /// Returns tonnage for each of [weekCount] calendar weeks ending at [weekEnd].
+  /// Index 0 = oldest week, index [weekCount-1] = the week containing [weekEnd].
+  Future<List<double>> getSparklineTonnage(
+      DateTime weekEnd, int weekCount) async {
+    final results = <double>[];
+    for (int i = weekCount - 1; i >= 0; i--) {
+      final to = weekEnd.subtract(Duration(days: i * 7));
+      final from = to.subtract(const Duration(days: 7));
+      final stats = await getWeeklyTonnageAndStats(from, to);
+      results.add(stats.tonnageKg);
+    }
+    return results;
+  }
+
+  /// Returns exercises where the max weight logged within [from, to) is
+  /// strictly greater than the max weight logged before [from].
+  /// Only applies to weighted (non-timed) exercises.
+  Future<List<WeeklyPREntry>> getPRsBreakingThisWeek(
+      DateTime from, DateTime to) async {
+    final results = await customSelect(
+      'SELECT e.name, '
+      '  MAX(ws.weight_kg) AS this_week_max, '
+      '  ws.reps '
+      'FROM workout_sets ws '
+      'JOIN workout_sessions s ON ws.session_id = s.id '
+      'JOIN exercises e ON ws.exercise_id = e.id '
+      'WHERE s.date >= ? AND s.date < ? '
+      '  AND ws.weight_kg > 0 AND e.is_timed = 0 '
+      'GROUP BY ws.exercise_id '
+      'HAVING this_week_max > COALESCE(('
+      '  SELECT MAX(ws2.weight_kg) '
+      '  FROM workout_sets ws2 '
+      '  JOIN workout_sessions s2 ON ws2.session_id = s2.id '
+      '  WHERE ws2.exercise_id = ws.exercise_id AND s2.date < ?'
+      '), -1) '
+      'AND ('
+      '  SELECT MAX(ws2.weight_kg) '
+      '  FROM workout_sets ws2 '
+      '  JOIN workout_sessions s2 ON ws2.session_id = s2.id '
+      '  WHERE ws2.exercise_id = ws.exercise_id AND s2.date < ?'
+      ') IS NOT NULL',
+      variables: [
+        Variable.withInt(from.millisecondsSinceEpoch),
+        Variable.withInt(to.millisecondsSinceEpoch),
+        Variable.withInt(from.millisecondsSinceEpoch),
+        Variable.withInt(from.millisecondsSinceEpoch),
+      ],
+      readsFrom: {workoutSets, workoutSessions},
+    ).get();
+
+    return results
+        .map((r) => WeeklyPREntry(
+              exerciseName: r.read<String>('name'),
+              weightKg: r.read<double>('this_week_max'),
+              reps: r.read<int>('reps'),
+            ))
+        .toList();
   }
 }
