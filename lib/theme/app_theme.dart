@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
 
@@ -58,6 +59,9 @@ class AppThemeData {
     return ThemeData(
       colorScheme: colorScheme,
       useMaterial3: true,
+      textTheme: GoogleFonts.spaceGroteskTextTheme(
+        ThemeData(brightness: brightness).textTheme,
+      ),
       scaffoldBackgroundColor: scaffoldBg,
       cardTheme: CardThemeData(
         elevation: 0,
