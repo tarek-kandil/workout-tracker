@@ -122,14 +122,18 @@ DateTime _weekStart(DateTime day) {
 }
 
 final weeklyProgressProvider = FutureProvider<WeeklyProgressData>((ref) async {
-  final db = ref.read(databaseProvider);
+  final db = ref.watch(databaseProvider);
   final now = DateTime.now();
   final thisMonday = _weekStart(now);
   final nextMonday = thisMonday.add(const Duration(days: 7));
   final lastMonday = thisMonday.subtract(const Duration(days: 7));
 
-  final current = await db.setsDao.getWeeklyTonnageAndStats(thisMonday, nextMonday);
-  final last = await db.setsDao.getWeeklyTonnageAndStats(lastMonday, thisMonday);
+  final results = await Future.wait([
+    db.setsDao.getWeeklyTonnageAndStats(thisMonday, nextMonday),
+    db.setsDao.getWeeklyTonnageAndStats(lastMonday, thisMonday),
+  ]);
+  final current = results[0];
+  final last = results[1];
 
   final categories = await db.setsDao.getTonnageByCategory(thisMonday, nextMonday);
   final push = categories['Push'] ?? (tonnageKg: 0.0, sets: 0);
@@ -138,8 +142,8 @@ final weeklyProgressProvider = FutureProvider<WeeklyProgressData>((ref) async {
 
   final sparkline = await db.setsDao.getSparklineTonnage(nextMonday, 8);
 
-  int plannedSessions = 3;
-  final program = await ref.read(activeProgramProvider.future);
+  int plannedSessions = 3; // fallback: assume 3 sessions/week when no program is set
+  final program = await ref.watch(activeProgramProvider.future);
   if (program != null) {
     final phases = await db.programsDao.getPhasesForProgram(program.id);
     if (phases.isNotEmpty) {
@@ -168,7 +172,7 @@ final weeklyProgressProvider = FutureProvider<WeeklyProgressData>((ref) async {
 });
 
 final weeklyPRsProvider = FutureProvider<List<WeeklyPREntry>>((ref) async {
-  final db = ref.read(databaseProvider);
+  final db = ref.watch(databaseProvider);
   final now = DateTime.now();
   final thisMonday = _weekStart(now);
   final nextMonday = thisMonday.add(const Duration(days: 7));
