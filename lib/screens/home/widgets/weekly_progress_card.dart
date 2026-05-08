@@ -6,6 +6,13 @@ import '../../../models/weekly_progress_data.dart';
 import '../../../providers/home_providers.dart';
 import '../../../widgets/liquid_glass_container.dart';
 
+String _formatTonnageStatic(double kg) {
+  if (kg >= 1000) {
+    return '${(kg / 1000).toStringAsFixed(1)}k'.replaceAll('.0k', 'k');
+  }
+  return kg.toStringAsFixed(0);
+}
+
 class WeeklyProgressCard extends ConsumerWidget {
   const WeeklyProgressCard({super.key});
 
@@ -138,12 +145,7 @@ class WeeklyProgressCard extends ConsumerWidget {
     );
   }
 
-  String _formatTonnage(double kg) {
-    if (kg >= 1000) {
-      return '${(kg / 1000).toStringAsFixed(1)}k'.replaceAll('.0k', 'k');
-    }
-    return kg.toStringAsFixed(0);
-  }
+  String _formatTonnage(double kg) => _formatTonnageStatic(kg);
 
   Widget _sparkline(List<double> weeks) {
     final maxVal = weeks.fold(0.0, (a, b) => a > b ? a : b);
@@ -154,7 +156,7 @@ class WeeklyProgressCard extends ConsumerWidget {
         children: List.generate(weeks.length, (i) {
           final isCurrent = i == weeks.length - 1;
           final frac = maxVal > 0 ? weeks[i] / maxVal : 0.0;
-          final alpha = isCurrent ? 1.0 : 0.20 + (i / (weeks.length - 1)) * 0.25;
+          final alpha = isCurrent ? 1.0 : (0.20 + (i / (weeks.length - 2)) * 0.20).clamp(0.20, 0.40);
           return Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 2.5),
@@ -364,7 +366,7 @@ class _MuscleBar extends StatelessWidget {
         SizedBox(
           width: 58,
           child: Text(
-            '${tonnageKg / 1000 >= 1 ? '${(tonnageKg / 1000).toStringAsFixed(1)}k' : tonnageKg.toStringAsFixed(0)} kg',
+            '${_formatTonnageStatic(tonnageKg)} kg',
             textAlign: TextAlign.right,
             style: TextStyle(
               fontSize: 11,
