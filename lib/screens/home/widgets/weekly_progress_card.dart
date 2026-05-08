@@ -6,12 +6,7 @@ import '../../../models/weekly_progress_data.dart';
 import '../../../providers/home_providers.dart';
 import '../../../widgets/liquid_glass_container.dart';
 
-String _formatTonnageStatic(double kg) {
-  if (kg >= 1000) {
-    return '${(kg / 1000).toStringAsFixed(1)}k'.replaceAll('.0k', 'k');
-  }
-  return kg.toStringAsFixed(0);
-}
+String _formatTonnageStatic(double kg) => kg.toStringAsFixed(0);
 
 class WeeklyProgressCard extends ConsumerWidget {
   const WeeklyProgressCard({super.key});
