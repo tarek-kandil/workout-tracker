@@ -72,7 +72,7 @@ class WeeklyPRCard extends ConsumerWidget {
                           ),
                         ),
                         Text(
-                          '${pr.weightKg % 1 == 0 ? pr.weightKg.toInt() : pr.weightKg} kg × ${pr.reps}',
+                          '${pr.weightKg.truncateToDouble() == pr.weightKg ? pr.weightKg.toInt() : pr.weightKg} kg × ${pr.reps}',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.white.withValues(alpha: 0.45),
