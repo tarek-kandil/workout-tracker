@@ -352,6 +352,7 @@ class _MuscleBar extends StatelessWidget {
                   if (fraction > 0)
                     FractionallySizedBox(
                       widthFactor: fraction.clamp(0.0, 1.0),
+                      heightFactor: 1.0,
                       child: ColoredBox(color: color),
                     ),
                 ],
