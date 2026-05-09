@@ -5,6 +5,7 @@ import '../../database/app_database.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/exercise_providers.dart';
 import '../../widgets/glass_background.dart';
+import '../../widgets/drum_picker.dart';
 
 // ── Local list model ───────────────────────────────────────────────────────────
 
@@ -43,7 +44,6 @@ class _WodExerciseSetupScreenState
     extends ConsumerState<WodExerciseSetupScreen> {
   List<_Item> _items = [];
   String _wodName = 'Exercises';
-  int _restSeconds = 90;
   bool _loading = true;
 
   @override
@@ -74,54 +74,12 @@ class _WodExerciseSetupScreenState
     setState(() {
       _items = items;
       _wodName = wodResult?.name ?? 'Exercises';
-      _restSeconds = wodResult?.restSeconds ?? 90;
       _loading = false;
     });
   }
 
   int get _nextSortOrder =>
       _items.isEmpty ? 1 : _items.map((e) => e.wodSortOrder).reduce((a, b) => a > b ? a : b) + 1;
-
-  // ── WOD rest time ───────────────────────────────────────────────────────────
-
-  Future<void> _editRestTime() async {
-    int restSeconds = _restSeconds;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('Default Rest Time'),
-          content: _RestStepper(
-            label: 'Rest',
-            value: restSeconds,
-            onChanged: (v) => setDialogState(() => restSeconds = v),
-          ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancel')),
-            FilledButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Save')),
-          ],
-        ),
-      ),
-    );
-    if (confirmed != true) return;
-    final db = ref.read(databaseProvider);
-    final wod = await (db.select(db.wodTemplates)
-          ..where((w) => w.id.equals(widget.wodTemplateId)))
-        .getSingleOrNull();
-    if (wod == null) return;
-    await db.programsDao.updateWodTemplate(WodTemplatesCompanion(
-      id: Value(wod.id),
-      phaseId: Value(wod.phaseId),
-      wodNumber: Value(wod.wodNumber),
-      name: Value(wod.name),
-      restSeconds: Value(restSeconds),
-    ));
-    setState(() => _restSeconds = restSeconds);
-  }
 
   // ── Add standalone exercise ─────────────────────────────────────────────────
 
@@ -267,8 +225,7 @@ class _WodExerciseSetupScreenState
       builder: (ctx) => _EditExerciseDialog(
           entry: entry,
           exercise: exercise,
-          inCircuit: inCircuit,
-          defaultRestSeconds: _restSeconds),
+          inCircuit: inCircuit),
     );
     if (result == null) return;
 
@@ -295,7 +252,10 @@ class _WodExerciseSetupScreenState
             repRangeMin: Value(result.repMin),
             repRangeMax: Value(result.repMax),
             notes: Value(result.notes.isEmpty ? null : result.notes),
-            restSeconds: Value(result.restSeconds == 0 ? null : result.restSeconds),
+            restSeconds: Value(result.restAfterExerciseSeconds),
+            restBetweenSetsSeconds: Value(result.restBetweenSetsSeconds),
+            targetRpe: Value(result.targetRpe),
+            videoUrl: Value(result.videoUrl?.isEmpty == true ? null : result.videoUrl),
           ),
         );
     _load();
@@ -403,15 +363,6 @@ class _WodExerciseSetupScreenState
     return Scaffold(
       appBar: AppBar(
         title: Text(_wodName),
-        actions: [
-          if (!_loading)
-            TextButton.icon(
-              onPressed: _editRestTime,
-              icon: const Icon(Icons.timer_outlined, size: 16),
-              label: Text('${_restSeconds}s rest'),
-              style: TextButton.styleFrom(foregroundColor: Colors.white70),
-            ),
-        ],
       ),
       body: Stack(
         children: [
@@ -467,7 +418,7 @@ class _WodExerciseSetupScreenState
                         key: ValueKey('s-${item.exercise.id}'),
                         templateExercise: item.exercise,
                         exercise: exercise,
-                        defaultRestSeconds: _restSeconds,
+                        dragIndex: i,
                         onEdit: () => _editEntry(item.exercise, exercise),
                         onDelete: () => _deleteEntry(item.exercise),
                       );
@@ -699,7 +650,7 @@ class _CircuitConfigDialogState extends State<_CircuitConfigDialog> {
 class _StandaloneExerciseTile extends StatelessWidget {
   final WodTemplateExercise templateExercise;
   final Exercise exercise;
-  final int defaultRestSeconds;
+  final int dragIndex;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
@@ -707,57 +658,131 @@ class _StandaloneExerciseTile extends StatelessWidget {
     super.key,
     required this.templateExercise,
     required this.exercise,
-    required this.defaultRestSeconds,
+    required this.dragIndex,
     required this.onEdit,
     required this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
-    final accent = Theme.of(context).colorScheme.primary;
     final te = templateExercise;
-    final restLabel = te.restSeconds != null
-        ? '${te.restSeconds}s rest'
-        : null;
+    final errorColor = Theme.of(context).colorScheme.error;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0x26000000),
-          borderRadius: BorderRadius.circular(16),
-          border:
-              Border.all(color: Colors.white.withValues(alpha: 0.09)),
+          color: Colors.white.withValues(alpha: 0.06),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.09)),
+          borderRadius: BorderRadius.circular(18),
         ),
-        child: ListTile(
-          leading: Icon(Icons.drag_handle,
-              color: Colors.white.withValues(alpha: 0.3)),
-          title: Text(exercise.name,
-              style: const TextStyle(fontWeight: FontWeight.w600)),
-          subtitle: Text(
-            [
-              exercise.isTimed
-                  ? '${te.targetSets} sets · ${_fmtSec(te.repRangeMin)}'
-                  : '${te.targetSets} sets · ${te.repRangeMin}–${te.repRangeMax} reps',
-              ?restLabel,
-            ].join('  ·  '),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.white.withValues(alpha: 0.45)),
-          ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                icon: Icon(Icons.tune,
-                    size: 20, color: accent.withValues(alpha: 0.8)),
-                onPressed: onEdit,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header row
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 14, 8, 0),
+              child: Row(
+                children: [
+                  ReorderableDragStartListener(
+                    index: dragIndex,
+                    child: Icon(
+                      Icons.drag_handle,
+                      size: 20,
+                      color: Colors.white.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      exercise.name,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.tune,
+                      size: 20,
+                      color: const Color(0xFF6366F1).withValues(alpha: 0.75),
+                    ),
+                    onPressed: onEdit,
+                    constraints: const BoxConstraints(),
+                    padding: const EdgeInsets.all(8),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.remove_circle_outline,
+                      size: 20,
+                      color: errorColor.withValues(alpha: 0.65),
+                    ),
+                    onPressed: onDelete,
+                    constraints: const BoxConstraints(),
+                    padding: const EdgeInsets.all(8),
+                  ),
+                ],
               ),
-              IconButton(
-                icon: const Icon(Icons.remove_circle_outline, size: 20),
-                color: Theme.of(context).colorScheme.error,
-                onPressed: onDelete,
+            ),
+            // Divider
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
+              child: Divider(
+                height: 1,
+                color: Colors.white.withValues(alpha: 0.07),
               ),
-            ],
-          ),
+            ),
+            // Meta row
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
+              child: Row(
+                children: [
+                  // Indigo dot
+                  Container(
+                    width: 5,
+                    height: 5,
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFF6366F1).withValues(alpha: 0.5),
+                    ),
+                  ),
+                  // Sets text
+                  Text(
+                    '${te.targetSets} sets',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.white.withValues(alpha: 0.55),
+                    ),
+                  ),
+                  const Spacer(),
+                  // Reps/duration pill
+                  _RepsPill(te: te, isTimed: exercise.isTimed),
+                  // RPE pill
+                  if (te.targetRpe != null) ...[
+                    const SizedBox(width: 5),
+                    _RpePill(rpe: te.targetRpe!),
+                  ],
+                  if (te.restBetweenSetsSeconds != null) ...[
+                    const SizedBox(width: 5),
+                    _RestPill(
+                      label: '${_fmtSec(te.restBetweenSetsSeconds!)} sets',
+                    ),
+                  ],
+                  if (te.restSeconds != null) ...[
+                    const SizedBox(width: 5),
+                    _RestPill(
+                      label: te.restSeconds == 0
+                          ? 'no rest after'
+                          : '${_fmtSec(te.restSeconds!)} after',
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -830,6 +855,7 @@ class _CircuitBlock extends StatelessWidget {
                               fontWeight: FontWeight.w700,
                               fontSize: 14,
                               color: accent),
+                          overflow: TextOverflow.ellipsis,
                         ),
                         Text(
                           '${group.rounds} rounds  ·  $restBetweenExLabel  ·  $restBetweenRoundsLabel',
@@ -839,6 +865,7 @@ class _CircuitBlock extends StatelessWidget {
                               ?.copyWith(
                                   color: Colors.white
                                       .withValues(alpha: 0.4)),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
@@ -876,49 +903,48 @@ class _CircuitBlock extends StatelessWidget {
               final exercise = exerciseMap[te.exerciseId];
               if (exercise == null) return const SizedBox.shrink();
               return Padding(
-                padding: const EdgeInsets.only(left: 8),
-                child: ListTile(
-                  dense: true,
-                  leading: Icon(Icons.subdirectory_arrow_right,
-                      size: 16,
-                      color: Colors.white.withValues(alpha: 0.25)),
-                  title: Text(exercise.name,
-                      style: const TextStyle(fontSize: 14)),
-                  subtitle: Text(
-                    exercise.isTimed
-                        ? '${te.repRangeMin}s per round'
-                        : '${te.repRangeMin}–${te.repRangeMax} reps per round',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(
-                            color: Colors.white.withValues(alpha: 0.4)),
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.tune,
-                            size: 18,
-                            color: accent.withValues(alpha: 0.7)),
-                        onPressed: () => onEditExercise(te, exercise),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                child: Row(
+                  children: [
+                    Icon(Icons.subdirectory_arrow_right,
+                        size: 16,
+                        color: Colors.white.withValues(alpha: 0.25)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        exercise.name,
+                        style: const TextStyle(fontSize: 14, color: Colors.white),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        icon: Icon(Icons.remove_circle_outline,
-                            size: 18,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .error
-                                .withValues(alpha: 0.6)),
-                        onPressed: () => onDeleteExercise(te),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _RepsPill(te: te, isTimed: exercise.isTimed),
+                    if (te.targetRpe != null) ...[
+                      const SizedBox(width: 5),
+                      _RpePill(rpe: te.targetRpe!),
                     ],
-                  ),
+                    const SizedBox(width: 4),
+                    IconButton(
+                      icon: Icon(Icons.tune,
+                          size: 18,
+                          color: accent.withValues(alpha: 0.7)),
+                      onPressed: () => onEditExercise(te, exercise),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                    const SizedBox(width: 4),
+                    IconButton(
+                      icon: Icon(Icons.remove_circle_outline,
+                          size: 18,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .error
+                              .withValues(alpha: 0.6)),
+                      onPressed: () => onDeleteExercise(te),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
                 ),
               );
             }),
@@ -1163,14 +1189,20 @@ class _ExerciseConfig {
   final int repMax;
   final String notes;
   final bool isTimed;
-  final int restSeconds; // 0 = use WOD default
+  final int? restBetweenSetsSeconds;
+  final int? restAfterExerciseSeconds;
+  final double? targetRpe;
+  final String? videoUrl;
   const _ExerciseConfig({
     required this.sets,
     required this.repMin,
     required this.repMax,
     required this.notes,
     required this.isTimed,
-    required this.restSeconds,
+    this.restBetweenSetsSeconds,
+    this.restAfterExerciseSeconds,
+    this.targetRpe,
+    this.videoUrl,
   });
 }
 
@@ -1178,12 +1210,10 @@ class _EditExerciseDialog extends StatefulWidget {
   final WodTemplateExercise entry;
   final Exercise exercise;
   final bool inCircuit;
-  final int defaultRestSeconds;
   const _EditExerciseDialog({
     required this.entry,
     required this.exercise,
     this.inCircuit = false,
-    this.defaultRestSeconds = 90,
   });
 
   @override
@@ -1195,6 +1225,25 @@ class _EditExerciseDialogState extends State<_EditExerciseDialog> {
     10, 20, 30, 45,
     60, 90, 120, 150, 180, 210, 240, 270, 300,
     360, 420, 480, 540, 600,
+  ];
+
+  static const List<String> _repItems = [
+    '1','2','3','4','5','6','7','8','9','10',
+    '11','12','13','14','15','16','17','18','19','20',
+    '21','22','23','24','25','26','27','28','29','30',
+    '35','40','45','50',
+  ];
+  static const List<int> _repValues = [
+    1,2,3,4,5,6,7,8,9,10,
+    11,12,13,14,15,16,17,18,19,20,
+    21,22,23,24,25,26,27,28,29,30,
+    35,40,45,50,
+  ];
+  static const List<String> _rpeItems = [
+    'NONE','6','6.5','7','7.5','8','8.5','9','9.5','10',
+  ];
+  static const List<double?> _rpeValues = [
+    null,6,6.5,7,7.5,8,8.5,9,9.5,10,
   ];
 
   static int _nearestIdx(int seconds) {
@@ -1211,110 +1260,120 @@ class _EditExerciseDialogState extends State<_EditExerciseDialog> {
   }
 
   late int _sets;
-  late bool _isTimed;
-  late int _repMin;
-  late int _repMax;
   late int _durationIdx;
-  late int _restSeconds;
+  late int _restBetweenSets;
+  late int _restAfterExercise;
+  late int _repMaxIndex;
+  late int _rpeIndex;
   late final TextEditingController _notesCtrl;
-
-  static const _accent = Colors.indigoAccent;
+  late final TextEditingController _videoUrlCtrl;
 
   @override
   void initState() {
     super.initState();
     _sets = widget.entry.targetSets;
-    _isTimed = widget.exercise.isTimed;
-    _restSeconds = widget.entry.restSeconds ?? widget.defaultRestSeconds;
+    _restBetweenSets = widget.entry.restBetweenSetsSeconds ?? 90;
+    _restAfterExercise = widget.entry.restSeconds ?? 90;
+
     if (widget.exercise.isTimed) {
       _durationIdx = _nearestIdx(widget.entry.repRangeMin);
-      _repMin = 6;
-      _repMax = 12;
     } else {
-      _repMin = widget.entry.repRangeMin;
-      _repMax = widget.entry.repRangeMax;
       _durationIdx = _nearestIdx(30);
     }
+
+    // Find closest repMax in _repValues
+    final repMax = widget.entry.repRangeMax.clamp(1, 50);
+    _repMaxIndex = _repValues.indexWhere((v) => v >= repMax);
+    if (_repMaxIndex < 0) _repMaxIndex = _repValues.length - 1;
+
+    // Find RPE index
+    final rpe = widget.entry.targetRpe;
+    if (rpe == null) {
+      _rpeIndex = 0;
+    } else {
+      _rpeIndex = _rpeValues.indexWhere((v) => v == rpe);
+      if (_rpeIndex < 0) _rpeIndex = 0;
+    }
+
     _notesCtrl = TextEditingController(text: widget.entry.notes ?? '');
+    _videoUrlCtrl = TextEditingController(text: widget.entry.videoUrl ?? '');
   }
 
   @override
   void dispose() {
     _notesCtrl.dispose();
+    _videoUrlCtrl.dispose();
     super.dispose();
   }
 
-  void _onTimedToggle(bool v) {
-    setState(() {
-      _isTimed = v;
-      if (v) {
-        _durationIdx = _nearestIdx(30);
-      } else {
-        _repMin = 6;
-        _repMax = 12;
-      }
-    });
+  void _onSave() {
+    final repMax = widget.exercise.isTimed ? _steps[_durationIdx] : _repValues[_repMaxIndex];
+    final repMin = widget.exercise.isTimed ? repMax : (repMax * 0.6).round();
+    Navigator.pop(context, _ExerciseConfig(
+      sets: _sets,
+      repMin: repMin,
+      repMax: repMax,
+      notes: _notesCtrl.text,
+      isTimed: widget.exercise.isTimed,
+      restBetweenSetsSeconds: _restBetweenSets == 90 ? null : _restBetweenSets,
+      restAfterExerciseSeconds: _restAfterExercise == 90 ? null : _restAfterExercise,
+      targetRpe: _rpeValues[_rpeIndex],
+      videoUrl: _videoUrlCtrl.text.trim().isEmpty ? null : _videoUrlCtrl.text.trim(),
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
+    final exercise = widget.exercise;
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding:
-          const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.grey[900],
-          borderRadius: BorderRadius.circular(20),
+          color: const Color(0xFF141428),
+          borderRadius: BorderRadius.circular(24),
         ),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(22),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Header
               Row(
                 children: [
                   Expanded(
                     child: Text(
-                      widget.exercise.name,
+                      exercise.name,
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w800,
-                        fontSize: 18,
+                        fontSize: 20,
+                        letterSpacing: -0.3,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close,
                         color: Colors.white38, size: 20),
                     onPressed: () => Navigator.pop(context),
+                    constraints: const BoxConstraints(),
+                    padding: const EdgeInsets.all(8),
                   ),
                 ],
               ),
               const SizedBox(height: 4),
-
-              // Timed toggle
-              Row(
-                children: [
-                  const Icon(Icons.timer_outlined,
-                      size: 18, color: Colors.white54),
-                  const SizedBox(width: 8),
-                  const Expanded(
-                    child: Text('Timed exercise',
-                        style: TextStyle(
-                            color: Colors.white70, fontSize: 14)),
-                  ),
-                  Switch(
-                      value: _isTimed,
-                      onChanged: _onTimedToggle,
-                      activeThumbColor: _accent),
-                ],
+              Text(
+                exercise.category,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white.withValues(alpha: 0.3),
+                ),
               ),
-              Divider(color: Colors.white.withValues(alpha: 0.08)),
-              const SizedBox(height: 20),
+              const SizedBox(height: 22),
 
-              // Sets picker (hidden for circuit exercises)
+              // SETS (hidden for circuit exercises)
               if (!widget.inCircuit) ...[
                 const _Label('SETS'),
                 const SizedBox(height: 14),
@@ -1351,132 +1410,172 @@ class _EditExerciseDialogState extends State<_EditExerciseDialog> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 24),
                 Divider(color: Colors.white.withValues(alpha: 0.08)),
                 const SizedBox(height: 20),
               ],
 
-              // Duration / Reps
-              if (_isTimed) ...[
+              // DURATION or REPS + RPE
+              if (exercise.isTimed) ...[
                 const _Label('DURATION'),
-                const SizedBox(height: 14),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _CircleBtn(
-                      icon: Icons.remove,
-                      onTap: () => setState(() => _durationIdx =
-                          (_durationIdx - 1).clamp(0, _steps.length - 1)),
-                    ),
-                    const SizedBox(width: 36),
-                    Column(
-                      children: [
-                        Text(
-                          _fmtSec(_steps[_durationIdx]),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 56,
-                            height: 1,
-                          ),
-                        ),
-                        Text(
-                          widget.inCircuit ? 'per round' : 'per set',
-                          style: const TextStyle(
-                              color: Colors.white38, fontSize: 12)),
-                      ],
-                    ),
-                    const SizedBox(width: 36),
-                    _CircleBtn(
-                      icon: Icons.add,
-                      onTap: () => setState(() => _durationIdx =
-                          (_durationIdx + 1).clamp(0, _steps.length - 1)),
-                    ),
-                  ],
+                const SizedBox(height: 12),
+                DrumPicker(
+                  items: _steps.map(_fmtSec).toList(),
+                  selectedIndex: _durationIdx,
+                  onChanged: (i) => setState(() => _durationIdx = i),
+                  accentColor: const Color(0xFF818CF8),
+                  backgroundColor: const Color(0xFF141428),
+                  height: 160,
+                  itemExtent: 48,
                 ),
               ] else ...[
-                const _Label('REP RANGE'),
-                const SizedBox(height: 12),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      child: _StepperRow(
-                        label: 'Min Reps',
-                        value: _repMin,
-                        min: 1,
-                        max: _repMax,
-                        onChanged: (v) => setState(() => _repMin = v),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const _Label('TARGET REPS'),
+                          const SizedBox(height: 12),
+                          DrumPicker(
+                            items: _repItems,
+                            selectedIndex: _repMaxIndex,
+                            onChanged: (i) => setState(() => _repMaxIndex = i),
+                            accentColor: const Color(0xFF818CF8),
+                            backgroundColor: const Color(0xFF141428),
+                            height: 160,
+                            itemExtent: 48,
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: _StepperRow(
-                        label: 'Max Reps',
-                        value: _repMax,
-                        min: _repMin,
-                        max: 50,
-                        onChanged: (v) => setState(() => _repMax = v),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: const [
+                              _Label('RPE'),
+                              SizedBox(width: 4),
+                              _OptPill(),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          DrumPicker(
+                            items: _rpeItems,
+                            selectedIndex: _rpeIndex,
+                            onChanged: (i) => setState(() => _rpeIndex = i),
+                            accentColor: const Color(0xFFFBBF24),
+                            backgroundColor: const Color(0xFF141428),
+                            height: 160,
+                            itemExtent: 48,
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ],
+
               const SizedBox(height: 24),
               Divider(color: Colors.white.withValues(alpha: 0.08)),
               const SizedBox(height: 12),
 
-              // Per-exercise rest (standalone only)
               if (!widget.inCircuit) ...[
-                const _Label('REST AFTER THIS EXERCISE'),
+                const _Label('REST BETWEEN SETS'),
                 const SizedBox(height: 8),
                 _RestStepper(
-                  label: 'Rest',
-                  value: _restSeconds,
+                  label: 'Between sets',
+                  value: _restBetweenSets,
+                  allowZero: false,
+                  onChanged: (v) => setState(() => _restBetweenSets = v),
+                ),
+                const SizedBox(height: 16),
+                const _Label('REST AFTER EXERCISE'),
+                const SizedBox(height: 8),
+                _RestStepper(
+                  label: 'After exercise',
+                  value: _restAfterExercise,
                   allowZero: true,
-                  onChanged: (v) => setState(() => _restSeconds = v),
+                  onChanged: (v) => setState(() => _restAfterExercise = v),
                 ),
                 const SizedBox(height: 16),
                 Divider(color: Colors.white.withValues(alpha: 0.08)),
                 const SizedBox(height: 12),
               ],
 
-              // Notes
+              // REFERENCE VIDEO
+              const _Label('REFERENCE VIDEO'),
+              const SizedBox(height: 4),
+              const _OptPill(),
+              const SizedBox(height: 8),
+              _VideoUrlField(controller: _videoUrlCtrl),
+
+              const SizedBox(height: 16),
+
+              // COACHING NOTE
+              const _Label('COACHING NOTE'),
+              const SizedBox(height: 4),
+              const _OptPill(),
+              const SizedBox(height: 8),
               TextField(
                 controller: _notesCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Coaching Note (optional)',
-                  hintText: 'e.g. pause at bottom',
-                  border: OutlineInputBorder(),
-                  isDense: true,
+                maxLines: null,
+                minLines: 3,
+                keyboardType: TextInputType.multiline,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.white.withValues(alpha: 0.65),
+                  height: 1.5,
                 ),
-              ),
-              const SizedBox(height: 24),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _accent,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    elevation: 0,
+                decoration: InputDecoration(
+                  hintText: 'e.g. pause 1s at chest…',
+                  hintStyle: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.25),
+                    fontSize: 13,
                   ),
-                  onPressed: () => Navigator.pop(
-                    context,
-                    _ExerciseConfig(
-                      sets: _sets,
-                      repMin: _isTimed ? _steps[_durationIdx] : _repMin,
-                      repMax: _isTimed ? _steps[_durationIdx] : _repMax,
-                      notes: _notesCtrl.text,
-                      isTimed: _isTimed,
-                      restSeconds: _restSeconds,
+                  filled: true,
+                  fillColor: Colors.white.withValues(alpha: 0.04),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.09)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.09)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(
+                      color: const Color(0xFF6366F1).withValues(alpha: 0.4),
+                      width: 1.5,
                     ),
                   ),
-                  child: const Text('Save',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 16)),
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 12),
+                ),
+              ),
+
+              const SizedBox(height: 22),
+
+              // SAVE button
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF6366F1),
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                    textStyle: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
+                  onPressed: _onSave,
+                  child: const Text('Save'),
                 ),
               ),
             ],
@@ -1487,53 +1586,6 @@ class _EditExerciseDialogState extends State<_EditExerciseDialog> {
   }
 }
 
-// ── Shared stepper ─────────────────────────────────────────────────────────────
-
-class _StepperRow extends StatelessWidget {
-  final String label;
-  final int value;
-  final int min;
-  final int max;
-  final ValueChanged<int> onChanged;
-  const _StepperRow({
-    required this.label,
-    required this.value,
-    required this.min,
-    required this.max,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: Theme.of(context).textTheme.labelSmall),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.remove),
-              onPressed: value > min
-                  ? () => onChanged((value - 1).clamp(min, max))
-                  : null,
-              iconSize: 20,
-            ),
-            Text('$value',
-                style: Theme.of(context).textTheme.titleMedium),
-            IconButton(
-              icon: const Icon(Icons.add),
-              onPressed: value < max
-                  ? () => onChanged((value + 1).clamp(min, max))
-                  : null,
-              iconSize: 20,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
 
 /// Formats seconds as "M:SS" (e.g. 90 → "1:30", 30 → "0:30").
 String _fmtSec(int seconds) {
@@ -1582,4 +1634,204 @@ class _Label extends StatelessWidget {
       ),
     );
   }
+}
+
+class _OptPill extends StatelessWidget {
+  const _OptPill();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: const Text(
+        'optional',
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.w600,
+          color: Colors.white38,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Reps/duration pill ─────────────────────────────────────────────────────────
+
+class _RepsPill extends StatelessWidget {
+  final WodTemplateExercise te;
+  final bool isTimed;
+  const _RepsPill({required this.te, required this.isTimed});
+
+  @override
+  Widget build(BuildContext context) {
+    final label = isTimed
+        ? _fmtSec(te.repRangeMin)
+        : '${te.repRangeMin}–${te.repRangeMax} reps';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(7),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: Colors.white38,
+        ),
+      ),
+    );
+  }
+}
+
+// ── RPE pill ───────────────────────────────────────────────────────────────────
+
+class _RpePill extends StatelessWidget {
+  final double rpe;
+  const _RpePill({required this.rpe});
+
+  @override
+  Widget build(BuildContext context) {
+    final label = '@${rpe == rpe.roundToDouble() ? rpe.toInt() : rpe}';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFBBF24).withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(7),
+        border: Border.all(
+            color: const Color(0xFFFBBF24).withValues(alpha: 0.25)),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFFFBBF24),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Rest pill ──────────────────────────────────────────────────────────────────
+
+class _RestPill extends StatelessWidget {
+  final String label;
+  const _RestPill({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: const Color(0xFF34D399).withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(7),
+        border: Border.all(
+          color: const Color(0xFF34D399).withValues(alpha: 0.2),
+        ),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: Color.fromRGBO(52, 211, 153, 0.7),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Video URL field ────────────────────────────────────────────────────────────
+
+class _VideoUrlField extends StatelessWidget {
+  final TextEditingController controller;
+  const _VideoUrlField({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      keyboardType: TextInputType.url,
+      style: TextStyle(
+        fontSize: 13,
+        color: Colors.white.withValues(alpha: 0.65),
+      ),
+      decoration: InputDecoration(
+        hintText: 'Paste a YouTube URL…',
+        hintStyle: TextStyle(
+          color: Colors.white.withValues(alpha: 0.25),
+          fontSize: 13,
+        ),
+        filled: true,
+        fillColor: Colors.white.withValues(alpha: 0.04),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide:
+              BorderSide(color: Colors.white.withValues(alpha: 0.09)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide:
+              BorderSide(color: Colors.white.withValues(alpha: 0.09)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(
+            color: const Color(0xFF6366F1).withValues(alpha: 0.4),
+            width: 1.5,
+          ),
+        ),
+        prefixIcon: const Padding(
+          padding: EdgeInsets.all(12),
+          child: _YouTubeIcon(),
+        ),
+        prefixIconConstraints:
+            const BoxConstraints(minWidth: 44, minHeight: 44),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        isDense: true,
+      ),
+    );
+  }
+}
+
+class _YouTubeIcon extends StatelessWidget {
+  const _YouTubeIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 20,
+      height: 14,
+      child: CustomPaint(painter: _YTPainter()),
+    );
+  }
+}
+
+class _YTPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final bgPaint = Paint()..color = const Color(0xFFFF0000);
+    final rrect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(0, 0, size.width, size.height),
+      const Radius.circular(3),
+    );
+    canvas.drawRRect(rrect, bgPaint);
+    final triPaint = Paint()..color = Colors.white;
+    final path = Path()
+      ..moveTo(size.width * 0.38, size.height * 0.22)
+      ..lineTo(size.width * 0.72, size.height * 0.5)
+      ..lineTo(size.width * 0.38, size.height * 0.78)
+      ..close();
+    canvas.drawPath(path, triPaint);
+  }
+
+  @override
+  bool shouldRepaint(_) => false;
 }
