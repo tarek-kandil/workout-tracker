@@ -3306,6 +3306,38 @@ class $WodTemplateExercisesTable extends WodTemplateExercises
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _restBetweenSetsSecondsMeta =
+      const VerificationMeta('restBetweenSetsSeconds');
+  @override
+  late final GeneratedColumn<int> restBetweenSetsSeconds = GeneratedColumn<int>(
+    'rest_between_sets_seconds',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _targetRpeMeta = const VerificationMeta(
+    'targetRpe',
+  );
+  @override
+  late final GeneratedColumn<double> targetRpe = GeneratedColumn<double>(
+    'target_rpe',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _videoUrlMeta = const VerificationMeta(
+    'videoUrl',
+  );
+  @override
+  late final GeneratedColumn<String> videoUrl = GeneratedColumn<String>(
+    'video_url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -3318,6 +3350,9 @@ class $WodTemplateExercisesTable extends WodTemplateExercises
     repRangeMax,
     notes,
     restSeconds,
+    restBetweenSetsSeconds,
+    targetRpe,
+    videoUrl,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3406,6 +3441,27 @@ class $WodTemplateExercisesTable extends WodTemplateExercises
         ),
       );
     }
+    if (data.containsKey('rest_between_sets_seconds')) {
+      context.handle(
+        _restBetweenSetsSecondsMeta,
+        restBetweenSetsSeconds.isAcceptableOrUnknown(
+          data['rest_between_sets_seconds']!,
+          _restBetweenSetsSecondsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('target_rpe')) {
+      context.handle(
+        _targetRpeMeta,
+        targetRpe.isAcceptableOrUnknown(data['target_rpe']!, _targetRpeMeta),
+      );
+    }
+    if (data.containsKey('video_url')) {
+      context.handle(
+        _videoUrlMeta,
+        videoUrl.isAcceptableOrUnknown(data['video_url']!, _videoUrlMeta),
+      );
+    }
     return context;
   }
 
@@ -3455,6 +3511,18 @@ class $WodTemplateExercisesTable extends WodTemplateExercises
         DriftSqlType.int,
         data['${effectivePrefix}rest_seconds'],
       ),
+      restBetweenSetsSeconds: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}rest_between_sets_seconds'],
+      ),
+      targetRpe: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}target_rpe'],
+      ),
+      videoUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}video_url'],
+      ),
     );
   }
 
@@ -3476,6 +3544,9 @@ class WodTemplateExercise extends DataClass
   final int repRangeMax;
   final String? notes;
   final int? restSeconds;
+  final int? restBetweenSetsSeconds;
+  final double? targetRpe;
+  final String? videoUrl;
   const WodTemplateExercise({
     required this.id,
     required this.wodTemplateId,
@@ -3487,6 +3558,9 @@ class WodTemplateExercise extends DataClass
     required this.repRangeMax,
     this.notes,
     this.restSeconds,
+    this.restBetweenSetsSeconds,
+    this.targetRpe,
+    this.videoUrl,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3506,6 +3580,15 @@ class WodTemplateExercise extends DataClass
     }
     if (!nullToAbsent || restSeconds != null) {
       map['rest_seconds'] = Variable<int>(restSeconds);
+    }
+    if (!nullToAbsent || restBetweenSetsSeconds != null) {
+      map['rest_between_sets_seconds'] = Variable<int>(restBetweenSetsSeconds);
+    }
+    if (!nullToAbsent || targetRpe != null) {
+      map['target_rpe'] = Variable<double>(targetRpe);
+    }
+    if (!nullToAbsent || videoUrl != null) {
+      map['video_url'] = Variable<String>(videoUrl);
     }
     return map;
   }
@@ -3528,6 +3611,15 @@ class WodTemplateExercise extends DataClass
       restSeconds: restSeconds == null && nullToAbsent
           ? const Value.absent()
           : Value(restSeconds),
+      restBetweenSetsSeconds: restBetweenSetsSeconds == null && nullToAbsent
+          ? const Value.absent()
+          : Value(restBetweenSetsSeconds),
+      targetRpe: targetRpe == null && nullToAbsent
+          ? const Value.absent()
+          : Value(targetRpe),
+      videoUrl: videoUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(videoUrl),
     );
   }
 
@@ -3547,6 +3639,11 @@ class WodTemplateExercise extends DataClass
       repRangeMax: serializer.fromJson<int>(json['repRangeMax']),
       notes: serializer.fromJson<String?>(json['notes']),
       restSeconds: serializer.fromJson<int?>(json['restSeconds']),
+      restBetweenSetsSeconds: serializer.fromJson<int?>(
+        json['restBetweenSetsSeconds'],
+      ),
+      targetRpe: serializer.fromJson<double?>(json['targetRpe']),
+      videoUrl: serializer.fromJson<String?>(json['videoUrl']),
     );
   }
   @override
@@ -3563,6 +3660,9 @@ class WodTemplateExercise extends DataClass
       'repRangeMax': serializer.toJson<int>(repRangeMax),
       'notes': serializer.toJson<String?>(notes),
       'restSeconds': serializer.toJson<int?>(restSeconds),
+      'restBetweenSetsSeconds': serializer.toJson<int?>(restBetweenSetsSeconds),
+      'targetRpe': serializer.toJson<double?>(targetRpe),
+      'videoUrl': serializer.toJson<String?>(videoUrl),
     };
   }
 
@@ -3577,6 +3677,9 @@ class WodTemplateExercise extends DataClass
     int? repRangeMax,
     Value<String?> notes = const Value.absent(),
     Value<int?> restSeconds = const Value.absent(),
+    Value<int?> restBetweenSetsSeconds = const Value.absent(),
+    Value<double?> targetRpe = const Value.absent(),
+    Value<String?> videoUrl = const Value.absent(),
   }) => WodTemplateExercise(
     id: id ?? this.id,
     wodTemplateId: wodTemplateId ?? this.wodTemplateId,
@@ -3588,6 +3691,11 @@ class WodTemplateExercise extends DataClass
     repRangeMax: repRangeMax ?? this.repRangeMax,
     notes: notes.present ? notes.value : this.notes,
     restSeconds: restSeconds.present ? restSeconds.value : this.restSeconds,
+    restBetweenSetsSeconds: restBetweenSetsSeconds.present
+        ? restBetweenSetsSeconds.value
+        : this.restBetweenSetsSeconds,
+    targetRpe: targetRpe.present ? targetRpe.value : this.targetRpe,
+    videoUrl: videoUrl.present ? videoUrl.value : this.videoUrl,
   );
   WodTemplateExercise copyWithCompanion(WodTemplateExercisesCompanion data) {
     return WodTemplateExercise(
@@ -3613,6 +3721,11 @@ class WodTemplateExercise extends DataClass
       restSeconds: data.restSeconds.present
           ? data.restSeconds.value
           : this.restSeconds,
+      restBetweenSetsSeconds: data.restBetweenSetsSeconds.present
+          ? data.restBetweenSetsSeconds.value
+          : this.restBetweenSetsSeconds,
+      targetRpe: data.targetRpe.present ? data.targetRpe.value : this.targetRpe,
+      videoUrl: data.videoUrl.present ? data.videoUrl.value : this.videoUrl,
     );
   }
 
@@ -3628,7 +3741,10 @@ class WodTemplateExercise extends DataClass
           ..write('repRangeMin: $repRangeMin, ')
           ..write('repRangeMax: $repRangeMax, ')
           ..write('notes: $notes, ')
-          ..write('restSeconds: $restSeconds')
+          ..write('restSeconds: $restSeconds, ')
+          ..write('restBetweenSetsSeconds: $restBetweenSetsSeconds, ')
+          ..write('targetRpe: $targetRpe, ')
+          ..write('videoUrl: $videoUrl')
           ..write(')'))
         .toString();
   }
@@ -3645,6 +3761,9 @@ class WodTemplateExercise extends DataClass
     repRangeMax,
     notes,
     restSeconds,
+    restBetweenSetsSeconds,
+    targetRpe,
+    videoUrl,
   );
   @override
   bool operator ==(Object other) =>
@@ -3659,7 +3778,10 @@ class WodTemplateExercise extends DataClass
           other.repRangeMin == this.repRangeMin &&
           other.repRangeMax == this.repRangeMax &&
           other.notes == this.notes &&
-          other.restSeconds == this.restSeconds);
+          other.restSeconds == this.restSeconds &&
+          other.restBetweenSetsSeconds == this.restBetweenSetsSeconds &&
+          other.targetRpe == this.targetRpe &&
+          other.videoUrl == this.videoUrl);
 }
 
 class WodTemplateExercisesCompanion
@@ -3674,6 +3796,9 @@ class WodTemplateExercisesCompanion
   final Value<int> repRangeMax;
   final Value<String?> notes;
   final Value<int?> restSeconds;
+  final Value<int?> restBetweenSetsSeconds;
+  final Value<double?> targetRpe;
+  final Value<String?> videoUrl;
   const WodTemplateExercisesCompanion({
     this.id = const Value.absent(),
     this.wodTemplateId = const Value.absent(),
@@ -3685,6 +3810,9 @@ class WodTemplateExercisesCompanion
     this.repRangeMax = const Value.absent(),
     this.notes = const Value.absent(),
     this.restSeconds = const Value.absent(),
+    this.restBetweenSetsSeconds = const Value.absent(),
+    this.targetRpe = const Value.absent(),
+    this.videoUrl = const Value.absent(),
   });
   WodTemplateExercisesCompanion.insert({
     this.id = const Value.absent(),
@@ -3697,6 +3825,9 @@ class WodTemplateExercisesCompanion
     this.repRangeMax = const Value.absent(),
     this.notes = const Value.absent(),
     this.restSeconds = const Value.absent(),
+    this.restBetweenSetsSeconds = const Value.absent(),
+    this.targetRpe = const Value.absent(),
+    this.videoUrl = const Value.absent(),
   }) : wodTemplateId = Value(wodTemplateId),
        exerciseId = Value(exerciseId),
        sortOrder = Value(sortOrder);
@@ -3711,6 +3842,9 @@ class WodTemplateExercisesCompanion
     Expression<int>? repRangeMax,
     Expression<String>? notes,
     Expression<int>? restSeconds,
+    Expression<int>? restBetweenSetsSeconds,
+    Expression<double>? targetRpe,
+    Expression<String>? videoUrl,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3723,6 +3857,10 @@ class WodTemplateExercisesCompanion
       if (repRangeMax != null) 'rep_range_max': repRangeMax,
       if (notes != null) 'notes': notes,
       if (restSeconds != null) 'rest_seconds': restSeconds,
+      if (restBetweenSetsSeconds != null)
+        'rest_between_sets_seconds': restBetweenSetsSeconds,
+      if (targetRpe != null) 'target_rpe': targetRpe,
+      if (videoUrl != null) 'video_url': videoUrl,
     });
   }
 
@@ -3737,6 +3875,9 @@ class WodTemplateExercisesCompanion
     Value<int>? repRangeMax,
     Value<String?>? notes,
     Value<int?>? restSeconds,
+    Value<int?>? restBetweenSetsSeconds,
+    Value<double?>? targetRpe,
+    Value<String?>? videoUrl,
   }) {
     return WodTemplateExercisesCompanion(
       id: id ?? this.id,
@@ -3749,6 +3890,10 @@ class WodTemplateExercisesCompanion
       repRangeMax: repRangeMax ?? this.repRangeMax,
       notes: notes ?? this.notes,
       restSeconds: restSeconds ?? this.restSeconds,
+      restBetweenSetsSeconds:
+          restBetweenSetsSeconds ?? this.restBetweenSetsSeconds,
+      targetRpe: targetRpe ?? this.targetRpe,
+      videoUrl: videoUrl ?? this.videoUrl,
     );
   }
 
@@ -3785,6 +3930,17 @@ class WodTemplateExercisesCompanion
     if (restSeconds.present) {
       map['rest_seconds'] = Variable<int>(restSeconds.value);
     }
+    if (restBetweenSetsSeconds.present) {
+      map['rest_between_sets_seconds'] = Variable<int>(
+        restBetweenSetsSeconds.value,
+      );
+    }
+    if (targetRpe.present) {
+      map['target_rpe'] = Variable<double>(targetRpe.value);
+    }
+    if (videoUrl.present) {
+      map['video_url'] = Variable<String>(videoUrl.value);
+    }
     return map;
   }
 
@@ -3800,7 +3956,10 @@ class WodTemplateExercisesCompanion
           ..write('repRangeMin: $repRangeMin, ')
           ..write('repRangeMax: $repRangeMax, ')
           ..write('notes: $notes, ')
-          ..write('restSeconds: $restSeconds')
+          ..write('restSeconds: $restSeconds, ')
+          ..write('restBetweenSetsSeconds: $restBetweenSetsSeconds, ')
+          ..write('targetRpe: $targetRpe, ')
+          ..write('videoUrl: $videoUrl')
           ..write(')'))
         .toString();
   }
@@ -8546,6 +8705,9 @@ typedef $$WodTemplateExercisesTableCreateCompanionBuilder =
       Value<int> repRangeMax,
       Value<String?> notes,
       Value<int?> restSeconds,
+      Value<int?> restBetweenSetsSeconds,
+      Value<double?> targetRpe,
+      Value<String?> videoUrl,
     });
 typedef $$WodTemplateExercisesTableUpdateCompanionBuilder =
     WodTemplateExercisesCompanion Function({
@@ -8559,6 +8721,9 @@ typedef $$WodTemplateExercisesTableUpdateCompanionBuilder =
       Value<int> repRangeMax,
       Value<String?> notes,
       Value<int?> restSeconds,
+      Value<int?> restBetweenSetsSeconds,
+      Value<double?> targetRpe,
+      Value<String?> videoUrl,
     });
 
 final class $$WodTemplateExercisesTableReferences
@@ -8685,6 +8850,21 @@ class $$WodTemplateExercisesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get restBetweenSetsSeconds => $composableBuilder(
+    column: $table.restBetweenSetsSeconds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get targetRpe => $composableBuilder(
+    column: $table.targetRpe,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get videoUrl => $composableBuilder(
+    column: $table.videoUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$WodTemplatesTableFilterComposer get wodTemplateId {
     final $$WodTemplatesTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -8799,6 +8979,21 @@ class $$WodTemplateExercisesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get restBetweenSetsSeconds => $composableBuilder(
+    column: $table.restBetweenSetsSeconds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get targetRpe => $composableBuilder(
+    column: $table.targetRpe,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get videoUrl => $composableBuilder(
+    column: $table.videoUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$WodTemplatesTableOrderingComposer get wodTemplateId {
     final $$WodTemplatesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -8906,6 +9101,17 @@ class $$WodTemplateExercisesTableAnnotationComposer
     column: $table.restSeconds,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get restBetweenSetsSeconds => $composableBuilder(
+    column: $table.restBetweenSetsSeconds,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get targetRpe =>
+      $composableBuilder(column: $table.targetRpe, builder: (column) => column);
+
+  GeneratedColumn<String> get videoUrl =>
+      $composableBuilder(column: $table.videoUrl, builder: (column) => column);
 
   $$WodTemplatesTableAnnotationComposer get wodTemplateId {
     final $$WodTemplatesTableAnnotationComposer composer = $composerBuilder(
@@ -9028,6 +9234,9 @@ class $$WodTemplateExercisesTableTableManager
                 Value<int> repRangeMax = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<int?> restSeconds = const Value.absent(),
+                Value<int?> restBetweenSetsSeconds = const Value.absent(),
+                Value<double?> targetRpe = const Value.absent(),
+                Value<String?> videoUrl = const Value.absent(),
               }) => WodTemplateExercisesCompanion(
                 id: id,
                 wodTemplateId: wodTemplateId,
@@ -9039,6 +9248,9 @@ class $$WodTemplateExercisesTableTableManager
                 repRangeMax: repRangeMax,
                 notes: notes,
                 restSeconds: restSeconds,
+                restBetweenSetsSeconds: restBetweenSetsSeconds,
+                targetRpe: targetRpe,
+                videoUrl: videoUrl,
               ),
           createCompanionCallback:
               ({
@@ -9052,6 +9264,9 @@ class $$WodTemplateExercisesTableTableManager
                 Value<int> repRangeMax = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<int?> restSeconds = const Value.absent(),
+                Value<int?> restBetweenSetsSeconds = const Value.absent(),
+                Value<double?> targetRpe = const Value.absent(),
+                Value<String?> videoUrl = const Value.absent(),
               }) => WodTemplateExercisesCompanion.insert(
                 id: id,
                 wodTemplateId: wodTemplateId,
@@ -9063,6 +9278,9 @@ class $$WodTemplateExercisesTableTableManager
                 repRangeMax: repRangeMax,
                 notes: notes,
                 restSeconds: restSeconds,
+                restBetweenSetsSeconds: restBetweenSetsSeconds,
+                targetRpe: targetRpe,
+                videoUrl: videoUrl,
               ),
           withReferenceMapper: (p0) => p0
               .map(

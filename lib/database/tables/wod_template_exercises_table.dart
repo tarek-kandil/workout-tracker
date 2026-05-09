@@ -17,6 +17,10 @@ class WodTemplateExercises extends Table {
   IntColumn get repRangeMin => integer().withDefault(const Constant(6))();
   IntColumn get repRangeMax => integer().withDefault(const Constant(12))();
   TextColumn get notes => text().nullable()();
-  // Per-exercise rest override (null = use WOD default). Standalone only.
+  // null = use default (90 s). Standalone only.
   IntColumn get restSeconds => integer().nullable()();
+  // null = use default (90 s). Between sets of the same exercise. Standalone only.
+  IntColumn get restBetweenSetsSeconds => integer().nullable()();
+  RealColumn get targetRpe => real().nullable()();
+  TextColumn get videoUrl => text().nullable()();
 }

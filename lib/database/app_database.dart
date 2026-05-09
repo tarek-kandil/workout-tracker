@@ -55,7 +55,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -100,6 +100,24 @@ class AppDatabase extends _$AppDatabase {
                 cols.any((r) => r.read<String>('name') == 'weekly_rate_kg');
             if (!hasWeeklyRate) {
               await m.addColumn(userProfiles, userProfiles.weeklyRateKg);
+            }
+          }
+          if (from < 11) {
+            await m.addColumn(wodTemplateExercises, wodTemplateExercises.targetRpe);
+            await m.addColumn(wodTemplateExercises, wodTemplateExercises.videoUrl);
+          }
+          if (from < 12) {
+            final cols = await customSelect(
+              'PRAGMA table_info(wod_template_exercises)',
+            ).get();
+            final hasCol = cols.any(
+              (r) => r.read<String>('name') == 'rest_between_sets_seconds',
+            );
+            if (!hasCol) {
+              await m.addColumn(
+                wodTemplateExercises,
+                wodTemplateExercises.restBetweenSetsSeconds,
+              );
             }
           }
           if (from >= 3 && from < 8) {
