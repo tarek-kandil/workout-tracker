@@ -255,7 +255,7 @@ class _WodExerciseSetupScreenState
             restSeconds: Value(result.restAfterExerciseSeconds),
             restBetweenSetsSeconds: Value(result.restBetweenSetsSeconds),
             targetRpe: Value(result.targetRpe),
-            videoUrl: Value(result.videoUrl?.isEmpty == true ? null : result.videoUrl),
+            videoUrl: Value(result.videoUrl),
           ),
         );
     _load();
@@ -1263,6 +1263,7 @@ class _EditExerciseDialogState extends State<_EditExerciseDialog> {
   late int _durationIdx;
   late int _restBetweenSets;
   late int _restAfterExercise;
+  late int _repMin;
   late int _repMaxIndex;
   late int _rpeIndex;
   late final TextEditingController _notesCtrl;
@@ -1277,8 +1278,10 @@ class _EditExerciseDialogState extends State<_EditExerciseDialog> {
 
     if (widget.exercise.isTimed) {
       _durationIdx = _nearestIdx(widget.entry.repRangeMin);
+      _repMin = widget.entry.repRangeMin;
     } else {
       _durationIdx = _nearestIdx(30);
+      _repMin = widget.entry.repRangeMin;
     }
 
     // Find closest repMax in _repValues
@@ -1308,7 +1311,7 @@ class _EditExerciseDialogState extends State<_EditExerciseDialog> {
 
   void _onSave() {
     final repMax = widget.exercise.isTimed ? _steps[_durationIdx] : _repValues[_repMaxIndex];
-    final repMin = widget.exercise.isTimed ? repMax : (repMax * 0.6).round();
+    final repMin = widget.exercise.isTimed ? repMax : _repMin;
     Navigator.pop(context, _ExerciseConfig(
       sets: _sets,
       repMin: repMin,
