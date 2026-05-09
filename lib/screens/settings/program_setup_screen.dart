@@ -9,7 +9,6 @@ import '../../providers/program_providers.dart';
 import '../../widgets/glass_background.dart';
 import '../../widgets/glass_route.dart';
 import '../../widgets/liquid_glass_container.dart';
-import '../../widgets/vibrant_text.dart';
 import 'wod_exercise_setup_screen.dart';
 import 'wod_setup_screen.dart';
 
@@ -350,19 +349,6 @@ class _ProgramSetupScreenState extends ConsumerState<ProgramSetupScreen> {
                   children: [
                     Text('Workouts',
                         style: Theme.of(context).textTheme.titleMedium),
-                    const Spacer(),
-                    if (!_readOnly && _phaseId != null)
-                      TextButton.icon(
-                        onPressed: () async {
-                          await Navigator.of(context).push(
-                            glassRoute(WodSetupScreen(phaseId: _phaseId!)),
-                          );
-                          ref.invalidate(
-                              wodTemplatesForPhaseProvider(_phaseId!));
-                        },
-                        icon: const Icon(Icons.edit_outlined, size: 18),
-                        label: const Text('Edit Workouts'),
-                      ),
                   ],
                 ),
                 if (_phaseId != null)
@@ -505,6 +491,7 @@ class _WodListState extends ConsumerState<_WodList> {
             _WodTile(
               key: ValueKey(wods[i].id),
               wod: wods[i],
+              phaseId: widget.phaseId,
               readOnly: widget.readOnly,
               dragIndex: widget.readOnly ? null : i,
             ),
@@ -516,17 +503,73 @@ class _WodListState extends ConsumerState<_WodList> {
 
 // ── WOD tile with exercise summary ───────────────────────────────────────────
 
-class _WodTile extends ConsumerWidget {
+String _fmtRpe(double rpe) =>
+    rpe == rpe.roundToDouble() ? rpe.toInt().toString() : rpe.toString();
+
+class _WodTile extends ConsumerStatefulWidget {
   final WodTemplate wod;
+  final int phaseId;
   final bool readOnly;
-  final int? dragIndex; // non-null → show drag handle
-  const _WodTile({super.key, required this.wod, required this.readOnly, this.dragIndex});
+  final int? dragIndex;
+  const _WodTile({
+    super.key,
+    required this.wod,
+    required this.phaseId,
+    required this.readOnly,
+    this.dragIndex,
+  });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_WodTile> createState() => _WodTileState();
+}
+
+class _WodTileState extends ConsumerState<_WodTile> {
+  bool _editing = false;
+  late final TextEditingController _nameCtrl;
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameCtrl = TextEditingController(text: widget.wod.name);
+    _focusNode = FocusNode();
+    _focusNode.addListener(() {
+      if (!_focusNode.hasFocus && _editing) _saveName();
+    });
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  Future<void> _saveName() async {
+    final newName = _nameCtrl.text.trim();
+    if (newName.isEmpty) {
+      _nameCtrl.text = widget.wod.name;
+      setState(() => _editing = false);
+      return;
+    }
+    setState(() => _editing = false);
+    await ref.read(databaseProvider).programsDao.updateWodTemplate(
+      WodTemplatesCompanion(
+        id: Value(widget.wod.id),
+        phaseId: Value(widget.wod.phaseId),
+        wodNumber: Value(widget.wod.wodNumber),
+        name: Value(newName),
+        notes: Value(widget.wod.notes),
+      ),
+    );
+    ref.invalidate(wodTemplatesForPhaseProvider(widget.phaseId));
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final templateExercisesAsync =
-        ref.watch(wodTemplateExercisesProvider(wod.id));
-    final circuitGroupsAsync = ref.watch(wodCircuitGroupsProvider(wod.id));
+        ref.watch(wodTemplateExercisesProvider(widget.wod.id));
+    final circuitGroupsAsync = ref.watch(wodCircuitGroupsProvider(widget.wod.id));
     final allExercisesAsync = ref.watch(exercisesProvider);
 
     final exerciseMap = <int, Exercise>{};
@@ -546,231 +589,500 @@ class _WodTile extends ConsumerWidget {
       }
     }
 
-    final isLoading = templateExercisesAsync.isLoading && templateExercises.isEmpty;
-    final isEmpty = !isLoading && templateExercises.isEmpty && circuitGroups.isEmpty;
+    final isLoading =
+        templateExercisesAsync.isLoading && templateExercises.isEmpty;
+    final isEmpty =
+        !isLoading && templateExercises.isEmpty && circuitGroups.isEmpty;
 
     // Build sorted list of wod-level items (standalone + circuit) by sort order
-    final wodLevelItems = <({int sortOrder, bool isCircuit, dynamic data})>[];
+    final wodLevelItems =
+        <({int sortOrder, bool isCircuit, dynamic data})>[];
     for (final te in standaloneExercises) {
-      wodLevelItems.add((sortOrder: te.sortOrder, isCircuit: false, data: te));
+      wodLevelItems
+          .add((sortOrder: te.sortOrder, isCircuit: false, data: te));
     }
     for (final g in circuitGroups) {
-      wodLevelItems.add((sortOrder: g.sortOrder, isCircuit: true, data: g));
+      wodLevelItems
+          .add((sortOrder: g.sortOrder, isCircuit: true, data: g));
     }
     wodLevelItems.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
-    final accent = Theme.of(context).colorScheme.tertiary;
+    final hasExercises = !isLoading && !isEmpty;
 
+    // ── Inner card ────────────────────────────────────────────────────────
     final inner = Container(
       decoration: BoxDecoration(
-        color: const Color(0x1A000000),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: _editing
+              ? const Color(0xFF6366F1).withValues(alpha: 0.3)
+              : Colors.white.withValues(alpha: 0.09),
+        ),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          // WOD name row
-          Row(
-            children: [
-              if (dragIndex != null)
-                ReorderableDragStartListener(
-                  index: dragIndex!,
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: Icon(Icons.drag_handle,
-                        size: 18,
-                        color: Colors.white.withValues(alpha: 0.3)),
-                  ),
-                ),
-              Expanded(
-                child: VibrantText(
-                  wod.name,
-                  style: Theme.of(context).textTheme.bodyMedium!,
+          // Rim-light: 1 px gradient line at top
+          Positioned(
+            left: 1,
+            right: 1,
+            top: 0,
+            height: 1,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(18)),
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white.withValues(alpha: 0.0),
+                    Colors.white.withValues(alpha: 0.18),
+                    Colors.white.withValues(alpha: 0.0),
+                  ],
                 ),
               ),
-              if (!readOnly)
-                Icon(Icons.chevron_right,
-                    size: 16,
-                    color: Colors.white.withValues(alpha: 0.3)),
-            ],
+            ),
           ),
 
-          // Exercise summary
-          if (isLoading)
-            const Padding(
-              padding: EdgeInsets.only(top: 6),
-              child: SizedBox(height: 2, child: LinearProgressIndicator()),
-            )
-          else if (isEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                'No exercises',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.28),
-                    ),
-              ),
-            )
-          else ...[
-            const SizedBox(height: 6),
-            ...wodLevelItems.map((item) {
-              if (!item.isCircuit) {
-                final te = item.data as WodTemplateExercise;
-                final exercise = exerciseMap[te.exerciseId];
-                final name = exercise?.name ?? '…';
-                final isTimed = exercise?.isTimed ?? false;
-                final rangeStr = isTimed
-                    ? '${te.targetSets}×${te.repRangeMin}s'
-                    : '${te.targetSets}×${te.repRangeMin}–${te.repRangeMax}';
-                return Padding(
-                  padding: const EdgeInsets.only(top: 3),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 3,
-                        height: 3,
-                        margin: const EdgeInsets.only(right: 7, top: 1),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          name,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.white.withValues(alpha: 0.55),
-                              ),
-                          overflow: TextOverflow.ellipsis,
+          // Content
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Header row ──────────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+                child: Row(
+                  children: [
+                    // Drag handle
+                    if (widget.dragIndex != null) ...[
+                      ReorderableDragStartListener(
+                        index: widget.dragIndex!,
+                        child: Icon(
+                          Icons.drag_handle,
+                          size: 18,
+                          color: Colors.white.withValues(alpha: 0.2),
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        rangeStr,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.white.withValues(alpha: 0.35),
-                            ),
-                      ),
                     ],
-                  ),
-                );
-              } else {
-                // Circuit block
-                final group = item.data as WodExerciseGroup;
-                final exercises = circuitExMap[group.id] ?? [];
-                final circuitName = (group.name != null && group.name!.isNotEmpty)
-                    ? group.name!
-                    : 'Circuit';
-                return Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: accent.withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: accent.withValues(alpha: 0.22)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(8, 7, 8, 5),
-                          child: Row(
-                            children: [
-                              Icon(Icons.loop, size: 11, color: accent),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  circuitName,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: accent,
-                                    letterSpacing: 0.2,
-                                  ),
-                                ),
-                              ),
-                              Text(
-                                '${group.rounds}×',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: accent.withValues(alpha: 0.7),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
+                    // Numbered indigo badge
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF6366F1)
+                            .withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(9),
+                        border: Border.all(
+                          color: const Color(0xFF6366F1)
+                              .withValues(alpha: 0.28),
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${widget.wod.wodNumber}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF818CF8),
                           ),
                         ),
-                        if (exercises.isNotEmpty) ...[
-                          Divider(height: 1, color: accent.withValues(alpha: 0.15)),
-                          ...exercises.map((te) {
-                            final exercise = exerciseMap[te.exerciseId];
-                            final name = exercise?.name ?? '…';
-                            final isTimed = exercise?.isTimed ?? false;
-                            final rangeStr = isTimed
-                                ? '${te.repRangeMin}s'
-                                : '${te.repRangeMin}–${te.repRangeMax}';
-                            return Padding(
-                              padding: const EdgeInsets.fromLTRB(12, 4, 8, 4),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      name,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            color: Colors.white
-                                                .withValues(alpha: 0.55),
-                                          ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    rangeStr,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
-                                        ?.copyWith(
-                                          color: Colors.white
-                                              .withValues(alpha: 0.35),
-                                        ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }),
-                          const SizedBox(height: 3),
-                        ],
-                      ],
+                      ),
                     ),
+                    const SizedBox(width: 10),
+                    // Name zone
+                    Expanded(
+                      child: !widget.readOnly
+                          ? GestureDetector(
+                              onTap: () {
+                                setState(() => _editing = true);
+                                Future.microtask(() => _focusNode.requestFocus());
+                              },
+                              child: _editing
+                                  ? TextField(
+                                      controller: _nameCtrl,
+                                      focusNode: _focusNode,
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: -0.2,
+                                      ),
+                                      decoration: const InputDecoration(
+                                        isDense: true,
+                                        contentPadding: EdgeInsets.zero,
+                                        border: InputBorder.none,
+                                        focusedBorder: UnderlineInputBorder(
+                                          borderSide: BorderSide(
+                                            color: Color(0xFF6366F1),
+                                            width: 1.5,
+                                          ),
+                                        ),
+                                      ),
+                                      onSubmitted: (_) => _saveName(),
+                                    )
+                                  : Text(
+                                      widget.wod.name,
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: -0.2,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                            )
+                          : Text(
+                              widget.wod.name,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.2,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                    ),
+                    // Pencil indicator — visual only, plain Icon, no onTap
+                    if (!widget.readOnly) ...[
+                      const SizedBox(width: 6),
+                      const Icon(
+                        Icons.edit_outlined,
+                        size: 15,
+                        color: Color.fromRGBO(99, 102, 241, 0.4),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+              // ── Divider (only when exercises exist) ─────────────────────
+              if (hasExercises)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
+                  child: Divider(
+                    height: 1,
+                    color: Colors.white.withValues(alpha: 0.07),
                   ),
-                );
-              }
-            }),
-          ],
+                ),
+
+              // ── Exercise rows ────────────────────────────────────────────
+              if (!widget.readOnly && (hasExercises || isEmpty))
+                InkWell(
+                  onTap: () => Navigator.of(context).push(
+                    glassRoute(WodExerciseSetupScreen(wodTemplateId: widget.wod.id)),
+                  ),
+                  borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(18),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
+                    child: isEmpty
+                        ? Text(
+                            'No exercises — tap to add',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Colors.white.withValues(alpha: 0.28),
+                                ),
+                          )
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              for (int idx = 0; idx < wodLevelItems.length; idx++) ...[
+                                if (idx > 0) const SizedBox(height: 4),
+                                _buildWodItem(context, wodLevelItems[idx], exerciseMap, circuitExMap),
+                              ],
+                            ],
+                          ),
+                  ),
+                )
+              else if (widget.readOnly && hasExercises)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (int idx = 0; idx < wodLevelItems.length; idx++) ...[
+                        if (idx > 0) const SizedBox(height: 4),
+                        _buildWodItem(context, wodLevelItems[idx], exerciseMap, circuitExMap),
+                      ],
+                    ],
+                  ),
+                )
+              else if (isLoading)
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(14, 8, 14, 14),
+                  child: SizedBox(height: 2, child: LinearProgressIndicator()),
+                )
+              else if (widget.readOnly && isEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
+                  child: Text(
+                    'No exercises',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.28),
+                        ),
+                  ),
+                ),
+            ],
+          ),
         ],
       ),
     );
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: readOnly
-          ? inner
-          : Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => Navigator.of(context).push(
-                  glassRoute(
-                      WodExerciseSetupScreen(wodTemplateId: wod.id)),
+      padding: const EdgeInsets.only(bottom: 8),
+      child: inner,
+    );
+  }
+
+  Widget _buildWodItem(
+    BuildContext context,
+    ({int sortOrder, bool isCircuit, dynamic data}) item,
+    Map<int, Exercise> exerciseMap,
+    Map<int, List<WodTemplateExercise>> circuitExMap,
+  ) {
+    if (!item.isCircuit) {
+      return _buildStandaloneRow(context, item.data as WodTemplateExercise,
+          exerciseMap);
+    } else {
+      return _buildCircuitBlock(context, item.data as WodExerciseGroup,
+          exerciseMap, circuitExMap);
+    }
+  }
+
+  Widget _buildStandaloneRow(
+    BuildContext context,
+    WodTemplateExercise te,
+    Map<int, Exercise> exerciseMap,
+  ) {
+    final exercise = exerciseMap[te.exerciseId];
+    final name = exercise?.name ?? '…';
+    final isTimed = exercise?.isTimed ?? false;
+    final rangeStr = isTimed
+        ? '${te.targetSets}×${te.repRangeMin}s'
+        : '${te.targetSets}×${te.repRangeMin}–${te.repRangeMax}';
+
+    return Row(
+      children: [
+        Container(
+          width: 5,
+          height: 5,
+          margin: const EdgeInsets.only(right: 8, top: 1),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: const Color(0xFF6366F1).withValues(alpha: 0.5),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            name,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.white.withValues(alpha: 0.55),
                 ),
-                borderRadius: BorderRadius.circular(12),
-                child: inner,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Reps pill
+        Container(
+          padding:
+              const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.07),
+            borderRadius: BorderRadius.circular(7),
+          ),
+          child: Text(
+            rangeStr,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Color.fromRGBO(255, 255, 255, 0.3),
+            ),
+          ),
+        ),
+        // RPE pill
+        if (te.targetRpe != null) ...[
+          const SizedBox(width: 5),
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+            decoration: BoxDecoration(
+              color:
+                  const Color(0xFFFBBF24).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(7),
+              border: Border.all(
+                color: const Color(0xFFFBBF24)
+                    .withValues(alpha: 0.25),
               ),
             ),
+            child: Text(
+              '@${_fmtRpe(te.targetRpe!)}',
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: Color.fromRGBO(251, 191, 36, 0.75),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildCircuitBlock(
+    BuildContext context,
+    WodExerciseGroup group,
+    Map<int, Exercise> exerciseMap,
+    Map<int, List<WodTemplateExercise>> circuitExMap,
+  ) {
+    final exercises = circuitExMap[group.id] ?? [];
+    final circuitName =
+        (group.name != null && group.name!.isNotEmpty)
+            ? group.name!
+            : 'Circuit';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF6366F1).withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: const Color(0xFF6366F1).withValues(alpha: 0.22),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Circuit header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
+            child: Row(
+              children: [
+                const Icon(Icons.loop,
+                    size: 11, color: Color(0xFF818CF8)),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    circuitName,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF818CF8),
+                      letterSpacing: 0.2,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ),
+                Text(
+                  '${group.rounds}×',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Color.fromRGBO(129, 140, 248, 0.7),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (exercises.isNotEmpty) ...[
+            Divider(
+                height: 1,
+                color: const Color(0xFF6366F1).withValues(alpha: 0.15)),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (int i = 0; i < exercises.length; i++) ...[
+                    if (i > 0) const SizedBox(height: 4),
+                    _buildCircuitExerciseRow(
+                        context, exercises[i], exerciseMap),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCircuitExerciseRow(
+    BuildContext context,
+    WodTemplateExercise te,
+    Map<int, Exercise> exerciseMap,
+  ) {
+    final exercise = exerciseMap[te.exerciseId];
+    final name = exercise?.name ?? '…';
+    final isTimed = exercise?.isTimed ?? false;
+    final rangeStr = isTimed
+        ? '${te.repRangeMin}s'
+        : '${te.repRangeMin}–${te.repRangeMax}';
+
+    return Row(
+      children: [
+        Container(
+          width: 4,
+          height: 4,
+          margin: const EdgeInsets.only(right: 7, top: 1),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: const Color(0xFF6366F1).withValues(alpha: 0.4),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            name,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.white.withValues(alpha: 0.55),
+                ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Reps pill
+        Container(
+          padding:
+              const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.07),
+            borderRadius: BorderRadius.circular(7),
+          ),
+          child: Text(
+            rangeStr,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Color.fromRGBO(255, 255, 255, 0.3),
+            ),
+          ),
+        ),
+        // RPE pill
+        if (te.targetRpe != null) ...[
+          const SizedBox(width: 5),
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+            decoration: BoxDecoration(
+              color:
+                  const Color(0xFFFBBF24).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(7),
+              border: Border.all(
+                color: const Color(0xFFFBBF24)
+                    .withValues(alpha: 0.25),
+              ),
+            ),
+            child: Text(
+              '@${_fmtRpe(te.targetRpe!)}',
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: Color.fromRGBO(251, 191, 36, 0.75),
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
