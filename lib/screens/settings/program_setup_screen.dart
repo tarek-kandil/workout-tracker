@@ -471,7 +471,7 @@ class _WodListState extends ConsumerState<_WodList> {
         child: Text(
           widget.readOnly
               ? 'No workouts in this program.'
-              : 'No workouts yet — tap "Edit Workouts" to add.',
+              : 'No workouts yet — tap + New Workout to add.',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Colors.white.withValues(alpha: 0.4),
               ),
@@ -766,31 +766,37 @@ class _WodTileState extends ConsumerState<_WodTile> {
 
               // ── Exercise rows ────────────────────────────────────────────
               if (!widget.readOnly && (hasExercises || isEmpty))
-                InkWell(
-                  onTap: () => Navigator.of(context).push(
-                    glassRoute(WodExerciseSetupScreen(wodTemplateId: widget.wod.id)),
-                  ),
+                Material(
+                  color: Colors.transparent,
                   borderRadius: const BorderRadius.vertical(
                     bottom: Radius.circular(18),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
-                    child: isEmpty
-                        ? Text(
-                            'No exercises — tap to add',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Colors.white.withValues(alpha: 0.28),
-                                ),
-                          )
-                        : Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              for (int idx = 0; idx < wodLevelItems.length; idx++) ...[
-                                if (idx > 0) const SizedBox(height: 4),
-                                _buildWodItem(context, wodLevelItems[idx], exerciseMap, circuitExMap),
+                  child: InkWell(
+                    onTap: () => Navigator.of(context).push(
+                      glassRoute(WodExerciseSetupScreen(wodTemplateId: widget.wod.id)),
+                    ),
+                    borderRadius: const BorderRadius.vertical(
+                      bottom: Radius.circular(18),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
+                      child: isEmpty
+                          ? Text(
+                              'No exercises — tap to add',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Colors.white.withValues(alpha: 0.28),
+                                  ),
+                            )
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                for (int idx = 0; idx < wodLevelItems.length; idx++) ...[
+                                  if (idx > 0) const SizedBox(height: 4),
+                                  _buildWodItem(context, wodLevelItems[idx], exerciseMap, circuitExMap),
+                                ],
                               ],
-                            ],
-                          ),
+                            ),
+                    ),
                   ),
                 )
               else if (widget.readOnly && hasExercises)
