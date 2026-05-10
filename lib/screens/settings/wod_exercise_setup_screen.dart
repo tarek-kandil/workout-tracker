@@ -737,46 +737,57 @@ class _StandaloneExerciseTile extends StatelessWidget {
             // Meta row
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Indigo dot
-                  Container(
-                    width: 5,
-                    height: 5,
-                    margin: const EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: const Color(0xFF6366F1).withValues(alpha: 0.5),
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        width: 5,
+                        height: 5,
+                        margin: const EdgeInsets.only(right: 8),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: const Color(0xFF6366F1).withValues(alpha: 0.5),
+                        ),
+                      ),
+                      Text(
+                        '${te.targetSets} sets',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.white.withValues(alpha: 0.55),
+                        ),
+                      ),
+                      const Spacer(),
+                      _RepsPill(te: te, isTimed: exercise.isTimed),
+                      if (te.targetRpe != null) ...[
+                        const SizedBox(width: 5),
+                        _RpePill(rpe: te.targetRpe!),
+                      ],
+                    ],
                   ),
-                  // Sets text
-                  Text(
-                    '${te.targetSets} sets',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.white.withValues(alpha: 0.55),
-                    ),
-                  ),
-                  const Spacer(),
-                  // Reps/duration pill
-                  _RepsPill(te: te, isTimed: exercise.isTimed),
-                  // RPE pill
-                  if (te.targetRpe != null) ...[
-                    const SizedBox(width: 5),
-                    _RpePill(rpe: te.targetRpe!),
-                  ],
-                  if (te.restBetweenSetsSeconds != null) ...[
-                    const SizedBox(width: 5),
-                    _RestPill(
-                      label: '${_fmtSec(te.restBetweenSetsSeconds!)} sets',
-                    ),
-                  ],
-                  if (te.restSeconds != null) ...[
-                    const SizedBox(width: 5),
-                    _RestPill(
-                      label: te.restSeconds == 0
-                          ? 'no rest after'
-                          : '${_fmtSec(te.restSeconds!)} after',
+                  if (te.restBetweenSetsSeconds != null ||
+                      te.restSeconds != null) ...[
+                    const SizedBox(height: 5),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        if (te.restBetweenSetsSeconds != null) ...[
+                          _RestPill(
+                            label:
+                                '${_fmtSec(te.restBetweenSetsSeconds!)} sets',
+                          ),
+                        ],
+                        if (te.restBetweenSetsSeconds != null &&
+                            te.restSeconds != null)
+                          const SizedBox(width: 5),
+                        if (te.restSeconds != null)
+                          _RestPill(
+                            label: te.restSeconds == 0
+                                ? 'no rest after'
+                                : '${_fmtSec(te.restSeconds!)} after',
+                          ),
+                      ],
                     ),
                   ],
                 ],
@@ -1525,7 +1536,7 @@ class _EditExerciseDialogState extends State<_EditExerciseDialog> {
               const SizedBox(height: 8),
               TextField(
                 controller: _notesCtrl,
-                maxLines: null,
+                maxLines: 4,
                 minLines: 3,
                 keyboardType: TextInputType.multiline,
                 style: TextStyle(
