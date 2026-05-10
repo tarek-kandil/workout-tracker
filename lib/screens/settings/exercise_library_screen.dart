@@ -61,213 +61,259 @@ class _ExerciseLibraryScreenState
     required List<Exercise> all,
     required Map<int, List<String>> muscleMap,
   }) async {
-    List<String> initialMuscles = existing != null
-        ? (muscleMap[existing.id] ?? [])
-        : [];
+    final initialMuscles =
+        existing != null ? (muscleMap[existing.id] ?? []) : <String>[];
 
-    final nameController =
-        TextEditingController(text: existing?.name ?? '')
-          ..selection = TextSelection.collapsed(
-              offset: existing?.name.length ?? 0);
+    final nameController = TextEditingController(text: existing?.name ?? '')
+      ..selection =
+          TextSelection.collapsed(offset: existing?.name.length ?? 0);
     bool isTimed = existing?.isTimed ?? false;
     List<String> selectedMuscles = List.from(initialMuscles);
 
-    await showDialog<void>(
+    await showModalBottomSheet<void>(
       context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setDialogState) {
-            return AlertDialog(
-              backgroundColor: const Color(0xFF141428),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              title: Text(
-                existing == null ? 'New Exercise' : 'Edit Exercise',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 20,
-                  letterSpacing: -0.3,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF141428),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          return Padding(
+            padding: EdgeInsets.only(
+                bottom: MediaQuery.viewInsetsOf(ctx).bottom),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Drag handle
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 12, bottom: 8),
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
                 ),
-              ),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Name field
-                    TextFormField(
-                      controller: nameController,
-                      autofocus: existing == null,
-                      decoration: const InputDecoration(labelText: 'Name'),
-                      textCapitalization: TextCapitalization.words,
-                      onChanged: (_) => setDialogState(() {}),
-                    ),
-                    const SizedBox(height: 20),
 
-                    // Muscle groups
-                    Text(
-                      'MUSCLE GROUPS',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1,
-                        color: Colors.white.withValues(alpha: 0.3),
-                      ),
+                // Title
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 4, 24, 0),
+                  child: Text(
+                    existing == null ? 'New Exercise' : 'Edit Exercise',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 22,
+                      letterSpacing: -0.4,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Tap to add. First = primary. Tap again to remove.',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.white.withValues(alpha: 0.25),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: kMuscleGroups.map((muscle) {
-                        final idx = selectedMuscles.indexOf(muscle);
-                        final isPrimary = idx == 0;
-                        final isSelected = idx >= 0;
-                        return GestureDetector(
-                          onTap: () => setDialogState(() {
-                            if (isSelected) {
-                              selectedMuscles.remove(muscle);
-                            } else {
-                              selectedMuscles.add(muscle);
-                            }
-                          }),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 11, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: isPrimary
-                                  ? const Color(0xFF6366F1)
-                                      .withValues(alpha: 0.2)
-                                  : isSelected
-                                      ? Colors.white.withValues(alpha: 0.08)
-                                      : Colors.white.withValues(alpha: 0.04),
-                              borderRadius: BorderRadius.circular(9),
-                              border: Border.all(
-                                color: isPrimary
-                                    ? const Color(0xFF6366F1)
-                                        .withValues(alpha: 0.5)
-                                    : isSelected
-                                        ? Colors.white.withValues(alpha: 0.2)
-                                        : Colors.white.withValues(alpha: 0.1),
-                              ),
-                            ),
-                            child: Text(
-                              muscle,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: isPrimary
-                                    ? const Color(0xFFA5B4FC)
-                                    : isSelected
-                                        ? Colors.white.withValues(alpha: 0.75)
-                                        : Colors.white.withValues(alpha: 0.4),
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
+                  ),
+                ),
 
-                    // Selection summary
-                    if (selectedMuscles.isNotEmpty) ...[
-                      const SizedBox(height: 10),
+                // Scrollable content
+                SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Name field
+                      TextFormField(
+                        controller: nameController,
+                        autofocus: existing == null,
+                        decoration:
+                            const InputDecoration(labelText: 'Name'),
+                        textCapitalization: TextCapitalization.words,
+                        onChanged: (_) => setSheetState(() {}),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Muscle groups label
+                      Text(
+                        'MUSCLE GROUPS',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1,
+                          color: Colors.white.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Tap to add. First = primary. Tap again to remove.',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.white.withValues(alpha: 0.25),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Muscle chip grid
                       Wrap(
-                        spacing: 5,
-                        children: [
-                          for (int i = 0; i < selectedMuscles.length; i++)
-                            Container(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: kMuscleGroups.map((muscle) {
+                          final idx = selectedMuscles.indexOf(muscle);
+                          final isPrimary = idx == 0;
+                          final isSelected = idx >= 0;
+                          return GestureDetector(
+                            onTap: () => setSheetState(() {
+                              if (isSelected) {
+                                selectedMuscles.remove(muscle);
+                              } else {
+                                selectedMuscles.add(muscle);
+                              }
+                            }),
+                            child: Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 3),
+                                  horizontal: 11, vertical: 7),
                               decoration: BoxDecoration(
-                                color: i == 0
+                                color: isPrimary
                                     ? const Color(0xFF6366F1)
-                                        .withValues(alpha: 0.15)
-                                    : Colors.white.withValues(alpha: 0.05),
-                                borderRadius: BorderRadius.circular(6),
+                                        .withValues(alpha: 0.2)
+                                    : isSelected
+                                        ? Colors.white
+                                            .withValues(alpha: 0.08)
+                                        : Colors.white
+                                            .withValues(alpha: 0.04),
+                                borderRadius: BorderRadius.circular(9),
                                 border: Border.all(
-                                  color: i == 0
+                                  color: isPrimary
                                       ? const Color(0xFF6366F1)
-                                          .withValues(alpha: 0.35)
-                                      : Colors.white.withValues(alpha: 0.09),
+                                          .withValues(alpha: 0.5)
+                                      : isSelected
+                                          ? Colors.white
+                                              .withValues(alpha: 0.2)
+                                          : Colors.white
+                                              .withValues(alpha: 0.1),
                                 ),
                               ),
                               child: Text(
-                                i == 0
-                                    ? '● ${selectedMuscles[i]}'
-                                    : selectedMuscles[i],
+                                muscle,
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: 13,
                                   fontWeight: FontWeight.w600,
-                                  color: i == 0
-                                      ? const Color(0xFF818CF8)
-                                      : Colors.white.withValues(alpha: 0.45),
+                                  color: isPrimary
+                                      ? const Color(0xFFA5B4FC)
+                                      : isSelected
+                                          ? Colors.white
+                                              .withValues(alpha: 0.75)
+                                          : Colors.white
+                                              .withValues(alpha: 0.4),
                                 ),
                               ),
                             ),
-                        ],
+                          );
+                        }).toList(),
+                      ),
+
+                      // Selection summary
+                      if (selectedMuscles.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 5,
+                          runSpacing: 5,
+                          children: [
+                            for (int i = 0;
+                                i < selectedMuscles.length;
+                                i++)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: i == 0
+                                      ? const Color(0xFF6366F1)
+                                          .withValues(alpha: 0.15)
+                                      : Colors.white
+                                          .withValues(alpha: 0.05),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: i == 0
+                                        ? const Color(0xFF6366F1)
+                                            .withValues(alpha: 0.35)
+                                        : Colors.white
+                                            .withValues(alpha: 0.09),
+                                  ),
+                                ),
+                                child: Text(
+                                  i == 0
+                                      ? '● ${selectedMuscles[i]}'
+                                      : selectedMuscles[i],
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: i == 0
+                                        ? const Color(0xFF818CF8)
+                                        : Colors.white
+                                            .withValues(alpha: 0.45),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+
+                      const SizedBox(height: 8),
+                      // Timed toggle
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Timed exercise'),
+                        value: isTimed,
+                        onChanged: (v) =>
+                            setSheetState(() => isTimed = v),
                       ),
                     ],
+                  ),
+                ),
 
-                    const SizedBox(height: 16),
-                    // Timed toggle
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('Timed exercise'),
-                      value: isTimed,
-                      onChanged: (v) => setDialogState(() => isTimed = v),
+                // Full-width Save button
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+                  child: ValueListenableBuilder(
+                    valueListenable: nameController,
+                    builder: (_, value, child) => FilledButton(
+                      onPressed: nameController.text.trim().isEmpty
+                          ? null
+                          : () async {
+                              final name = nameController.text.trim();
+                              final dao =
+                                  ref.read(databaseProvider).exercisesDao;
+                              int exerciseId;
+                              if (existing == null) {
+                                exerciseId = await dao
+                                    .insertExercise(ExercisesCompanion(
+                                  name: Value(name),
+                                  isTimed: Value(isTimed),
+                                ));
+                              } else {
+                                await dao.updateExercise(ExercisesCompanion(
+                                  id: Value(existing.id),
+                                  name: Value(name),
+                                  isTimed: Value(isTimed),
+                                ));
+                                exerciseId = existing.id;
+                              }
+                              await dao.setMusclesForExercise(
+                                  exerciseId, selectedMuscles);
+                              if (ctx.mounted) Navigator.pop(ctx);
+                            },
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(52),
+                        textStyle: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      child: const Text('Save'),
                     ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Cancel'),
-                ),
-                ValueListenableBuilder(
-                  valueListenable: nameController,
-                  builder: (_, value, child) => FilledButton(
-                    onPressed: nameController.text.trim().isEmpty
-                        ? null
-                        : () async {
-                            final name = nameController.text.trim();
-                            final dao =
-                                ref.read(databaseProvider).exercisesDao;
-                            int exerciseId;
-                            if (existing == null) {
-                              exerciseId =
-                                  await dao.insertExercise(ExercisesCompanion(
-                                name: Value(name),
-                                isTimed: Value(isTimed),
-                              ));
-                            } else {
-                              await dao.updateExercise(ExercisesCompanion(
-                                id: Value(existing.id),
-                                name: Value(name),
-                                isTimed: Value(isTimed),
-                              ));
-                              exerciseId = existing.id;
-                            }
-                            await dao.setMusclesForExercise(
-                                exerciseId, selectedMuscles);
-                            if (ctx.mounted) Navigator.pop(ctx);
-                          },
-                    child: const Text('Save'),
                   ),
                 ),
               ],
-            );
-          },
-        );
-      },
+            ),
+          );
+        },
+      ),
     );
   }
 
