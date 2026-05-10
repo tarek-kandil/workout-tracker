@@ -127,7 +127,7 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 13) {
             final tables = await customSelect(
-              'SELECT name FROM sqlite_master WHERE type="table"',
+              "SELECT name FROM sqlite_master WHERE type='table'",
             ).get();
             final exists =
                 tables.any((r) => r.read<String>('name') == 'exercise_muscles');
