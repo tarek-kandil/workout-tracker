@@ -741,13 +741,22 @@ class _WodTileState extends ConsumerState<_WodTile> {
                               maxLines: 1,
                             ),
                     ),
-                    // Pencil indicator — visual only, plain Icon, no onTap
+                    // Pencil → navigate to exercise setup screen
                     if (!widget.readOnly) ...[
-                      const SizedBox(width: 6),
-                      const Icon(
-                        Icons.edit_outlined,
-                        size: 15,
-                        color: Color.fromRGBO(99, 102, 241, 0.4),
+                      const SizedBox(width: 4),
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).push(
+                          glassRoute(WodExerciseSetupScreen(
+                              wodTemplateId: widget.wod.id)),
+                        ),
+                        child: const Padding(
+                          padding: EdgeInsets.all(6),
+                          child: Icon(
+                            Icons.edit_outlined,
+                            size: 15,
+                            color: Color.fromRGBO(99, 102, 241, 0.6),
+                          ),
+                        ),
                       ),
                     ],
                   ],
@@ -765,39 +774,25 @@ class _WodTileState extends ConsumerState<_WodTile> {
                 ),
 
               // ── Exercise rows ────────────────────────────────────────────
-              if (!widget.readOnly && (hasExercises || isEmpty))
-                Material(
-                  color: Colors.transparent,
-                  borderRadius: const BorderRadius.vertical(
-                    bottom: Radius.circular(18),
-                  ),
-                  child: InkWell(
-                    onTap: () => Navigator.of(context).push(
-                      glassRoute(WodExerciseSetupScreen(wodTemplateId: widget.wod.id)),
-                    ),
-                    borderRadius: const BorderRadius.vertical(
-                      bottom: Radius.circular(18),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
-                      child: isEmpty
-                          ? Text(
-                              'No exercises — tap to add',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Colors.white.withValues(alpha: 0.28),
-                                  ),
-                            )
-                          : Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                for (int idx = 0; idx < wodLevelItems.length; idx++) ...[
-                                  if (idx > 0) const SizedBox(height: 4),
-                                  _buildWodItem(context, wodLevelItems[idx], exerciseMap, circuitExMap),
-                                ],
-                              ],
-                            ),
-                    ),
-                  ),
+              if (hasExercises || (!widget.readOnly && isEmpty))
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
+                  child: isEmpty
+                      ? Text(
+                          'No exercises yet',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Colors.white.withValues(alpha: 0.28),
+                              ),
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            for (int idx = 0; idx < wodLevelItems.length; idx++) ...[
+                              if (idx > 0) const SizedBox(height: 4),
+                              _buildWodItem(context, wodLevelItems[idx], exerciseMap, circuitExMap),
+                            ],
+                          ],
+                        ),
                 )
               else if (widget.readOnly && hasExercises)
                 Padding(
