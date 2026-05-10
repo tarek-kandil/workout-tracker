@@ -234,7 +234,7 @@ class _ExerciseLibraryScreenState
                 ),
                 ValueListenableBuilder(
                   valueListenable: nameController,
-                  builder: (_, __, ___) => FilledButton(
+                  builder: (_, value, child) => FilledButton(
                     onPressed: nameController.text.trim().isEmpty
                         ? null
                         : () async {
