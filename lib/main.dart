@@ -95,6 +95,32 @@ class _AppStartupState extends ConsumerState<_AppStartup> {
       await prefs.setBool('exercises_seeded', true);
     }
 
+    final musclesSeeded = prefs.getBool('muscles_seeded_v1') ?? false;
+    if (!musclesSeeded) {
+      final db = ref.read(databaseProvider);
+      final dao = db.exercisesDao;
+
+      // 1. Insert exercises that don't exist yet (by name).
+      final existingByName = await dao.getExerciseIdsByName();
+      for (final companion in kDefaultExercises) {
+        final name = companion.name.value;
+        if (!existingByName.containsKey(name)) {
+          final newId = await dao.insertExercise(companion);
+          existingByName[name] = newId;
+        }
+      }
+
+      // 2. Seed muscle assignments for every exercise in kExerciseMuscles.
+      for (final entry in kExerciseMuscles.entries) {
+        final id = existingByName[entry.key];
+        if (id != null) {
+          await dao.setMusclesForExercise(id, entry.value);
+        }
+      }
+
+      await prefs.setBool('muscles_seeded_v1', true);
+    }
+
     setState(() => _ready = true);
   }
 
