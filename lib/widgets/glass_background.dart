@@ -8,11 +8,9 @@ class GlassBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
-    return Positioned.fill(
-      child: IgnorePointer(
-        child: CustomPaint(
-          painter: _GlowPainter(primary),
-        ),
+    return IgnorePointer(
+      child: CustomPaint(
+        painter: _GlowPainter(primary),
       ),
     );
   }
