@@ -16,6 +16,7 @@ import 'tables/wod_template_exercises_table.dart';
 import 'tables/daily_tasks_table.dart';
 import 'tables/daily_task_completions_table.dart';
 import 'tables/user_profile_table.dart';
+import 'tables/exercise_muscles_table.dart';
 import 'daos/exercises_dao.dart';
 import 'daos/programs_dao.dart';
 import 'daos/sessions_dao.dart';
@@ -40,6 +41,7 @@ part 'app_database.g.dart';
     DailyTasks,
     DailyTaskCompletions,
     UserProfiles,
+    ExerciseMuscles,
   ],
   daos: [
     ExercisesDao,
@@ -55,7 +57,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -118,6 +120,16 @@ class AppDatabase extends _$AppDatabase {
                 wodTemplateExercises,
                 wodTemplateExercises.restBetweenSetsSeconds,
               );
+            }
+          }
+          if (from < 13) {
+            final tables = await customSelect(
+              'SELECT name FROM sqlite_master WHERE type="table"',
+            ).get();
+            final exists =
+                tables.any((r) => r.read<String>('name') == 'exercise_muscles');
+            if (!exists) {
+              await m.createTable(exerciseMuscles);
             }
           }
           if (from >= 3 && from < 8) {
