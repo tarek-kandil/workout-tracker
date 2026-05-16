@@ -208,30 +208,44 @@ WeightSuggestion _computeSuggestion({
   required int repRangeMax,
   double incrementKg = 2.5,
 }) {
-  final validSets = lastSets.where((s) => s.reps > 0).toList();
+  final validSets = lastSets.where((s) => s.reps > 0 && s.weightKg > 0).toList();
   if (validSets.isEmpty) return WeightSuggestion.noHistory;
 
-  final lastWeight = validSets.first.weightKg;
+  // Best set = highest weight × reps (volume), which reflects peak effort
+  // better than always using set #1 (which is often a lighter opener).
+  final bestSet = validSets.reduce(
+    (a, b) => a.weightKg * a.reps >= b.weightKg * b.reps ? a : b,
+  );
+  final bestWeight = bestSet.weightKg;
+  final bestRpe = bestSet.rpe; // null if not logged
+
   final minReps = validSets.map((s) => s.reps).reduce(min);
   final maxReps = validSets.map((s) => s.reps).reduce(max);
 
-  if (minReps >= repRangeMax) {
+  // RPE ≤ 7.5 means they had clear room left — don't push the weight up yet
+  // even if the rep count looks good.
+  final easyEffort = bestRpe != null && bestRpe <= 7.5;
+  final rpeStr = bestRpe != null ? ' @ RPE ${bestRpe.toStringAsFixed(1)}' : '';
+
+  if (minReps >= repRangeMax && !easyEffort) {
     return WeightSuggestion(
       type: SuggestionType.increase,
-      suggestedKg: lastWeight + incrementKg,
-      message: 'Hit $maxReps reps — increase to ${lastWeight + incrementKg}kg',
+      suggestedKg: bestWeight + incrementKg,
+      message: 'Hit $maxReps reps$rpeStr — increase to ${bestWeight + incrementKg}kg',
     );
   } else if (maxReps < repRangeMin) {
     return WeightSuggestion(
       type: SuggestionType.decrease,
-      suggestedKg: (lastWeight - incrementKg).clamp(0.0, double.infinity),
-      message: 'Only $minReps reps — reduce to ${lastWeight - incrementKg}kg',
+      suggestedKg: (bestWeight - incrementKg).clamp(0.0, double.infinity),
+      message: 'Only $minReps reps$rpeStr — reduce to ${bestWeight - incrementKg}kg',
     );
   } else {
     return WeightSuggestion(
       type: SuggestionType.maintain,
-      suggestedKg: lastWeight,
-      message: 'Stay at ${lastWeight}kg, aim for $repRangeMax reps',
+      suggestedKg: bestWeight,
+      message: easyEffort
+          ? 'Easy effort$rpeStr — maintain ${bestWeight}kg, push to $repRangeMax reps'
+          : 'Stay at ${bestWeight}kg, aim for $repRangeMax reps',
     );
   }
 }

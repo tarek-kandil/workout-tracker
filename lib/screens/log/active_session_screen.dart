@@ -572,8 +572,6 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     final contextLabel = circuit != null
         ? 'Round ${_currentSetIdx + 1}/${circuit.rounds}'
         : 'Set ${_currentSetIdx + 1}/${current.templateExercise.targetSets}';
-    final nextLabel = _getNextLabel();
-
     String title;
     String body;
     int? chronoMs;
@@ -584,7 +582,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       body = '$contextLabel · Get ready...';
     } else if (_resting) {
       title = 'Rest';
-      body = nextLabel;
+      body = _getCurrentRestLabel();
       chronoMs = _restEndsAt?.millisecondsSinceEpoch;
       countDown = true;
     } else if (_timedRunning) {
@@ -850,8 +848,10 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       final tmp = _sessionItems[i];
       _sessionItems[i] = _sessionItems[i + 1];
       _sessionItems[i + 1] = tmp;
-      if (_currentItemIdx == i) _currentItemIdx = i + 1;
-      else if (_currentItemIdx == i + 1) _currentItemIdx = i;
+      // When moving the current item down, keep _currentItemIdx at i so the
+      // item that moved up (was at i+1, now at i) becomes the active exercise.
+      // Only follow the current item when some other item is moved past it.
+      if (_currentItemIdx == i + 1) _currentItemIdx = i;
     });
     _saveProgress();
   }
