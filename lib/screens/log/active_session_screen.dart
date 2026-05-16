@@ -26,7 +26,8 @@ class _SetData {
   double weightKg;
   int reps;
   int durationSeconds;
-  _SetData({required this.weightKg, required this.reps, this.durationSeconds = 0});
+  double? rpe;
+  _SetData({required this.weightKg, required this.reps, this.durationSeconds = 0, this.rpe});
 }
 
 /// Wraps a [WodItem] with mutable session metadata.
@@ -769,6 +770,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
             setNumber: i + 1,
             reps: isTimed ? 0 : s.reps,
             weightKg: s.weightKg,
+            rpe: Value(s.rpe),
             durationSeconds: isTimed ? Value(s.durationSeconds) : const Value.absent(),
           ));
         }
@@ -2419,26 +2421,27 @@ class _SetRowState extends State<_SetRow> {
       weightKg: (base.weightKg + delta).clamp(0.0, double.infinity),
       reps: base.reps,
       durationSeconds: base.durationSeconds,
+      rpe: base.rpe,
     ));
   }
 
   void _handleReps(int delta) {
     final base = _initialized ? widget.data : widget.referenceData;
     _initialized = true;
-    widget.onChanged(_SetData(weightKg: base.weightKg, reps: (base.reps + delta).clamp(1, 999)));
+    widget.onChanged(_SetData(weightKg: base.weightKg, reps: (base.reps + delta).clamp(1, 999), rpe: base.rpe));
   }
 
   void _handleDuration(int delta) {
     final base = _initialized ? widget.data : widget.referenceData;
     _initialized = true;
-    widget.onChanged(_SetData(weightKg: base.weightKg, reps: 0, durationSeconds: (base.durationSeconds + delta).clamp(5, 3600)));
+    widget.onChanged(_SetData(weightKg: base.weightKg, reps: 0, durationSeconds: (base.durationSeconds + delta).clamp(5, 3600), rpe: base.rpe));
   }
 
   void _commitWeight() {
     final v = double.tryParse(_weightCtrl.text.replaceAll(',', '.'));
     if (v != null && v >= 0) {
       _initialized = true;
-      widget.onChanged(_SetData(weightKg: v, reps: widget.data.reps, durationSeconds: widget.data.durationSeconds));
+      widget.onChanged(_SetData(weightKg: v, reps: widget.data.reps, durationSeconds: widget.data.durationSeconds, rpe: widget.data.rpe));
     }
     if (mounted) setState(() => _editingWeight = false);
   }
@@ -2447,7 +2450,7 @@ class _SetRowState extends State<_SetRow> {
     final v = int.tryParse(_secondaryCtrl.text);
     if (v != null && v >= 1) {
       _initialized = true;
-      widget.onChanged(_SetData(weightKg: widget.data.weightKg, reps: v));
+      widget.onChanged(_SetData(weightKg: widget.data.weightKg, reps: v, rpe: widget.data.rpe));
     }
     if (mounted) setState(() => _editingSecondary = false);
   }
@@ -2456,7 +2459,7 @@ class _SetRowState extends State<_SetRow> {
     final v = int.tryParse(_secondaryCtrl.text);
     if (v != null && v >= 1) {
       _initialized = true;
-      widget.onChanged(_SetData(weightKg: widget.data.weightKg, reps: 0, durationSeconds: v.clamp(5, 3600)));
+      widget.onChanged(_SetData(weightKg: widget.data.weightKg, reps: 0, durationSeconds: v.clamp(5, 3600), rpe: widget.data.rpe));
     }
     if (mounted) setState(() => _editingSecondary = false);
   }
