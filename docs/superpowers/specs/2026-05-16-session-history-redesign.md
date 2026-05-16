@@ -126,20 +126,28 @@ class SessionSetStats {
   final double? avgRpe;       // null if no RPE logged
   final double topWeight;     // MAX(weight_kg)
   final int exerciseCount;    // COUNT(DISTINCT exercise_id)
+  final int prCount;          // distinct exercises where this session holds the all-time max
 }
 ```
 
-`getAllSessionStats()` runs a single SQL query:
+`getAllSessionStats()` runs a single SQL query (self-join to find PR sets):
 ```sql
 SELECT 
-  session_id,
-  SUM(weight_kg * reps) as total_volume,
-  COUNT(*) as set_count,
-  AVG(rpe) as avg_rpe,
-  MAX(weight_kg) as top_weight,
-  COUNT(DISTINCT exercise_id) as exercise_count
-FROM workout_sets
-GROUP BY session_id
+  ws.session_id,
+  SUM(ws.weight_kg * ws.reps)                                          AS total_volume,
+  COUNT(*)                                                              AS set_count,
+  AVG(ws.rpe)                                                          AS avg_rpe,
+  MAX(ws.weight_kg)                                                     AS top_weight,
+  COUNT(DISTINCT ws.exercise_id)                                        AS exercise_count,
+  COUNT(DISTINCT CASE WHEN ws.weight_kg = ex_max.max_weight
+                      THEN ws.exercise_id END)                         AS pr_count
+FROM workout_sets ws
+LEFT JOIN (
+  SELECT exercise_id, MAX(weight_kg) AS max_weight
+  FROM workout_sets
+  GROUP BY exercise_id
+) ex_max ON ws.exercise_id = ex_max.exercise_id
+GROUP BY ws.session_id
 ```
 
 ### New providers
