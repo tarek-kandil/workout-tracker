@@ -1,7 +1,9 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../database/app_database.dart';
 import '../../providers/database_provider.dart';
+import '../../providers/session_providers.dart';
 import '../../widgets/glass_background.dart';
 import '../../widgets/liquid_glass_container.dart';
 import '../../widgets/vibrant_text.dart';
@@ -16,21 +18,170 @@ class SessionDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
-  List<_ExerciseGroup> _groups = [];
-  bool _loading = true;
+  Map<int, Exercise> _exerciseMap = {};
+  bool _exercisesLoaded = false;
+  double? _priorVolume;
+  int? _pressedSetId;
 
   @override
   void initState() {
     super.initState();
-    _load();
+    _loadExercises();
   }
 
-  Future<void> _load() async {
+  Future<void> _loadExercises() async {
     final db = ref.read(databaseProvider);
-    final sets = await db.setsDao.getSetsForSession(widget.session.id);
     final exercises = await db.exercisesDao.getAllExercises();
-    final exerciseMap = {for (final e in exercises) e.id: e};
+    final prior = await db.setsDao.getVolumeForPriorSession(
+      widget.session.workoutName,
+      widget.session.date,
+    );
+    setState(() {
+      _exerciseMap = {for (final e in exercises) e.id: e};
+      _priorVolume = prior;
+      _exercisesLoaded = true;
+    });
+  }
 
+  void _clearPressed() {
+    if (_pressedSetId != null) setState(() => _pressedSetId = null);
+  }
+
+  Future<void> _deleteSet(BuildContext ctx, int setId) async {
+    final confirmed = await showDialog<bool>(
+      context: ctx,
+      builder: (c) => AlertDialog(
+        title: const Text('Delete Set'),
+        content: const Text('Remove this set from the session?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(c, false),
+              child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(c, true),
+              child: const Text('Delete',
+                  style: TextStyle(color: Color(0xFFFF453A)))),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await ref.read(databaseProvider).setsDao.deleteSet(setId);
+    ref.invalidate(personalRecordsProvider);
+    ref.invalidate(allSessionStatsProvider);
+    setState(() => _pressedSetId = null);
+  }
+
+  void _openEditSheet(BuildContext ctx, WorkoutSet set) {
+    final exercise = _exerciseMap[set.exerciseId];
+    showModalBottomSheet(
+      context: ctx,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _EditSetSheet(
+        set: set,
+        exerciseName: exercise?.name ?? 'Exercise',
+        isTimed: exercise?.isTimed ?? false,
+        onSaved: () {
+          ref.invalidate(personalRecordsProvider);
+          ref.invalidate(allSessionStatsProvider);
+          ref
+              .read(databaseProvider)
+              .setsDao
+              .getVolumeForPriorSession(
+                  widget.session.workoutName, widget.session.date)
+              .then((v) {
+            if (mounted) setState(() => _priorVolume = v);
+          });
+        },
+      ),
+    );
+    setState(() => _pressedSetId = null);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final session = widget.session;
+    final setsAsync = ref.watch(setsForSessionProvider(session.id));
+    final dateStr = _formatDate(session.date);
+
+    return GestureDetector(
+      onTap: _clearPressed,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(session.workoutName),
+              Text(dateStr, style: Theme.of(context).textTheme.bodySmall),
+            ],
+          ),
+        ),
+        body: Stack(
+          children: [
+            const Positioned.fill(child: GlassBackground()),
+            setsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(child: Text('Error: $e')),
+              data: (sets) {
+                if (!_exercisesLoaded) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (sets.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'No sets recorded for this session.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.white.withValues(alpha: 0.4),
+                          ),
+                    ),
+                  );
+                }
+                final groups = _buildGroups(sets);
+                return ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+                  itemCount: groups.length + 2,
+                  itemBuilder: (_, i) {
+                    if (i == 0) {
+                      return _StatsHeader(
+                        sets: sets,
+                        exerciseMap: _exerciseMap,
+                        session: session,
+                        priorVolume: _priorVolume,
+                      );
+                    }
+                    if (i == 1) {
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(4, 8, 4, 12),
+                        child: Text(
+                          'Long-press any set to edit or delete',
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Colors.white.withValues(alpha: 0.35),
+                                    fontSize: 11,
+                                  ),
+                        ),
+                      );
+                    }
+                    final group = groups[i - 2];
+                    return _ExerciseCard(
+                      group: group,
+                      pressedSetId: _pressedSetId,
+                      onLongPress: (id) =>
+                          setState(() => _pressedSetId = id),
+                      onEdit: (set) => _openEditSheet(context, set),
+                      onDelete: (id) => _deleteSet(context, id),
+                    );
+                  },
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<_ExerciseGroup> _buildGroups(List<WorkoutSet> sets) {
     final seen = <int>[];
     final grouped = <int, List<WorkoutSet>>{};
     for (final s in sets) {
@@ -40,70 +191,203 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
       }
       grouped[s.exerciseId]!.add(s);
     }
-
-    setState(() {
-      _groups = seen.map((id) {
-        final ex = exerciseMap[id];
-        return _ExerciseGroup(
-          name: ex?.name ?? 'Unknown',
-          isTimed: ex?.isTimed ?? false,
-          sets: grouped[id]!,
-        );
-      }).toList();
-      _loading = false;
-    });
+    return seen.map((id) {
+      final ex = _exerciseMap[id];
+      return _ExerciseGroup(
+        exerciseId: id,
+        name: ex?.name ?? 'Unknown',
+        isTimed: ex?.isTimed ?? false,
+        sets: grouped[id]!,
+      );
+    }).toList();
   }
+}
+
+// ─── Stats Header ─────────────────────────────────────────────────────────────
+
+class _StatsHeader extends StatelessWidget {
+  final List<WorkoutSet> sets;
+  final Map<int, Exercise> exerciseMap;
+  final WorkoutSession session;
+  final double? priorVolume;
+  const _StatsHeader({
+    required this.sets,
+    required this.exerciseMap,
+    required this.session,
+    this.priorVolume,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final session = widget.session;
-    final dateStr = _formatDate(session.date);
+    double totalVolume = 0;
+    double topWeight = 0;
+    double rpeSum = 0;
+    int rpeCount = 0;
+    final exerciseIds = <int>{};
+    for (final s in sets) {
+      totalVolume += s.weightKg * s.reps;
+      if (s.weightKg > topWeight) topWeight = s.weightKg;
+      if (s.rpe != null) {
+        rpeSum += s.rpe!;
+        rpeCount++;
+      }
+      exerciseIds.add(s.exerciseId);
+    }
+    final avgRpe = rpeCount > 0 ? rpeSum / rpeCount : null;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(session.workoutName),
-            Text(dateStr, style: Theme.of(context).textTheme.bodySmall),
-          ],
-        ),
-      ),
-      body: Stack(
+    String? deltaStr;
+    Color? deltaColor;
+    if (priorVolume != null && priorVolume! > 0 && totalVolume > 0) {
+      final pct = (totalVolume - priorVolume!) / priorVolume! * 100;
+      if (pct >= 0) {
+        deltaStr =
+            '↑ +${pct.toStringAsFixed(0)}% vs last ${session.workoutName}';
+        deltaColor = const Color(0xFF34C759);
+      } else {
+        deltaStr =
+            '↓ ${pct.toStringAsFixed(0)}% vs last ${session.workoutName}';
+        deltaColor = const Color(0xFFFF453A);
+      }
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
         children: [
-          const Positioned.fill(child: GlassBackground()),
-          _loading
-              ? const Center(child: CircularProgressIndicator())
-              : _groups.isEmpty
-                  ? Center(
-                      child: Text(
-                        'No sets recorded for this session.',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.white.withValues(alpha: 0.4),
-                            ),
+          LiquidGlassContainer(
+            borderRadius: 16,
+            blurSigma: 10,
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _fmtVol(totalVolume),
+                        style: const TextStyle(
+                            fontSize: 28, fontWeight: FontWeight.w800),
                       ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-                      itemCount: _groups.length,
-                      itemBuilder: (_, i) => _ExerciseCard(group: _groups[i]),
-                    ),
+                      Text(
+                        'total volume · kg',
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.white.withValues(alpha: 0.45)),
+                      ),
+                      if (deltaStr != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          deltaStr,
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: deltaColor),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          GridView.count(
+            crossAxisCount: 3,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childAspectRatio: 1.6,
+            children: [
+              _SmallStat(label: 'SETS', value: '${sets.length}'),
+              _SmallStat(
+                  label: 'AVG RPE',
+                  value: avgRpe != null ? avgRpe.toStringAsFixed(1) : '—'),
+              _SmallStat(
+                  label: 'TOP WEIGHT',
+                  value: topWeight > 0 ? '${_fmtW(topWeight)} kg' : '—'),
+              _SmallStat(
+                  label: 'EXERCISES', value: '${exerciseIds.length}'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _fmtVol(double v) {
+    if (v >= 1000) {
+      final k = v / 1000;
+      return k == k.roundToDouble()
+          ? '${k.toInt()}k'
+          : '${k.toStringAsFixed(1)}k';
+    }
+    return v == v.roundToDouble() ? v.toInt().toString() : v.toStringAsFixed(1);
+  }
+}
+
+class _SmallStat extends StatelessWidget {
+  final String label;
+  final String value;
+  const _SmallStat({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return LiquidGlassContainer(
+      borderRadius: 12,
+      blurSigma: 8,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+                color: Colors.white.withValues(alpha: 0.45),
+                letterSpacing: 0.5),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+          ),
         ],
       ),
     );
   }
 }
 
+// ─── Exercise group / set rows ────────────────────────────────────────────────
+
 class _ExerciseGroup {
+  final int exerciseId;
   final String name;
   final bool isTimed;
   final List<WorkoutSet> sets;
-  _ExerciseGroup({required this.name, required this.isTimed, required this.sets});
+  _ExerciseGroup({
+    required this.exerciseId,
+    required this.name,
+    required this.isTimed,
+    required this.sets,
+  });
 }
 
 class _ExerciseCard extends StatelessWidget {
   final _ExerciseGroup group;
-  const _ExerciseCard({required this.group});
+  final int? pressedSetId;
+  final void Function(int setId) onLongPress;
+  final void Function(WorkoutSet set) onEdit;
+  final void Function(int setId) onDelete;
+  const _ExerciseCard({
+    required this.group,
+    required this.pressedSetId,
+    required this.onLongPress,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -130,57 +414,13 @@ class _ExerciseCard extends StatelessWidget {
                     .copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
-              ...group.sets.map((s) => Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: group.isTimed
-                        ? Row(
-                            children: [
-                              SizedBox(
-                                width: 52,
-                                child: Text(
-                                  'Set ${s.setNumber}',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: Colors.white.withValues(alpha: 0.4),
-                                      ),
-                                ),
-                              ),
-                              Text(
-                                _fmtSec(s.durationSeconds ?? 0),
-                                style: const TextStyle(fontWeight: FontWeight.w600),
-                              ),
-                            ],
-                          )
-                        : Row(
-                            children: [
-                              SizedBox(
-                                width: 52,
-                                child: Text(
-                                  'Set ${s.setNumber}',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: Colors.white.withValues(alpha: 0.4),
-                                      ),
-                                ),
-                              ),
-                              Text(
-                                '${_fmtW(s.weightKg)} kg',
-                                style: const TextStyle(fontWeight: FontWeight.w600),
-                              ),
-                              const SizedBox(width: 8),
-                              Text('×',
-                                  style: Theme.of(context).textTheme.bodySmall),
-                              const SizedBox(width: 8),
-                              Text(
-                                '${s.reps} reps',
-                                style: const TextStyle(fontWeight: FontWeight.w600),
-                              ),
-                            ],
-                          ),
+              ...group.sets.map((s) => _SetRow(
+                    set: s,
+                    isTimed: group.isTimed,
+                    isPressed: pressedSetId == s.id,
+                    onLongPress: () => onLongPress(s.id),
+                    onEdit: () => onEdit(s),
+                    onDelete: () => onDelete(s.id),
                   )),
             ],
           ),
@@ -189,6 +429,381 @@ class _ExerciseCard extends StatelessWidget {
     );
   }
 }
+
+class _SetRow extends StatelessWidget {
+  final WorkoutSet set;
+  final bool isTimed;
+  final bool isPressed;
+  final VoidCallback onLongPress;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+  const _SetRow({
+    required this.set,
+    required this.isTimed,
+    required this.isPressed,
+    required this.onLongPress,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const indigo = Color(0xFF6366F1);
+    const red = Color(0xFFFF453A);
+
+    return GestureDetector(
+      onLongPress: onLongPress,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        margin: const EdgeInsets.only(bottom: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: isPressed ? indigo.withValues(alpha: 0.12) : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 52,
+              child: Text(
+                'Set ${set.setNumber}',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.4),
+                    ),
+              ),
+            ),
+            Expanded(
+              child: isTimed
+                  ? Text(_fmtSec(set.durationSeconds ?? 0),
+                      style: const TextStyle(fontWeight: FontWeight.w600))
+                  : Row(
+                      children: [
+                        Text('${_fmtW(set.weightKg)} kg',
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w600)),
+                        const SizedBox(width: 8),
+                        Text('×',
+                            style: Theme.of(context).textTheme.bodySmall),
+                        const SizedBox(width: 8),
+                        Text('${set.reps} reps',
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w600)),
+                        if (set.rpe != null) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            'RPE ${set.rpe!.toStringAsFixed(1)}',
+                            style: const TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFFFFCC00),
+                                fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ],
+                    ),
+            ),
+            if (isPressed) ...[
+              TextButton(
+                onPressed: onEdit,
+                style: TextButton.styleFrom(
+                    minimumSize: Size.zero,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    foregroundColor: indigo),
+                child: const Text('Edit',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              ),
+              TextButton(
+                onPressed: onDelete,
+                style: TextButton.styleFrom(
+                    minimumSize: Size.zero,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    foregroundColor: red),
+                child: const Text('Delete',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Edit Set Bottom Sheet ────────────────────────────────────────────────────
+
+class _EditSetSheet extends ConsumerStatefulWidget {
+  final WorkoutSet set;
+  final String exerciseName;
+  final bool isTimed;
+  final VoidCallback onSaved;
+  const _EditSetSheet({
+    required this.set,
+    required this.exerciseName,
+    required this.isTimed,
+    required this.onSaved,
+  });
+
+  @override
+  ConsumerState<_EditSetSheet> createState() => _EditSetSheetState();
+}
+
+class _EditSetSheetState extends ConsumerState<_EditSetSheet> {
+  late double _weight;
+  late int _reps;
+  late int _durationSeconds;
+  late double _rpe;
+  late TextEditingController _notesCtrl;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _weight = widget.set.weightKg;
+    _reps = widget.set.reps;
+    _durationSeconds = widget.set.durationSeconds ?? 0;
+    _rpe = widget.set.rpe ?? 0.0;
+    _notesCtrl = TextEditingController(text: widget.set.notes ?? '');
+  }
+
+  @override
+  void dispose() {
+    _notesCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    await ref.read(databaseProvider).setsDao.updateSet(WorkoutSetsCompanion(
+          id: Value(widget.set.id),
+          sessionId: Value(widget.set.sessionId),
+          exerciseId: Value(widget.set.exerciseId),
+          setNumber: Value(widget.set.setNumber),
+          reps: Value(_reps),
+          weightKg: Value(_weight),
+          durationSeconds: Value(
+              widget.isTimed ? _durationSeconds : widget.set.durationSeconds),
+          rpe: Value(_rpe == 0.0 ? null : _rpe),
+          notes: Value(_notesCtrl.text.trim().isEmpty
+              ? null
+              : _notesCtrl.text.trim()),
+        ));
+    widget.onSaved();
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  Widget _stepper({
+    required String label,
+    required String display,
+    required VoidCallback onDec,
+    required VoidCallback onInc,
+    String? unit,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 90,
+            child: Text(
+              label,
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white.withValues(alpha: 0.55),
+                  letterSpacing: 0.5),
+            ),
+          ),
+          IconButton(
+            onPressed: onDec,
+            icon: const Icon(Icons.remove_circle_outline, size: 22),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+          const SizedBox(width: 12),
+          Text(display,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+          if (unit != null) ...[
+            const SizedBox(width: 4),
+            Text(unit,
+                style: TextStyle(
+                    fontSize: 12, color: Colors.white.withValues(alpha: 0.45))),
+          ],
+          const SizedBox(width: 12),
+          IconButton(
+            onPressed: onInc,
+            icon: const Icon(Icons.add_circle_outline, size: 22),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    final subtitle = 'Set ${widget.set.setNumber}';
+    final bool saveEnabled =
+        widget.isTimed ? _durationSeconds > 0 : (_weight > 0 && _reps > 0);
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFF1C1C1E),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.fromLTRB(20, 12, 20, bottom + 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Text(
+            'Edit Set · ${widget.exerciseName}',
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+          ),
+          Text(
+            subtitle,
+            style: TextStyle(
+                fontSize: 13, color: Colors.white.withValues(alpha: 0.45)),
+          ),
+          const Divider(height: 24),
+          if (!widget.isTimed)
+            _stepper(
+              label: 'WEIGHT',
+              display: _weight == _weight.roundToDouble()
+                  ? _weight.toInt().toString()
+                  : _weight.toStringAsFixed(1),
+              unit: 'kg',
+              onDec: () =>
+                  setState(() => _weight = (_weight - 0.5).clamp(0.0, 9999.0)),
+              onInc: () =>
+                  setState(() => _weight = (_weight + 0.5).clamp(0.0, 9999.0)),
+            ),
+          if (!widget.isTimed)
+            _stepper(
+              label: 'REPS',
+              display: '$_reps',
+              onDec: () => setState(() => _reps = (_reps - 1).clamp(0, 9999)),
+              onInc: () => setState(() => _reps = (_reps + 1).clamp(0, 9999)),
+            )
+          else
+            _stepper(
+              label: 'DURATION',
+              display: _fmtSec(_durationSeconds),
+              onDec: () => setState(() =>
+                  _durationSeconds = (_durationSeconds - 5).clamp(0, 99999)),
+              onInc: () => setState(() =>
+                  _durationSeconds = (_durationSeconds + 5).clamp(0, 99999)),
+            ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 90,
+                  child: Text(
+                    'RPE',
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white.withValues(alpha: 0.55),
+                        letterSpacing: 0.5),
+                  ),
+                ),
+                Expanded(
+                  child: Slider(
+                    value: _rpe == 0.0 ? 6.0 : _rpe,
+                    min: 6.0,
+                    max: 10.0,
+                    divisions: 8,
+                    activeColor: const Color(0xFFFFCC00),
+                    onChanged: (v) => setState(() => _rpe = v),
+                  ),
+                ),
+                SizedBox(
+                  width: 36,
+                  child: Text(
+                    _rpe == 0.0 ? '—' : _rpe.toStringAsFixed(1),
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFFFFCC00)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (_rpe != 0.0)
+            GestureDetector(
+              onTap: () => setState(() => _rpe = 0.0),
+              child: Text(
+                'Clear RPE',
+                style: TextStyle(
+                    fontSize: 12, color: Colors.white.withValues(alpha: 0.4)),
+              ),
+            ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _notesCtrl,
+            maxLines: 4,
+            minLines: 1,
+            decoration: InputDecoration(
+              labelText: 'Notes',
+              labelStyle:
+                  TextStyle(color: Colors.white.withValues(alpha: 0.45)),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide:
+                    BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Color(0xFF6366F1)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: (saveEnabled && !_saving) ? _save : null,
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF6366F1),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+              ),
+              child: _saving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
+                  : const Text('Save',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w700, fontSize: 16)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 String _formatDate(DateTime d) {
   const months = [
