@@ -142,11 +142,18 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                   itemCount: groups.length + 2,
                   itemBuilder: (_, i) {
                     if (i == 0) {
+                      final prCount = ref
+                              .watch(allSessionStatsProvider)
+                              .asData
+                              ?.value[session.id]
+                              ?.prCount ??
+                          0;
                       return _StatsHeader(
                         sets: sets,
                         exerciseMap: _exerciseMap,
                         session: session,
                         priorVolume: _priorVolume,
+                        prCount: prCount,
                       );
                     }
                     if (i == 1) {
@@ -210,23 +217,23 @@ class _StatsHeader extends StatelessWidget {
   final Map<int, Exercise> exerciseMap;
   final WorkoutSession session;
   final double? priorVolume;
+  final int prCount;
   const _StatsHeader({
     required this.sets,
     required this.exerciseMap,
     required this.session,
     this.priorVolume,
+    required this.prCount,
   });
 
   @override
   Widget build(BuildContext context) {
     double totalVolume = 0;
-    double topWeight = 0;
     double rpeSum = 0;
     int rpeCount = 0;
     final exerciseIds = <int>{};
     for (final s in sets) {
       totalVolume += s.weightKg * s.reps;
-      if (s.weightKg > topWeight) topWeight = s.weightKg;
       if (s.rpe != null) {
         rpeSum += s.rpe!;
         rpeCount++;
@@ -305,8 +312,8 @@ class _StatsHeader extends StatelessWidget {
                   label: 'AVG RPE',
                   value: avgRpe != null ? avgRpe.toStringAsFixed(1) : '—'),
               _SmallStat(
-                  label: 'TOP WEIGHT',
-                  value: topWeight > 0 ? '${_fmtW(topWeight)} kg' : '—'),
+                  label: 'PRs',
+                  value: prCount > 0 ? '🏆 $prCount' : '—'),
               _SmallStat(
                   label: 'EXERCISES', value: '${exerciseIds.length}'),
             ],
@@ -334,27 +341,31 @@ class _SmallStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LiquidGlassContainer(
-      borderRadius: 12,
-      blurSigma: 8,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.w600,
-                color: Colors.white.withValues(alpha: 0.45),
-                letterSpacing: 0.5),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-          ),
-        ],
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white.withValues(alpha: 0.45),
+                  letterSpacing: 0.5),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
       ),
     );
   }
