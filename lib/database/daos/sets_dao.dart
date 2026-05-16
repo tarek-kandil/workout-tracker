@@ -55,6 +55,7 @@ class SetsDao extends DatabaseAccessor<AppDatabase> with _$SetsDaoMixin {
       (select(workoutSets)
             ..where((s) => s.sessionId.equals(sessionId))
             ..orderBy([
+              // Group by exercise for display; within each exercise by set number
               (s) => OrderingTerm(expression: s.exerciseId),
               (s) => OrderingTerm(expression: s.setNumber),
             ]))
