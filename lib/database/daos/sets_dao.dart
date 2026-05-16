@@ -8,6 +8,25 @@ import '../../models/weekly_pr_entry.dart';
 
 part 'sets_dao.g.dart';
 
+class SessionSetStats {
+  final int sessionId;
+  final double totalVolume;
+  final int setCount;
+  final double? avgRpe;
+  final double topWeight;
+  final int exerciseCount;
+  final int prCount;
+  const SessionSetStats({
+    required this.sessionId,
+    required this.totalVolume,
+    required this.setCount,
+    this.avgRpe,
+    required this.topWeight,
+    required this.exerciseCount,
+    required this.prCount,
+  });
+}
+
 @DriftAccessor(tables: [WorkoutSets, WorkoutSessions])
 class SetsDao extends DatabaseAccessor<AppDatabase> with _$SetsDaoMixin {
   SetsDao(super.db);
@@ -31,6 +50,72 @@ class SetsDao extends DatabaseAccessor<AppDatabase> with _$SetsDaoMixin {
               (s) => OrderingTerm(expression: s.setNumber),
             ]))
           .get();
+
+  Stream<List<WorkoutSet>> watchSetsForSession(int sessionId) =>
+      (select(workoutSets)
+            ..where((s) => s.sessionId.equals(sessionId))
+            ..orderBy([
+              (s) => OrderingTerm(expression: s.exerciseId),
+              (s) => OrderingTerm(expression: s.setNumber),
+            ]))
+          .watch();
+
+  Future<Map<int, SessionSetStats>> getAllSessionStats() async {
+    final results = await customSelect(
+      'SELECT '
+      '  ws.session_id, '
+      '  COALESCE(SUM(ws.weight_kg * ws.reps), 0.0) AS total_volume, '
+      '  COUNT(*) AS set_count, '
+      '  AVG(ws.rpe) AS avg_rpe, '
+      '  COALESCE(MAX(ws.weight_kg), 0.0) AS top_weight, '
+      '  COUNT(DISTINCT ws.exercise_id) AS exercise_count, '
+      '  COUNT(DISTINCT CASE WHEN ws.weight_kg = ex_max.max_weight '
+      '    AND ws.weight_kg > 0 THEN ws.exercise_id END) AS pr_count '
+      'FROM workout_sets ws '
+      'LEFT JOIN ( '
+      '  SELECT exercise_id, MAX(weight_kg) AS max_weight '
+      '  FROM workout_sets '
+      '  WHERE weight_kg > 0 '
+      '  GROUP BY exercise_id '
+      ') ex_max ON ws.exercise_id = ex_max.exercise_id '
+      'GROUP BY ws.session_id',
+      readsFrom: {workoutSets},
+    ).get();
+
+    return {
+      for (final r in results)
+        r.read<int>('session_id'): SessionSetStats(
+          sessionId: r.read<int>('session_id'),
+          totalVolume: r.read<double>('total_volume'),
+          setCount: r.read<int>('set_count'),
+          avgRpe: r.read<double?>('avg_rpe'),
+          topWeight: r.read<double>('top_weight'),
+          exerciseCount: r.read<int>('exercise_count'),
+          prCount: r.read<int>('pr_count'),
+        ),
+    };
+  }
+
+  Future<double?> getVolumeForPriorSession(
+      String workoutName, DateTime beforeDate) async {
+    final result = await customSelect(
+      'SELECT COALESCE(SUM(ws.weight_kg * ws.reps), 0.0) AS volume '
+      'FROM workout_sets ws '
+      'WHERE ws.session_id = ('
+      '  SELECT id FROM workout_sessions '
+      '  WHERE workout_name = ? AND date < ? '
+      '  ORDER BY date DESC '
+      '  LIMIT 1 '
+      ')',
+      variables: [
+        Variable.withString(workoutName),
+        Variable.withInt(beforeDate.millisecondsSinceEpoch ~/ 1000),
+      ],
+      readsFrom: {workoutSets, workoutSessions},
+    ).getSingleOrNull();
+    final v = result?.read<double?>('volume');
+    return (v == null || v == 0.0) ? null : v;
+  }
 
   /// Last sets for a given exercise in a specific WOD template.
   /// Returns sets from the single most-recent session of that WOD.
