@@ -123,6 +123,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   final Map<int, List<_SetData>> _setData = {};
   final Map<int, List<WorkoutSet>> _lastSets = {};
   final Map<int, double?> _prData = {};
+  final Map<int, int> _prBestReps = {};
   final Map<int, int?> _prDurationData = {};
   final Map<int, bool> _historyExpanded = {};
 
@@ -364,7 +365,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   int _bestRepsAtPrWeight(int exerciseId) {
     final pr = _prData[exerciseId];
     if (pr == null || pr == 0) return 0;
-    int best = 0;
+    int best = _prBestReps[exerciseId] ?? 0;
     for (final s in (_lastSets[exerciseId] ?? [])) {
       if (s.weightKg == pr && s.reps > best) best = s.reps;
     }
@@ -374,12 +375,17 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     return best;
   }
 
-  /// Returns true if this set is a new PR; updates _prData when it is.
+  /// Returns true if this set is a new PR; updates _prData / _prBestReps when it is.
   bool _checkPrAndUpdate(int exerciseId, double weightKg, int reps) {
     final currentPr = _prData[exerciseId] ?? 0.0;
     final isNewWeight = weightKg > currentPr;
     final isMoreReps = weightKg == currentPr && reps > _bestRepsAtPrWeight(exerciseId);
-    if (isNewWeight) _prData[exerciseId] = weightKg;
+    if (isNewWeight) {
+      _prData[exerciseId] = weightKg;
+      _prBestReps.remove(exerciseId);
+    } else if (isMoreReps) {
+      _prBestReps[exerciseId] = reps;
+    }
     return isNewWeight || isMoreReps;
   }
 
