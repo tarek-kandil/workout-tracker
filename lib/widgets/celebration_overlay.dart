@@ -125,6 +125,215 @@ class _TaskDoneFlashState extends State<_TaskDoneFlash>
   }
 }
 
+// ─── PR overlay ───────────────────────────────────────────────────────────────
+
+/// Animated overlay card shown when a new personal record is logged.
+/// Returns when the overlay has dismissed itself (tap or 3-second auto-dismiss).
+Future<void> showPrOverlay(
+  BuildContext context, {
+  required String exerciseName,
+  required double newWeightKg,
+  required int reps,
+  double? oldWeightKg,
+}) {
+  final completer = Completer<void>();
+  final overlay = Overlay.of(context);
+  late OverlayEntry entry;
+  entry = OverlayEntry(
+    builder: (_) => _PrOverlay(
+      exerciseName: exerciseName,
+      newWeightKg: newWeightKg,
+      reps: reps,
+      oldWeightKg: oldWeightKg,
+      onDone: () {
+        if (entry.mounted) entry.remove();
+        if (!completer.isCompleted) completer.complete();
+      },
+    ),
+  );
+  overlay.insert(entry);
+  return completer.future;
+}
+
+class _PrOverlay extends StatefulWidget {
+  final String exerciseName;
+  final double newWeightKg;
+  final int reps;
+  final double? oldWeightKg;
+  final VoidCallback onDone;
+  const _PrOverlay({
+    required this.exerciseName,
+    required this.newWeightKg,
+    required this.reps,
+    required this.oldWeightKg,
+    required this.onDone,
+  });
+  @override
+  State<_PrOverlay> createState() => _PrOverlayState();
+}
+
+class _PrOverlayState extends State<_PrOverlay>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _scale;
+  late final Animation<double> _fade;
+  Timer? _autoTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _scale = CurvedAnimation(parent: _ctrl, curve: const ElasticOutCurve(0.7));
+    _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
+    _ctrl.forward();
+    _autoTimer = Timer(const Duration(seconds: 3), widget.onDone);
+  }
+
+  @override
+  void dispose() {
+    _autoTimer?.cancel();
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  String _fmtW(double v) =>
+      v == v.truncateToDouble() ? v.toInt().toString() : v.toStringAsFixed(1);
+
+  @override
+  Widget build(BuildContext context) {
+    final delta = widget.oldWeightKg != null && widget.oldWeightKg! > 0
+        ? widget.newWeightKg - widget.oldWeightKg!
+        : null;
+
+    return GestureDetector(
+      onTap: widget.onDone,
+      child: AnimatedBuilder(
+        animation: _fade,
+        builder: (_, child) => ColoredBox(
+          color: Colors.black.withValues(alpha: 0.72 * _fade.value),
+          child: child,
+        ),
+        child: Center(
+          child: ScaleTransition(
+            scale: _scale,
+            child: GestureDetector(
+              onTap: () {}, // absorb taps on card so backdrop tap still works
+              child: Container(
+                width: 220,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF1e1b4b), Color(0xFF1a1a2e)],
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: const Color(0xFF6366F1).withValues(alpha: 0.5),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF6366F1).withValues(alpha: 0.3),
+                      blurRadius: 40,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            const Color(0xFFFBBF24).withValues(alpha: 0.25),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                      child: const Center(
+                        child: Text('🏆', style: TextStyle(fontSize: 36, decoration: TextDecoration.none)),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'NEW PR!',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFFFFD700),
+                        letterSpacing: 0.05,
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '${_fmtW(widget.newWeightKg)} kg',
+                      style: const TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
+                    if (delta != null && delta > 0) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        '↑ +${_fmtW(delta)} kg from ${_fmtW(widget.oldWeightKg!)} kg',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.white.withValues(alpha: 0.45),
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 4),
+                    Text(
+                      '${widget.exerciseName} · ${widget.reps} reps',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.white.withValues(alpha: 0.4),
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    GestureDetector(
+                      onTap: widget.onDone,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF6366F1).withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text(
+                          'Crush it! 💪',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            decoration: TextDecoration.none,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ─── Workout complete overlay ──────────────────────────────────────────────────
 
 class _WorkoutCompleteOverlay extends StatefulWidget {
