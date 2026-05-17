@@ -1614,6 +1614,82 @@ class _ExerciseCard extends StatelessWidget {
     required this.onSkipSet, required this.onShowActions,
   });
 
+  static void _showCoachingNotes(
+      BuildContext context, WodExerciseEntry entry, WodTemplateExercise te) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFF1e2030),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36, height: 4,
+                margin: const EdgeInsets.only(bottom: 14),
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Text(entry.exercise.name,
+                style: const TextStyle(
+                    fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white)),
+            const SizedBox(height: 2),
+            const Text('Coaching Notes',
+                style: TextStyle(fontSize: 10, color: Colors.white38)),
+            const SizedBox(height: 12),
+            const Divider(color: Colors.white12, height: 1),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                te.notes!,
+                style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.white.withValues(alpha: 0.75),
+                    height: 1.5),
+              ),
+            ),
+            if (te.targetRpe != null) ...[
+              const SizedBox(height: 14),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Target RPE',
+                      style: TextStyle(fontSize: 11, color: Colors.white38)),
+                  Text(
+                    te.targetRpe! == te.targetRpe!.truncateToDouble()
+                        ? te.targetRpe!.toInt().toString()
+                        : te.targetRpe!.toStringAsFixed(1),
+                    style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFFFBBF24)),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   _SetData _refDataFor(int setIdx, bool isTimed, WodTemplateExercise te) {
     if (setIdx == 0) {
       return isTimed
@@ -1665,11 +1741,31 @@ class _ExerciseCard extends StatelessWidget {
               ),
             ])),
             Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-              IconButton(
-                icon: const Icon(Icons.more_horiz, size: 20),
-                onPressed: onShowActions,
-                padding: EdgeInsets.zero,
-                style: IconButton.styleFrom(minimumSize: const Size(32, 32), tapTargetSize: MaterialTapTargetSize.shrinkWrap, foregroundColor: Colors.white38),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (te.notes != null && te.notes!.isNotEmpty)
+                    IconButton(
+                      icon: const Icon(Icons.info_outline_rounded, size: 18),
+                      onPressed: () => _showCoachingNotes(context, entry, te),
+                      padding: EdgeInsets.zero,
+                      style: IconButton.styleFrom(
+                        minimumSize: const Size(32, 32),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        foregroundColor: Colors.white38,
+                      ),
+                    ),
+                  IconButton(
+                    icon: const Icon(Icons.more_horiz, size: 20),
+                    onPressed: onShowActions,
+                    padding: EdgeInsets.zero,
+                    style: IconButton.styleFrom(
+                      minimumSize: const Size(32, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      foregroundColor: Colors.white38,
+                    ),
+                  ),
+                ],
               ),
               if (!isTimed) _SuggestionBadge(suggestion: entry.suggestion),
             ]),
@@ -1682,6 +1778,34 @@ class _ExerciseCard extends StatelessWidget {
             expanded: historyExpanded, onToggle: onToggleHistory,
           ),
           const SizedBox(height: 10),
+          if (isActive && te.targetRpe != null) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Set ${currentSetIdx + 1} / ${te.targetSets}',
+                  style: TextStyle(fontSize: 8, color: Colors.white.withValues(alpha: 0.3)),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFBBF24).withValues(alpha: 0.1),
+                    border: Border.all(color: const Color(0xFFFBBF24).withValues(alpha: 0.3)),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    'Target RPE ${te.targetRpe! == te.targetRpe!.truncateToDouble() ? te.targetRpe!.toInt() : te.targetRpe!.toStringAsFixed(1)}',
+                    style: const TextStyle(
+                      fontSize: 8,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFFBBF24),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+          ],
           // Set rows
           ...List.generate(te.targetSets, (setIdx) {
             final isSetActive = isActive && setIdx == currentSetIdx;
