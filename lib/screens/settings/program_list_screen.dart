@@ -448,7 +448,7 @@ class _ProgressBar extends ConsumerWidget {
       data: (currentWeek) {
         final week = currentWeek ?? 1;
         final total = totalWeeks ?? 12;
-        final progress = (week / total).clamp(0.0, 1.0);
+        final progress = (total > 0 ? (week - 1) / total : 0.0).clamp(0.0, 1.0);
         final pct = (progress * 100).round();
 
         return Padding(

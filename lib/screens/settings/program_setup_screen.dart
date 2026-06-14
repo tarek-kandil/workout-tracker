@@ -428,6 +428,82 @@ class _WodListState extends ConsumerState<_WodList> {
     if (mounted) setState(() => _wods = wods);
   }
 
+  Future<void> _addWod(BuildContext context) async {
+    final nameCtrl = TextEditingController(text: 'WOD ${(_wods?.length ?? 0) + 1}');
+    int restSeconds = 90;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('New Workout'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Workout Name',
+                  hintText: 'e.g. WOD 1 – Push',
+                  border: OutlineInputBorder(),
+                ),
+                autofocus: true,
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  const Icon(Icons.timer_outlined, size: 18),
+                  const SizedBox(width: 8),
+                  const Text('Rest'),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.remove, size: 16),
+                    onPressed: restSeconds > 15
+                        ? () => setDialogState(() => restSeconds = (restSeconds - 15).clamp(15, 600))
+                        : null,
+                    style: IconButton.styleFrom(minimumSize: const Size(32, 32), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                  ),
+                  SizedBox(
+                    width: 52,
+                    child: Text('${restSeconds}s', textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add, size: 16),
+                    onPressed: restSeconds < 600
+                        ? () => setDialogState(() => restSeconds = (restSeconds + 15).clamp(15, 600))
+                        : null,
+                    style: IconButton.styleFrom(minimumSize: const Size(32, 32), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Add')),
+          ],
+        ),
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final db = ref.read(databaseProvider);
+    final wods = _wods ?? [];
+    final id = await db.programsDao.insertWodTemplate(
+      WodTemplatesCompanion(
+        phaseId: Value(widget.phaseId),
+        wodNumber: Value(wods.length + 1),
+        name: Value(nameCtrl.text.trim()),
+        restSeconds: Value(restSeconds),
+      ),
+    );
+    await _load();
+    ref.invalidate(wodTemplatesForPhaseProvider(widget.phaseId));
+    ref.invalidate(nextWodProvider);
+    if (mounted) {
+      Navigator.of(context).push(glassRoute(WodExerciseSetupScreen(wodTemplateId: id)));
+    }
+  }
+
   Future<void> _onReorder(int oldIndex, int newIndex) async {
     if (newIndex > oldIndex) newIndex--;
     final wods = List<WodTemplate>.from(_wods!);
@@ -481,19 +557,33 @@ class _WodListState extends ConsumerState<_WodList> {
 
     return Padding(
       padding: const EdgeInsets.only(top: 8),
-      child: ReorderableListView(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        buildDefaultDragHandles: false,
-        onReorder: widget.readOnly ? (a, b) {} : _onReorder,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (int i = 0; i < wods.length; i++)
-            _WodTile(
-              key: ValueKey(wods[i].id),
-              wod: wods[i],
-              phaseId: widget.phaseId,
-              readOnly: widget.readOnly,
-              dragIndex: widget.readOnly ? null : i,
+          ReorderableListView(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            buildDefaultDragHandles: false,
+            onReorder: widget.readOnly ? (a, b) {} : _onReorder,
+            children: [
+              for (int i = 0; i < wods.length; i++)
+                _WodTile(
+                  key: ValueKey(wods[i].id),
+                  wod: wods[i],
+                  phaseId: widget.phaseId,
+                  readOnly: widget.readOnly,
+                  dragIndex: widget.readOnly ? null : i,
+                ),
+            ],
+          ),
+          if (!widget.readOnly)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: TextButton.icon(
+                onPressed: () => _addWod(context),
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('New Workout'),
+              ),
             ),
         ],
       ),
@@ -748,7 +838,10 @@ class _WodTileState extends ConsumerState<_WodTile> {
                         onTap: () => Navigator.of(context).push(
                           glassRoute(WodExerciseSetupScreen(
                               wodTemplateId: widget.wod.id)),
-                        ),
+                        ).then((_) {
+                          ref.invalidate(wodTemplateExercisesProvider(widget.wod.id));
+                          ref.invalidate(wodCircuitGroupsProvider(widget.wod.id));
+                        }),
                         child: const Padding(
                           padding: EdgeInsets.all(6),
                           child: Icon(

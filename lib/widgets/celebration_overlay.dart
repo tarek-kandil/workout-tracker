@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 
 /// Brief green checkmark that pops and fades — for task completion.
@@ -173,11 +174,13 @@ class _PrOverlay extends StatefulWidget {
 }
 
 class _PrOverlayState extends State<_PrOverlay>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _ctrl;
+  late final AnimationController _confettiCtrl;
   late final Animation<double> _scale;
   late final Animation<double> _fade;
   Timer? _autoTimer;
+  late final List<_Particle> _particles;
 
   @override
   void initState() {
@@ -186,9 +189,15 @@ class _PrOverlayState extends State<_PrOverlay>
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
+    _confettiCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    );
     _scale = CurvedAnimation(parent: _ctrl, curve: const ElasticOutCurve(0.7));
     _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
+    _particles = List.generate(80, (_) => _Particle());
     _ctrl.forward();
+    _confettiCtrl.forward();
     _autoTimer = Timer(const Duration(seconds: 3), widget.onDone);
   }
 
@@ -196,6 +205,7 @@ class _PrOverlayState extends State<_PrOverlay>
   void dispose() {
     _autoTimer?.cancel();
     _ctrl.dispose();
+    _confettiCtrl.dispose();
     super.dispose();
   }
 
@@ -216,12 +226,26 @@ class _PrOverlayState extends State<_PrOverlay>
           color: Colors.black.withValues(alpha: 0.72 * _fade.value),
           child: child,
         ),
-        child: Center(
-          child: ScaleTransition(
-            scale: _scale,
-            child: GestureDetector(
-              onTap: () {}, // absorb taps on card so backdrop tap still works
-              child: Container(
+        child: Stack(
+          children: [
+            // Confetti layer
+            Positioned.fill(
+              child: IgnorePointer(
+                child: AnimatedBuilder(
+                  animation: _confettiCtrl,
+                  builder: (_, child) => CustomPaint(
+                    painter: _ConfettiPainter(_particles, _confettiCtrl.value),
+                  ),
+                ),
+              ),
+            ),
+            // Card
+            Center(
+              child: ScaleTransition(
+                scale: _scale,
+                child: GestureDetector(
+                  onTap: () {},
+                  child: Container(
                 width: 220,
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
                 decoration: BoxDecoration(
@@ -329,9 +353,71 @@ class _PrOverlayState extends State<_PrOverlay>
             ),
           ),
         ),
+          ],
+        ),
       ),
     );
   }
+}
+
+// ─── Confetti ─────────────────────────────────────────────────────────────────
+
+class _Particle {
+  final double x;
+  final double y;
+  final double vx;
+  final double vy;
+  final Color color;
+  final double size;
+  final double angle;
+  final double spin;
+
+  _Particle()
+      : x = Random().nextDouble(),
+        y = -0.1 - Random().nextDouble() * 0.4,
+        vx = (Random().nextDouble() - 0.5) * 0.5,
+        vy = 0.5 + Random().nextDouble() * 0.8,
+        color = const [
+          Color(0xFFFFD700),
+          Color(0xFF6366F1),
+          Color(0xFFEC4899),
+          Color(0xFF22D3EE),
+          Color(0xFF4ADE80),
+          Color(0xFFFF6B35),
+        ][Random().nextInt(6)],
+        size = 6 + Random().nextDouble() * 8,
+        angle = Random().nextDouble() * pi * 2,
+        spin = (Random().nextDouble() - 0.5) * 12;
+}
+
+class _ConfettiPainter extends CustomPainter {
+  final List<_Particle> particles;
+  final double t;
+
+  _ConfettiPainter(this.particles, this.t);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint();
+    for (final p in particles) {
+      final px = (p.x + p.vx * t) * size.width;
+      final py = (p.y + p.vy * t) * size.height;
+      if (py > size.height + 20) continue;
+      final opacity = t < 0.7 ? 1.0 : 1.0 - ((t - 0.7) / 0.3);
+      paint.color = p.color.withValues(alpha: opacity.clamp(0.0, 1.0));
+      canvas.save();
+      canvas.translate(px, py);
+      canvas.rotate(p.angle + p.spin * t);
+      canvas.drawRect(
+        Rect.fromCenter(center: Offset.zero, width: p.size, height: p.size * 0.5),
+        paint,
+      );
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(_ConfettiPainter old) => old.t != t;
 }
 
 // ─── Workout complete overlay ──────────────────────────────────────────────────
