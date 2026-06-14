@@ -314,7 +314,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
           );
         }
         if (idx == 0 && !isTimed) {
-          return _SetData(weightKg: entry.suggestion.suggestedKg ?? 0.0, reps: te.repRangeMax);
+          return _SetData(weightKg: entry.suggestion.suggestedKg ?? 0.0, reps: (te.repRangeMax * 0.8).round());
         }
         return _SetData(weightKg: 0, reps: 0);
       });
@@ -1194,7 +1194,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   }
 
   void _showAddExerciseConfig(int insertAt, Exercise exercise) {
-    int sets = 3, repMin = 8, repMax = 12, durationSecs = 30;
+    int sets = 3, repMax = 12, durationSecs = 30;
     final isTimed = exercise.isTimed;
     showModalBottomSheet(
       context: context, isScrollControlled: true,
@@ -1218,9 +1218,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
               Row(children: [
                 Expanded(child: _ConfigStepper(label: 'Sets', value: sets, min: 1, max: 10, onChanged: (v) => setM(() => sets = v))),
                 const SizedBox(width: 12),
-                Expanded(child: _ConfigStepper(label: 'Min reps', value: repMin, min: 1, max: 100, onChanged: (v) => setM(() => repMin = v))),
-                const SizedBox(width: 12),
-                Expanded(child: _ConfigStepper(label: 'Max reps', value: repMax, min: 1, max: 100, onChanged: (v) => setM(() => repMax = v))),
+                Expanded(child: _ConfigStepper(label: 'Reps', value: repMax, min: 1, max: 100, onChanged: (v) => setM(() => repMax = v))),
               ]),
             const SizedBox(height: 20),
             SizedBox(width: double.infinity, child: FilledButton(
@@ -1228,7 +1226,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                 Navigator.pop(ctx);
                 _insertAdHocExercise(
                   insertAt, exercise, sets,
-                  isTimed ? durationSecs : repMin,
+                  isTimed ? durationSecs : (repMax * 0.8).round(),
                   isTimed ? durationSecs : repMax,
                 );
               },
@@ -2019,7 +2017,7 @@ class _CircuitExerciseSection extends StatelessWidget {
             Text(exercise.exercise.name,
                 style: Theme.of(context).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w700)),
             Text(
-              isTimed ? _fmtSec(te.repRangeMin) : '${te.repRangeMin}–${te.repRangeMax} reps',
+              isTimed ? _fmtSec(te.repRangeMin) : '${te.repRangeMax} reps',
               style: TextStyle(fontSize: 10, color: Colors.white.withValues(alpha: 0.45)),
             ),
           ])),

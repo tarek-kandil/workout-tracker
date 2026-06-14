@@ -952,7 +952,7 @@ class _WodTileState extends ConsumerState<_WodTile> {
     final isTimed = exercise?.isTimed ?? false;
     final rangeStr = isTimed
         ? '${te.targetSets}×${te.repRangeMin}s'
-        : '${te.targetSets}×${te.repRangeMin}–${te.repRangeMax}';
+        : '${te.targetSets}×${te.repRangeMax}';
 
     return Row(
       children: [
@@ -1110,7 +1110,7 @@ class _WodTileState extends ConsumerState<_WodTile> {
     final isTimed = exercise?.isTimed ?? false;
     final rangeStr = isTimed
         ? '${te.repRangeMin}s'
-        : '${te.repRangeMin}–${te.repRangeMax}';
+        : '${te.repRangeMax}';
 
     return Row(
       children: [
