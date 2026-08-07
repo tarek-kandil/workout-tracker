@@ -56,8 +56,11 @@ part 'app_database.g.dart';
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
+  /// Test-only constructor that accepts an explicit [QueryExecutor].
+  AppDatabase.forTesting(super.e);
+
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -133,6 +136,24 @@ class AppDatabase extends _$AppDatabase {
                 tables.any((r) => r.read<String>('name') == 'exercise_muscles');
             if (!exists) {
               await m.createTable(exerciseMuscles);
+            }
+          }
+          if (from < 14) {
+            // rpe/notes have been part of the WorkoutSets class for a long time
+            // but were never added via a migration, so devices whose
+            // workout_sets table was created before those columns existed are
+            // missing them — writing rpe/notes then crashes with "no such
+            // column". Add them if absent (fresh installs already have them).
+            final cols = await customSelect(
+              'PRAGMA table_info(workout_sets)',
+            ).get();
+            final names =
+                cols.map((r) => r.read<String>('name')).toSet();
+            if (!names.contains('rpe')) {
+              await m.addColumn(workoutSets, workoutSets.rpe);
+            }
+            if (!names.contains('notes')) {
+              await m.addColumn(workoutSets, workoutSets.notes);
             }
           }
           if (from >= 3 && from < 8) {
