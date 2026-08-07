@@ -50,26 +50,14 @@ void main() {
   );
 
   test(
-    'v16 -> v17 renames exercise_sisters to exercise_variations, keeping data',
+    'v16 -> v17 creates exercise_variations when it is missing',
     () async {
       final raw = sqlite3.openInMemory();
       raw.execute(_createExercises);
-      raw.execute('''
-        CREATE TABLE exercise_sisters (
-          id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-          exercise_id INTEGER NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
-          sister_exercise_id INTEGER NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
-          UNIQUE (exercise_id, sister_exercise_id)
-        );
-      ''');
       raw.execute(
         "INSERT INTO exercises (id, name, category, notes, is_timed) VALUES "
         "(1, 'Squat', 'Strength', NULL, 0), "
         "(2, 'Leg Press', 'Strength', NULL, 0);",
-      );
-      raw.execute(
-        "INSERT INTO exercise_sisters (exercise_id, sister_exercise_id) "
-        "VALUES (1, 2);",
       );
       raw.execute('PRAGMA user_version = 16;');
 
@@ -78,15 +66,7 @@ void main() {
 
       await db.customSelect('SELECT 1').get();
 
-      // Old table gone, new table present.
-      final oldTable = await db
-          .customSelect(
-            "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'exercise_sisters'",
-          )
-          .get();
-      expect(oldTable, isEmpty);
-
-      // Existing link preserved and exposed under the new API/column name.
+      await db.exerciseVariationsDao.addVariation(1, 2);
       final variations = await db.exerciseVariationsDao.getVariations(1);
       expect(variations.single.name, 'Leg Press');
     },

@@ -179,11 +179,7 @@ class AppDatabase extends _$AppDatabase {
               "SELECT name FROM sqlite_master WHERE type='table'",
             ).get();
             final names = tables.map((r) => r.read<String>('name')).toSet();
-            // Fresh v16 upgrades create the table under its current name.
-            // (Installs that already have the old 'exercise_sisters' table are
-            // handled by the v17 rename below.)
-            if (!names.contains('exercise_variations') &&
-                !names.contains('exercise_sisters')) {
+            if (!names.contains('exercise_variations')) {
               await m.createTable(exerciseVariations);
             }
           }
@@ -192,17 +188,8 @@ class AppDatabase extends _$AppDatabase {
               "SELECT name FROM sqlite_master WHERE type='table'",
             ).get();
             final names = tables.map((r) => r.read<String>('name')).toSet();
-            // Rename the table (and its column) introduced in v16 from the old
-            // 'sister' terminology to 'variation', preserving existing links.
-            if (names.contains('exercise_sisters') &&
-                !names.contains('exercise_variations')) {
-              await customStatement(
-                'ALTER TABLE exercise_sisters RENAME TO exercise_variations',
-              );
-              await customStatement(
-                'ALTER TABLE exercise_variations '
-                'RENAME COLUMN sister_exercise_id TO variation_exercise_id',
-              );
+            if (!names.contains('exercise_variations')) {
+              await m.createTable(exerciseVariations);
             }
           }
           if (from >= 3 && from < 8) {
