@@ -32,12 +32,14 @@ class _SetData {
 
 /// Wraps a [WodItem] with mutable session metadata.
 class _SessionItem {
+  final int id;
   WodItem wodItem;
   bool skipped;
   bool isAdHoc;
   final Set<int> skippedSets;
 
   _SessionItem({
+    required this.id,
     required this.wodItem,
     this.skipped = false,
     this.isAdHoc = false,
@@ -129,6 +131,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
 
   // ── Mutable session items ──────────────────────────────────────────────────────
   final List<_SessionItem> _sessionItems = [];
+  int _nextItemId = 0;
 
   bool _loading = true;
   bool _saving = false;
@@ -299,14 +302,26 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       } else {
         _prData[exerciseId] = await db.setsDao.getPersonalRecord(exerciseId);
       }
-      _setData[exerciseId] = List.generate(
-        slotsNeeded[exerciseId] ?? te.targetSets,
-        (_) => _SetData(weightKg: 0, reps: 0),
-      );
+      final numSets = slotsNeeded[exerciseId] ?? te.targetSets;
+      final isTimed = entry.exercise.isTimed;
+      _setData[exerciseId] = List.generate(numSets, (idx) {
+        if (idx < lastSets.length) {
+          final ls = lastSets[idx];
+          return _SetData(
+            weightKg: ls.weightKg,
+            reps: isTimed ? 0 : ls.reps,
+            durationSeconds: isTimed ? (ls.durationSeconds ?? te.repRangeMin) : 0,
+          );
+        }
+        if (idx == 0 && !isTimed) {
+          return _SetData(weightKg: entry.suggestion.suggestedKg ?? 0.0, reps: (te.repRangeMax * 0.8).round());
+        }
+        return _SetData(weightKg: 0, reps: 0);
+      });
     }
 
     // Build mutable session items from the original result
-    _sessionItems.addAll(widget.result.items.map((i) => _SessionItem(wodItem: i)));
+    _sessionItems.addAll(widget.result.items.map((i) => _SessionItem(id: _nextItemId++, wodItem: i)));
 
     final prefs = await SharedPreferences.getInstance();
     final savedJson = prefs.getString('workout_progress_${widget.result.wodTemplate.id}');
@@ -387,15 +402,6 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       _prBestReps[exerciseId] = reps;
     }
     return isNewWeight || isMoreReps;
-  }
-
-  Future<void> _playPrChime() async {
-    HapticFeedback.heavyImpact();
-    await _sfxPlayer.play(BytesSource(_makeBeepWav(hz: 660, ms: 150)));
-    await Future.delayed(const Duration(milliseconds: 200));
-    await _sfxPlayer.play(BytesSource(_makeBeepWav(hz: 880, ms: 150)));
-    await Future.delayed(const Duration(milliseconds: 200));
-    await _sfxPlayer.play(BytesSource(_makeBeepWav(hz: 1100, ms: 200)));
   }
 
   Future<double?> _showRpeSheet(String exerciseName, int setNumber) {
@@ -491,7 +497,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     if (!isTimed && loggedData != null && loggedData.reps > 0 && mounted) {
       final oldPrKg = _prData[exerciseId];
       if (_checkPrAndUpdate(exerciseId, loggedData.weightKg, loggedData.reps)) {
-        await _playPrChime();
+        HapticFeedback.heavyImpact();
         if (mounted) {
           await showPrOverlay(
             context,
@@ -917,31 +923,106 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     _saveProgress();
   }
 
-  void _moveItemUp(int i) {
-    if (i <= 0) return;
-    setState(() {
-      final tmp = _sessionItems[i];
-      _sessionItems[i] = _sessionItems[i - 1];
-      _sessionItems[i - 1] = tmp;
-      // Mirror of _moveItemDown: only follow the current item when it is the one
-      // being moved (up). When some other (upcoming) item is pulled above the
-      // current one, keep _currentItemIdx put so that item becomes active — never
-      // bump the boundary forward, which would falsely mark the moved item done.
-      if (_currentItemIdx == i) _currentItemIdx = i - 1;
-    });
-    _saveProgress();
+  Future<void> _editSet(BuildContext context, int itemIdx, int setIdx) async {
+    final si = _sessionItems[itemIdx];
+    if (si.wodItem is! StandaloneWodExercise) return;
+    final entry = (si.wodItem as StandaloneWodExercise).entry;
+    final exerciseId = entry.templateExercise.exerciseId;
+    final isTimed = entry.exercise.isTimed;
+    final sets = _setData[exerciseId] ?? [];
+    final current = setIdx < sets.length ? sets[setIdx] : _SetData(weightKg: 0, reps: 0);
+
+    final weightCtrl = TextEditingController(text: current.weightKg > 0 ? _fmtW(current.weightKg) : '');
+    final secondaryCtrl = TextEditingController(
+        text: isTimed
+            ? (current.durationSeconds > 0 ? '${current.durationSeconds}' : '')
+            : (current.reps > 0 ? '${current.reps}' : ''));
+
+    final saved = await showModalBottomSheet<_SetData>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF1e2030),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Edit Set ${setIdx + 1}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
+            const SizedBox(height: 4),
+            Text(entry.exercise.name, style: const TextStyle(fontSize: 12, color: Colors.white54)),
+            const SizedBox(height: 20),
+            if (!isTimed) ...[
+              TextField(
+                controller: weightCtrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                autofocus: true,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(labelText: 'Weight (kg)', labelStyle: TextStyle(color: Colors.white54)),
+              ),
+              const SizedBox(height: 12),
+            ],
+            TextField(
+              controller: secondaryCtrl,
+              keyboardType: TextInputType.number,
+              autofocus: isTimed,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: isTimed ? 'Duration (seconds)' : 'Reps',
+                labelStyle: const TextStyle(color: Colors.white54),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(children: [
+              Expanded(child: TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              )),
+              const SizedBox(width: 12),
+              Expanded(child: FilledButton(
+                onPressed: () {
+                  final w = double.tryParse(weightCtrl.text.replaceAll(',', '.')) ?? current.weightKg;
+                  final s = int.tryParse(secondaryCtrl.text);
+                  Navigator.pop(ctx, _SetData(
+                    weightKg: isTimed ? 0 : w,
+                    reps: isTimed ? 0 : (s ?? current.reps),
+                    durationSeconds: isTimed ? (s ?? current.durationSeconds) : 0,
+                    rpe: current.rpe,
+                  ));
+                },
+                child: const Text('Save'),
+              )),
+            ]),
+          ]),
+        ),
+      ),
+    );
+
+    weightCtrl.dispose();
+    secondaryCtrl.dispose();
+
+    if (saved != null && mounted) {
+      _onSetChanged(entry.templateExercise.exerciseId, setIdx, saved);
+    }
   }
 
-  void _moveItemDown(int i) {
-    if (i >= _sessionItems.length - 1) return;
+  void _onReorder(int oldIndex, int newIndex) {
+    if (newIndex > oldIndex) newIndex--;
+    // Completed/skipped exercises have no drag handle, so oldIndex should always
+    // be the active exercise or an upcoming one. Guard defensively, and never let
+    // an item land in the completed region (before the active exercise): that
+    // would falsely mark an exercise as done. Keeping _currentItemIdx fixed means
+    // the set of completed exercises (indices < _currentItemIdx) never changes —
+    // whichever exercise ends up in the active slot simply becomes current.
+    if (oldIndex < _currentItemIdx) return;
+    if (newIndex < _currentItemIdx) newIndex = _currentItemIdx;
+    if (newIndex == oldIndex) return;
     setState(() {
-      final tmp = _sessionItems[i];
-      _sessionItems[i] = _sessionItems[i + 1];
-      _sessionItems[i + 1] = tmp;
-      // When moving the current item down, keep _currentItemIdx at i so the
-      // item that moved up (was at i+1, now at i) becomes the active exercise.
-      // Only follow the current item when some other item is moved past it.
-      if (_currentItemIdx == i + 1) _currentItemIdx = i;
+      final item = _sessionItems.removeAt(oldIndex);
+      _sessionItems.insert(newIndex, item);
     });
     _saveProgress();
   }
@@ -972,12 +1053,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
             const SizedBox(height: 14),
             _ActionTile(icon: Icons.swap_horiz, label: 'Swap Exercise',
                 onTap: () { Navigator.pop(ctx); _showSwapExerciseSheet(itemIdx); }),
-            if (itemIdx > 0)
-              _ActionTile(icon: Icons.arrow_upward, label: 'Move Up',
-                  onTap: () { Navigator.pop(ctx); _moveItemUp(itemIdx); }),
-            if (itemIdx < _sessionItems.length - 1)
-              _ActionTile(icon: Icons.arrow_downward, label: 'Move Down',
-                  onTap: () { Navigator.pop(ctx); _moveItemDown(itemIdx); }),
+            _ActionTile(icon: Icons.add, label: 'Add Exercise',
+                onTap: () { Navigator.pop(ctx); _showAddExerciseSheet(itemIdx + 1); }),
             _ActionTile(icon: Icons.skip_next, label: 'Skip Exercise',
                 onTap: () { Navigator.pop(ctx); _skipExercise(itemIdx); }),
             if (si.isAdHoc)
@@ -1041,6 +1118,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     );
     setState(() {
       _sessionItems[itemIdx] = _SessionItem(
+        id: _sessionItems[itemIdx].id,
         wodItem: StandaloneWodExercise(entry: newEntry, restSeconds: original.restSeconds),
         isAdHoc: true,
       );
@@ -1088,7 +1166,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       exercises: newExercises,
     );
     setState(() {
-      _sessionItems[itemIdx] = _SessionItem(wodItem: newCircuit, isAdHoc: _sessionItems[itemIdx].isAdHoc);
+      _sessionItems[itemIdx] = _SessionItem(id: _sessionItems[itemIdx].id, wodItem: newCircuit, isAdHoc: _sessionItems[itemIdx].isAdHoc);
       _setData[newExercise.id] = List.generate(circuit.rounds, (_) => _SetData(weightKg: 0, reps: 0));
       _lastSets[newExercise.id] = [];
       _prData[newExercise.id] = null;
@@ -1118,7 +1196,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   }
 
   void _showAddExerciseConfig(int insertAt, Exercise exercise) {
-    int sets = 3, repMin = 8, repMax = 12, durationSecs = 30;
+    int sets = 3, repMax = 12, durationSecs = 30;
     final isTimed = exercise.isTimed;
     showModalBottomSheet(
       context: context, isScrollControlled: true,
@@ -1142,9 +1220,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
               Row(children: [
                 Expanded(child: _ConfigStepper(label: 'Sets', value: sets, min: 1, max: 10, onChanged: (v) => setM(() => sets = v))),
                 const SizedBox(width: 12),
-                Expanded(child: _ConfigStepper(label: 'Min reps', value: repMin, min: 1, max: 100, onChanged: (v) => setM(() => repMin = v))),
-                const SizedBox(width: 12),
-                Expanded(child: _ConfigStepper(label: 'Max reps', value: repMax, min: 1, max: 100, onChanged: (v) => setM(() => repMax = v))),
+                Expanded(child: _ConfigStepper(label: 'Reps', value: repMax, min: 1, max: 100, onChanged: (v) => setM(() => repMax = v))),
               ]),
             const SizedBox(height: 20),
             SizedBox(width: double.infinity, child: FilledButton(
@@ -1152,7 +1228,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                 Navigator.pop(ctx);
                 _insertAdHocExercise(
                   insertAt, exercise, sets,
-                  isTimed ? durationSecs : repMin,
+                  isTimed ? durationSecs : (repMax * 0.8).round(),
                   isTimed ? durationSecs : repMax,
                 );
               },
@@ -1177,7 +1253,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     final entry = WodExerciseEntry(
       templateExercise: fakeTe, exercise: exercise, suggestion: WeightSuggestion.noHistory,
     );
-    final si = _SessionItem(wodItem: StandaloneWodExercise(entry: entry, restSeconds: null), isAdHoc: true);
+    final si = _SessionItem(id: _nextItemId++, wodItem: StandaloneWodExercise(entry: entry, restSeconds: null), isAdHoc: true);
     setState(() {
       _sessionItems.insert(insertAt, si);
       _setData[exercise.id] = List.generate(sets, (_) => _SetData(weightKg: 0, reps: 0));
@@ -1250,24 +1326,23 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
           if (_loading)
             const Center(child: CircularProgressIndicator())
           else
-            ListView.builder(
+            ReorderableListView.builder(
               padding: EdgeInsets.fromLTRB(16, _resting ? 72 : 8, 16, 24),
-              itemCount: _sessionItems.length * 2 + 1,
-              itemBuilder: (_, i) {
-                if (i.isEven) {
-                  final insertAt = i ~/ 2;
-                  return _AddExerciseGap(onAdd: () => _showAddExerciseSheet(insertAt));
-                }
-                final itemIdx = i ~/ 2;
+              buildDefaultDragHandles: false,
+              onReorder: _onReorder,
+              itemCount: _sessionItems.length,
+              itemBuilder: (_, itemIdx) {
                 final state = _cardStateFor(itemIdx);
                 final si = _sessionItems[itemIdx];
                 return Padding(
+                  key: ValueKey(si.id),
                   padding: const EdgeInsets.only(bottom: 10),
                   child: switch (si.wodItem) {
                     StandaloneWodExercise(:final entry) => _ExerciseCard(
                         entry: entry,
                         cardState: state,
                         itemIndex: itemIdx,
+                        dragIndex: state == _CardState.completed ? null : itemIdx,
                         setData: _setData[entry.templateExercise.exerciseId] ?? [],
                         currentSetIdx: itemIdx == _currentItemIdx ? _currentSetIdx : -1,
                         lastSets: _lastSets[entry.templateExercise.exerciseId] ?? [],
@@ -1288,12 +1363,14 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                         onStartTimer: itemIdx == _currentItemIdx ? _startExerciseTimer : null,
                         onStopTimer: itemIdx == _currentItemIdx ? _stopExerciseTimer : null,
                         onSkipSet: (setIdx) => _skipSet(itemIdx, setIdx),
+                        onEditSet: (setIdx) => _editSet(context, itemIdx, setIdx),
                         onShowActions: () => _showExerciseActions(context, itemIdx),
                       ),
                     WodCircuit() => _CircuitCard(
                         circuit: si.wodItem as WodCircuit,
                         cardState: state,
                         itemIndex: itemIdx,
+                        dragIndex: state == _CardState.completed ? null : itemIdx,
                         currentItemIdx: _currentItemIdx,
                         currentSetIdx: _currentSetIdx,
                         currentCircuitExIdx: _circuitExerciseIdx,
@@ -1353,29 +1430,6 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
               circuitNextLabel: _circuitNextLabel,
             ),
         ],
-      ),
-    );
-  }
-}
-
-// ─── _AddExerciseGap ───────────────────────────────────────────────────────────
-
-class _AddExerciseGap extends StatelessWidget {
-  final VoidCallback onAdd;
-  const _AddExerciseGap({required this.onAdd});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onAdd,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 5),
-        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(Icons.add_circle_outline, size: 13, color: Colors.white.withValues(alpha: 0.18)),
-          const SizedBox(width: 5),
-          Text('add exercise', style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.18))),
-        ]),
       ),
     );
   }
@@ -1527,16 +1581,16 @@ class _SetRowItem extends StatelessWidget {
   final bool isSkipped;
   final bool canSkip;
   final _SetData data;
-  final _SetData referenceData;
   final void Function(_SetData)? onChanged;
   final VoidCallback onSkip;
+  final VoidCallback? onEdit;
 
   const _SetRowItem({
     super.key,
     required this.setIndex, required this.isTimed,
     required this.isActive, required this.isDone, required this.isSkipped,
-    required this.canSkip, required this.data, required this.referenceData,
-    required this.onChanged, required this.onSkip,
+    required this.canSkip, required this.data,
+    required this.onChanged, required this.onSkip, this.onEdit,
   });
 
   @override
@@ -1544,6 +1598,7 @@ class _SetRowItem extends StatelessWidget {
     final accent = Theme.of(context).colorScheme.primary;
     return GestureDetector(
       onLongPress: canSkip ? onSkip : null,
+      onTap: onEdit,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 3),
         child: Row(children: [
@@ -1563,7 +1618,7 @@ class _SetRowItem extends StatelessWidget {
             Expanded(child: _SetRow(
               key: ValueKey('srinput-$setIndex'),
               setNumber: setIndex + 1, isTimed: isTimed,
-              data: data, referenceData: referenceData, onChanged: onChanged!,
+              data: data, onChanged: onChanged!,
             ))
           else ...[
             if (!isTimed) ...[
@@ -1583,6 +1638,11 @@ class _SetRowItem extends StatelessWidget {
               strikethrough: isSkipped,
               accent: isSkipped ? Colors.orange : null,
             )),
+            if (onEdit != null)
+              const Padding(
+                padding: EdgeInsets.only(left: 6),
+                child: Icon(Icons.edit, size: 12, color: Colors.white24),
+              ),
           ],
         ]),
       ),
@@ -1596,6 +1656,7 @@ class _ExerciseCard extends StatelessWidget {
   final WodExerciseEntry entry;
   final _CardState cardState;
   final int itemIndex;
+  final int? dragIndex;
   final List<_SetData> setData;
   final int currentSetIdx;
   final List<WorkoutSet> lastSets;
@@ -1613,17 +1674,19 @@ class _ExerciseCard extends StatelessWidget {
   final VoidCallback? onStartTimer;
   final VoidCallback? onStopTimer;
   final void Function(int) onSkipSet;
+  final void Function(int) onEditSet;
   final VoidCallback onShowActions;
 
   const _ExerciseCard({
     required this.entry, required this.cardState, required this.itemIndex,
+    this.dragIndex,
     required this.setData, required this.currentSetIdx, required this.lastSets,
     required this.prKg, required this.prDurationSeconds, required this.skippedSets,
     required this.isAdHoc, required this.timedRunning, required this.timedElapsed,
     required this.timedStopped, required this.historyExpanded,
     required this.onToggleHistory, required this.onSetDataChanged,
     required this.onDoneSet, required this.onStartTimer, required this.onStopTimer,
-    required this.onSkipSet, required this.onShowActions,
+    required this.onSkipSet, required this.onEditSet, required this.onShowActions,
   });
 
   static void _showCoachingNotes(
@@ -1702,15 +1765,6 @@ class _ExerciseCard extends StatelessWidget {
     );
   }
 
-  _SetData _refDataFor(int setIdx, bool isTimed, WodTemplateExercise te) {
-    if (setIdx == 0) {
-      return isTimed
-          ? _SetData(weightKg: 0, reps: 0, durationSeconds: lastSets.isNotEmpty ? (lastSets[0].durationSeconds ?? te.repRangeMin) : te.repRangeMin)
-          : _SetData(weightKg: entry.suggestion.suggestedKg ?? 0.0, reps: lastSets.isNotEmpty ? lastSets[0].reps : te.repRangeMax);
-    }
-    return setIdx - 1 < setData.length ? setData[setIdx - 1] : _SetData(weightKg: 0, reps: 0);
-  }
-
   @override
   Widget build(BuildContext context) {
     final te = entry.templateExercise;
@@ -1765,6 +1819,14 @@ class _ExerciseCard extends StatelessWidget {
                         minimumSize: const Size(32, 32),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         foregroundColor: Colors.white38,
+                      ),
+                    ),
+                  if (dragIndex != null)
+                    ReorderableDragStartListener(
+                      index: dragIndex!,
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                        child: Icon(Icons.drag_handle, size: 20, color: Colors.white24),
                       ),
                     ),
                   IconButton(
@@ -1830,9 +1892,9 @@ class _ExerciseCard extends StatelessWidget {
               isActive: isSetActive, isDone: isSetDone, isSkipped: isSetSkipped,
               canSkip: !isSetActive && !isSetDone && !isSetSkipped && isActive,
               data: setIdx < setData.length ? setData[setIdx] : _SetData(weightKg: 0, reps: 0),
-              referenceData: _refDataFor(setIdx, isTimed, te),
               onChanged: isSetActive ? (data) => onSetDataChanged(setIdx, data) : null,
               onSkip: () => onSkipSet(setIdx),
+              onEdit: isSetDone ? () => onEditSet(setIdx) : null,
             );
           }),
           // Done button / timer
@@ -1864,13 +1926,12 @@ class _RoundRowItem extends StatelessWidget {
   final bool isActive;
   final bool isDone;
   final _SetData data;
-  final _SetData referenceData;
   final void Function(_SetData)? onChanged;
 
   const _RoundRowItem({
     required this.roundIndex, required this.isTimed,
     required this.isActive, required this.isDone,
-    required this.data, required this.referenceData, required this.onChanged,
+    required this.data, required this.onChanged,
   });
 
   @override
@@ -1892,7 +1953,7 @@ class _RoundRowItem extends StatelessWidget {
           Expanded(child: _SetRow(
             key: ValueKey('round-input-$roundIndex'),
             setNumber: roundIndex + 1, isTimed: isTimed,
-            data: data, referenceData: referenceData, onChanged: onChanged!,
+            data: data, onChanged: onChanged!,
           ))
         else ...[
           if (!isTimed) ...[
@@ -1946,17 +2007,6 @@ class _CircuitExerciseSection extends StatelessWidget {
     required this.timedRunning, required this.timedElapsed, required this.timedStopped,
   });
 
-  _SetData _refData(int roundIdx) {
-    final te = exercise.templateExercise;
-    final isTimed = exercise.exercise.isTimed;
-    if (roundIdx == 0) {
-      return isTimed
-          ? _SetData(weightKg: 0, reps: 0, durationSeconds: lastSets.isNotEmpty ? (lastSets[0].durationSeconds ?? te.repRangeMin) : te.repRangeMin)
-          : _SetData(weightKg: exercise.suggestion.suggestedKg ?? 0.0, reps: lastSets.isNotEmpty ? lastSets[0].reps : te.repRangeMax);
-    }
-    return roundIdx - 1 < setData.length ? setData[roundIdx - 1] : _SetData(weightKg: 0, reps: 0);
-  }
-
   @override
   Widget build(BuildContext context) {
     final te = exercise.templateExercise;
@@ -1972,7 +2022,7 @@ class _CircuitExerciseSection extends StatelessWidget {
             Text(exercise.exercise.name,
                 style: Theme.of(context).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w700)),
             Text(
-              isTimed ? _fmtSec(te.repRangeMin) : '${te.repRangeMin}–${te.repRangeMax} reps',
+              isTimed ? _fmtSec(te.repRangeMin) : '${te.repRangeMax} reps',
               style: TextStyle(fontSize: 10, color: Colors.white.withValues(alpha: 0.45)),
             ),
           ])),
@@ -1997,7 +2047,6 @@ class _CircuitExerciseSection extends StatelessWidget {
             isDone: r < currentRound || (!isCurrentExercise && r < setData.length &&
                 (isTimed ? setData[r].durationSeconds > 0 : setData[r].reps > 0)),
             data: r < setData.length ? setData[r] : _SetData(weightKg: 0, reps: 0),
-            referenceData: _refData(r),
             onChanged: isCurrentExercise && r == currentRound ? (d) => onSetDataChanged(r, d) : null,
           ),
         if (isCurrentExercise && onDoneSet != null) ...[
@@ -2043,6 +2092,7 @@ class _CircuitCard extends StatelessWidget {
   final bool timedRunning;
   final int timedElapsed;
   final bool timedStopped;
+  final int? dragIndex;
 
   const _CircuitCard({
     required this.circuit, required this.cardState, required this.itemIndex,
@@ -2053,6 +2103,7 @@ class _CircuitCard extends StatelessWidget {
     required this.onDoneSet, required this.onStartTimer, required this.onStopTimer,
     required this.onShowCircuitActions, required this.onShowExerciseActions,
     required this.timedRunning, required this.timedElapsed, required this.timedStopped,
+    this.dragIndex,
   });
 
   @override
@@ -2090,6 +2141,14 @@ class _CircuitCard extends StatelessWidget {
               ),
             ])),
             if (isDone) const _StatusBadge(label: '✓ DONE', color: Colors.green),
+            if (dragIndex != null)
+              ReorderableDragStartListener(
+                index: dragIndex!,
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                  child: Icon(Icons.drag_handle, size: 20, color: Colors.white24),
+                ),
+              ),
             IconButton(
               icon: const Icon(Icons.more_horiz, size: 18),
               onPressed: onShowCircuitActions,
@@ -2595,13 +2654,12 @@ class _SetRow extends StatefulWidget {
   final int setNumber;
   final bool isTimed;
   final _SetData data;
-  final _SetData referenceData;
   final void Function(_SetData) onChanged;
 
   const _SetRow({
     super.key,
     required this.setNumber, required this.isTimed,
-    required this.data, required this.referenceData, required this.onChanged,
+    required this.data, required this.onChanged,
   });
 
   @override
@@ -2609,7 +2667,6 @@ class _SetRow extends StatefulWidget {
 }
 
 class _SetRowState extends State<_SetRow> {
-  bool _initialized = false;
   bool _editingWeight = false;
   bool _editingSecondary = false;
   late final TextEditingController _weightCtrl;
@@ -2630,32 +2687,25 @@ class _SetRowState extends State<_SetRow> {
   }
 
   void _handleWeight(double delta) {
-    final base = _initialized ? widget.data : widget.referenceData;
-    _initialized = true;
     widget.onChanged(_SetData(
-      weightKg: (base.weightKg + delta).clamp(0.0, double.infinity),
-      reps: base.reps,
-      durationSeconds: base.durationSeconds,
-      rpe: base.rpe,
+      weightKg: (widget.data.weightKg + delta).clamp(0.0, double.infinity),
+      reps: widget.data.reps,
+      durationSeconds: widget.data.durationSeconds,
+      rpe: widget.data.rpe,
     ));
   }
 
   void _handleReps(int delta) {
-    final base = _initialized ? widget.data : widget.referenceData;
-    _initialized = true;
-    widget.onChanged(_SetData(weightKg: base.weightKg, reps: (base.reps + delta).clamp(1, 999), rpe: base.rpe));
+    widget.onChanged(_SetData(weightKg: widget.data.weightKg, reps: (widget.data.reps + delta).clamp(1, 999), rpe: widget.data.rpe));
   }
 
   void _handleDuration(int delta) {
-    final base = _initialized ? widget.data : widget.referenceData;
-    _initialized = true;
-    widget.onChanged(_SetData(weightKg: base.weightKg, reps: 0, durationSeconds: (base.durationSeconds + delta).clamp(5, 3600), rpe: base.rpe));
+    widget.onChanged(_SetData(weightKg: widget.data.weightKg, reps: 0, durationSeconds: (widget.data.durationSeconds + delta).clamp(5, 3600), rpe: widget.data.rpe));
   }
 
   void _commitWeight() {
     final v = double.tryParse(_weightCtrl.text.replaceAll(',', '.'));
     if (v != null && v >= 0) {
-      _initialized = true;
       widget.onChanged(_SetData(weightKg: v, reps: widget.data.reps, durationSeconds: widget.data.durationSeconds, rpe: widget.data.rpe));
     }
     if (mounted) setState(() => _editingWeight = false);
@@ -2664,7 +2714,6 @@ class _SetRowState extends State<_SetRow> {
   void _commitReps() {
     final v = int.tryParse(_secondaryCtrl.text);
     if (v != null && v >= 1) {
-      _initialized = true;
       widget.onChanged(_SetData(weightKg: widget.data.weightKg, reps: v, rpe: widget.data.rpe));
     }
     if (mounted) setState(() => _editingSecondary = false);
@@ -2673,7 +2722,6 @@ class _SetRowState extends State<_SetRow> {
   void _commitDuration() {
     final v = int.tryParse(_secondaryCtrl.text);
     if (v != null && v >= 1) {
-      _initialized = true;
       widget.onChanged(_SetData(weightKg: widget.data.weightKg, reps: 0, durationSeconds: v.clamp(5, 3600), rpe: widget.data.rpe));
     }
     if (mounted) setState(() => _editingSecondary = false);

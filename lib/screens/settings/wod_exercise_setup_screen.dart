@@ -114,7 +114,7 @@ class _WodExerciseSetupScreenState
           groupId: Value(groupId),
           sortOrder: Value(nextInGroup),
           targetSets: const Value(1), // circuits: 1 rep per exercise per round
-          repRangeMin: picked.isTimed ? const Value(30) : const Value(6),
+          repRangeMin: picked.isTimed ? const Value(30) : const Value(10),
           repRangeMax: picked.isTimed ? const Value(30) : const Value(12),
         ),
       );
@@ -126,7 +126,7 @@ class _WodExerciseSetupScreenState
           exerciseId: Value(picked.id),
           sortOrder: Value(_nextSortOrder),
           targetSets: const Value(3),
-          repRangeMin: picked.isTimed ? const Value(30) : const Value(6),
+          repRangeMin: picked.isTimed ? const Value(30) : const Value(10),
           repRangeMax: picked.isTimed ? const Value(60) : const Value(12),
         ),
       );
@@ -1274,7 +1274,6 @@ class _EditExerciseDialogState extends State<_EditExerciseDialog> {
   late int _durationIdx;
   late int _restBetweenSets;
   late int _restAfterExercise;
-  late int _repMin;
   late int _repMaxIndex;
   late int _rpeIndex;
   late final TextEditingController _notesCtrl;
@@ -1289,10 +1288,8 @@ class _EditExerciseDialogState extends State<_EditExerciseDialog> {
 
     if (widget.exercise.isTimed) {
       _durationIdx = _nearestIdx(widget.entry.repRangeMin);
-      _repMin = widget.entry.repRangeMin;
     } else {
       _durationIdx = _nearestIdx(30);
-      _repMin = widget.entry.repRangeMin;
     }
 
     // Find closest repMax in _repValues
@@ -1322,7 +1319,7 @@ class _EditExerciseDialogState extends State<_EditExerciseDialog> {
 
   void _onSave() {
     final repMax = widget.exercise.isTimed ? _steps[_durationIdx] : _repValues[_repMaxIndex];
-    final repMin = widget.exercise.isTimed ? repMax : _repMin;
+    final repMin = widget.exercise.isTimed ? repMax : (repMax * 0.8).round();
     Navigator.pop(context, _ExerciseConfig(
       sets: _sets,
       repMin: repMin,
@@ -1684,7 +1681,7 @@ class _RepsPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final label = isTimed
         ? _fmtSec(te.repRangeMin)
-        : '${te.repRangeMin}–${te.repRangeMax} reps';
+        : '${te.repRangeMax} reps';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
