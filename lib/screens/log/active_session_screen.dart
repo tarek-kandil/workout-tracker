@@ -923,8 +923,11 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       final tmp = _sessionItems[i];
       _sessionItems[i] = _sessionItems[i - 1];
       _sessionItems[i - 1] = tmp;
+      // Mirror of _moveItemDown: only follow the current item when it is the one
+      // being moved (up). When some other (upcoming) item is pulled above the
+      // current one, keep _currentItemIdx put so that item becomes active — never
+      // bump the boundary forward, which would falsely mark the moved item done.
       if (_currentItemIdx == i) _currentItemIdx = i - 1;
-      else if (_currentItemIdx == i - 1) _currentItemIdx = i;
     });
     _saveProgress();
   }
