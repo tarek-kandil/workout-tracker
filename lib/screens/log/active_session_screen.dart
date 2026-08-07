@@ -20,6 +20,8 @@ import '../../widgets/celebration_overlay.dart';
 import '../../widgets/glass_background.dart';
 import 'models/session_models.dart';
 import 'audio/session_sounds.dart';
+import 'session_formatters.dart';
+import 'widgets/session_common.dart';
 
 // ─── Screen ────────────────────────────────────────────────────────────────────
 
@@ -845,7 +847,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     final sets = _setData[exerciseId] ?? [];
     final current = setIdx < sets.length ? sets[setIdx] : SetData(weightKg: 0, reps: 0);
 
-    final weightCtrl = TextEditingController(text: current.weightKg > 0 ? _fmtW(current.weightKg) : '');
+    final weightCtrl = TextEditingController(text: current.weightKg > 0 ? fmtW(current.weightKg) : '');
     final secondaryCtrl = TextEditingController(
         text: isTimed
             ? (current.durationSeconds > 0 ? '${current.durationSeconds}' : '')
@@ -1348,53 +1350,6 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   }
 }
 
-// ─── StatusBadge ─────────────────────────────────────────────────────────────
-
-class StatusBadge extends StatelessWidget {
-  final String label;
-  final Color color;
-  const StatusBadge({super.key, required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.only(bottom: 3),
-    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-    decoration: BoxDecoration(
-      color: color.withValues(alpha: 0.18),
-      borderRadius: BorderRadius.circular(5),
-    ),
-    child: Text(label, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: color, letterSpacing: 0.5)),
-  );
-}
-
-// ─── ReadOnlyField ───────────────────────────────────────────────────────────
-
-class ReadOnlyField extends StatelessWidget {
-  final String label;
-  final String value;
-  final bool dim;
-  final bool strikethrough;
-  final Color? accent;
-  const ReadOnlyField({super.key, required this.label, required this.value, this.dim = false, this.strikethrough = false, this.accent});
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-    decoration: BoxDecoration(
-      color: Colors.white.withValues(alpha: dim ? 0.03 : 0.07),
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: Column(children: [
-      Text(label, style: TextStyle(fontSize: 8, color: Colors.white.withValues(alpha: 0.35), letterSpacing: 0.3)),
-      Text(value, style: TextStyle(
-        fontSize: 14, fontWeight: FontWeight.w700,
-        color: accent ?? Colors.white.withValues(alpha: dim ? 0.3 : 0.9),
-        decoration: strikethrough ? TextDecoration.lineThrough : null,
-      )),
-    ]),
-  );
-}
-
 // ─── HistoryChipRow ──────────────────────────────────────────────────────────
 
 class HistoryChipRow extends StatelessWidget {
@@ -1415,8 +1370,8 @@ class HistoryChipRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasHistory = lastSets.isNotEmpty;
     final prStr = isTimed
-        ? (prDurationSeconds != null && prDurationSeconds! > 0 ? _fmtSec(prDurationSeconds!) : null)
-        : (prKg != null && prKg! > 0 ? '${_fmtW(prKg!)} kg' : null);
+        ? (prDurationSeconds != null && prDurationSeconds! > 0 ? fmtSec(prDurationSeconds!) : null)
+        : (prKg != null && prKg! > 0 ? '${fmtW(prKg!)} kg' : null);
 
     if (!hasHistory && prStr == null) return const SizedBox.shrink();
 
@@ -1466,14 +1421,14 @@ class HistoryChipRow extends StatelessWidget {
                 child: Row(children: [
                   SizedBox(width: 46, child: Text('Set ${i + 1}', style: const TextStyle(fontSize: 10, color: Colors.white38))),
                   if (!isTimed)
-                    Expanded(child: Text('${_fmtW(lastSets[i].weightKg)} kg',
+                    Expanded(child: Text('${fmtW(lastSets[i].weightKg)} kg',
                         style: const TextStyle(fontSize: 11, color: Colors.white60, fontWeight: FontWeight.w600))),
                   Expanded(child: Text(
-                    isTimed ? _fmtSec(lastSets[i].durationSeconds ?? 0) : '× ${lastSets[i].reps} reps',
+                    isTimed ? fmtSec(lastSets[i].durationSeconds ?? 0) : '× ${lastSets[i].reps} reps',
                     style: const TextStyle(fontSize: 11, color: Colors.white54),
                   )),
                   if (lastSets[i].rpe != null)
-                    Text('RPE ${_fmtRpe(lastSets[i].rpe!)}',
+                    Text('RPE ${fmtRpe(lastSets[i].rpe!)}',
                         style: const TextStyle(fontSize: 11, color: Colors.white38, fontWeight: FontWeight.w600)),
                 ]),
               ),
@@ -1537,7 +1492,7 @@ class SetRowItem extends StatelessWidget {
             if (!isTimed) ...[
               Expanded(child: ReadOnlyField(
                 label: 'WEIGHT',
-                value: isSkipped || data.weightKg == 0 ? '—' : '${_fmtW(data.weightKg)} kg',
+                value: isSkipped || data.weightKg == 0 ? '—' : '${fmtW(data.weightKg)} kg',
                 dim: !isDone,
               )),
               const SizedBox(width: 6),
@@ -1545,7 +1500,7 @@ class SetRowItem extends StatelessWidget {
             Expanded(child: ReadOnlyField(
               label: isTimed ? 'DURATION' : 'REPS',
               value: isSkipped ? 'skip'
-                  : isTimed ? (data.durationSeconds > 0 ? _fmtSec(data.durationSeconds) : '—')
+                  : isTimed ? (data.durationSeconds > 0 ? fmtSec(data.durationSeconds) : '—')
                   : (data.reps > 0 ? '${data.reps}' : '—'),
               dim: !isDone,
               strikethrough: isSkipped,
@@ -1714,7 +1669,7 @@ class ExerciseCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleLarge!.copyWith(fontWeight: FontWeight.w800)),
               const SizedBox(height: 2),
               Text(
-                isTimed ? '${te.targetSets} sets · ${_fmtSec(te.repRangeMin)}'
+                isTimed ? '${te.targetSets} sets · ${fmtSec(te.repRangeMin)}'
                         : '${te.targetSets} sets · ${te.repRangeMin}–${te.repRangeMax} reps',
                 style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.45)),
               ),
@@ -1871,12 +1826,12 @@ class RoundRowItem extends StatelessWidget {
         else ...[
           if (!isTimed) ...[
             Expanded(child: ReadOnlyField(label: 'WEIGHT',
-                value: data.weightKg > 0 ? '${_fmtW(data.weightKg)} kg' : '—', dim: !isDone)),
+                value: data.weightKg > 0 ? '${fmtW(data.weightKg)} kg' : '—', dim: !isDone)),
             const SizedBox(width: 6),
           ],
           Expanded(child: ReadOnlyField(
             label: isTimed ? 'DURATION' : 'REPS',
-            value: isTimed ? (data.durationSeconds > 0 ? _fmtSec(data.durationSeconds) : '—')
+            value: isTimed ? (data.durationSeconds > 0 ? fmtSec(data.durationSeconds) : '—')
                            : (data.reps > 0 ? '${data.reps}' : '—'),
             dim: !isDone,
           )),
@@ -1935,7 +1890,7 @@ class CircuitExerciseSection extends StatelessWidget {
             Text(exercise.exercise.name,
                 style: Theme.of(context).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w700)),
             Text(
-              isTimed ? _fmtSec(te.repRangeMin) : '${te.repRangeMax} reps',
+              isTimed ? fmtSec(te.repRangeMin) : '${te.repRangeMax} reps',
               style: TextStyle(fontSize: 10, color: Colors.white.withValues(alpha: 0.45)),
             ),
           ])),
@@ -2101,28 +2056,6 @@ class CircuitCard extends StatelessWidget {
   }
 }
 
-// ─── ActionTile ──────────────────────────────────────────────────────────────
-
-class ActionTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final Color? color;
-  const ActionTile({super.key, required this.icon, required this.label, required this.onTap, this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    final c = color ?? Colors.white;
-    return ListTile(
-      leading: Icon(icon, color: c, size: 20),
-      title: Text(label, style: TextStyle(color: c, fontSize: 14, fontWeight: FontWeight.w600)),
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-      dense: true,
-    );
-  }
-}
-
 // ─── _cfgBtn helper ──────────────────────────────────────────────────────────
 
 Widget _cfgBtn(ColorScheme cs, bool enabled, IconData icon, VoidCallback cb) =>
@@ -2267,59 +2200,6 @@ class _ExerciseLibrarySheetState extends ConsumerState<ExerciseLibrarySheet> {
   }
 }
 
-// ─── TimedSetInput ───────────────────────────────────────────────────────────
-
-class TimedSetInput extends StatelessWidget {
-  final bool running;
-  final int elapsed;
-  final bool stopped;
-  final int target;
-  final bool isCircuit;
-  final VoidCallback onStart;
-  final VoidCallback onStop;
-
-  const TimedSetInput({super.key, 
-    required this.running, required this.elapsed, required this.stopped,
-    required this.target, this.isCircuit = false,
-    required this.onStart, required this.onStop,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(children: [
-      if (stopped)
-        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          const Icon(Icons.check_circle, color: Colors.green, size: 20),
-          const SizedBox(width: 8),
-          Text(_fmtSec(elapsed), style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(width: 4),
-          Text('logged', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white.withValues(alpha: 0.38))),
-        ])
-      else if (running)
-        Column(children: [
-          Text(_fmtSec(elapsed), style: const TextStyle(fontSize: 48, fontWeight: FontWeight.w300, color: Colors.white)),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: onStop,
-            icon: const Icon(Icons.stop_circle_outlined),
-            label: const Text('Stop'),
-            style: OutlinedButton.styleFrom(foregroundColor: Colors.red, side: const BorderSide(color: Colors.red)),
-          ),
-        ])
-      else
-        Column(children: [
-          Text('Target: ${_fmtSec(target)}', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white.withValues(alpha: 0.45))),
-          const SizedBox(height: 10),
-          SizedBox(width: double.infinity, child: OutlinedButton.icon(
-            onPressed: onStart,
-            icon: const Icon(Icons.play_circle_outlined),
-            label: Text(isCircuit ? 'Start Circuit' : 'Start Timer'),
-          )),
-        ]),
-    ]);
-  }
-}
-
 // ─── RestPill ─────────────────────────────────────────────────────────────────
 
 class RestPill extends StatelessWidget {
@@ -2360,7 +2240,7 @@ class RestPill extends StatelessWidget {
               color: accent,
             ),
             Text(
-              _fmtSec(secondsLeft),
+              fmtSec(secondsLeft),
               style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: accent),
             ),
           ]),
@@ -2522,45 +2402,6 @@ class CountdownOverlay extends StatelessWidget {
   }
 }
 
-// ─── SuggestionBadge ────────────────────────────────────────────────────────
-
-class SuggestionBadge extends StatelessWidget {
-  final WeightSuggestion suggestion;
-  const SuggestionBadge({super.key, required this.suggestion});
-
-  @override
-  Widget build(BuildContext context) {
-    if (suggestion.type == SuggestionType.noHistory) return const SizedBox.shrink();
-    Color color;
-    IconData icon;
-    switch (suggestion.type) {
-      case SuggestionType.increase:
-        color = Colors.green; icon = Icons.trending_up;
-      case SuggestionType.decrease:
-        color = Colors.orange; icon = Icons.trending_down;
-      case SuggestionType.maintain:
-      case SuggestionType.noHistory:
-        color = Theme.of(context).colorScheme.secondary; icon = Icons.trending_flat;
-    }
-    final kg = suggestion.suggestedKg != null ? '${_fmtW(suggestion.suggestedKg!)} kg' : '';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
-      ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 14, color: color),
-        if (kg.isNotEmpty) ...[
-          const SizedBox(width: 4),
-          Text(kg, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w600)),
-        ],
-      ]),
-    );
-  }
-}
-
 // ─── SetRow (stepper widget) ─────────────────────────────────────────────────
 
 class SetRow extends StatefulWidget {
@@ -2648,12 +2489,12 @@ class _SetRowState extends State<SetRow> {
     return Row(children: [
       if (!isTimed) ...[
         Expanded(child: StepperField(
-          label: _editingWeight ? null : '${_fmtW(widget.data.weightKg)} kg',
+          label: _editingWeight ? null : '${fmtW(widget.data.weightKg)} kg',
           editingController: _editingWeight ? _weightCtrl : null,
           onDecrement: () => _handleWeight(-2.5),
           onIncrement: () => _handleWeight(2.5),
           onTapValue: () => setState(() {
-            _weightCtrl.text = _fmtW(widget.data.weightKg);
+            _weightCtrl.text = fmtW(widget.data.weightKg);
             _weightCtrl.selection = TextSelection(baseOffset: 0, extentOffset: _weightCtrl.text.length);
             _editingWeight = true; _editingSecondary = false;
           }),
@@ -2664,7 +2505,7 @@ class _SetRowState extends State<SetRow> {
       Expanded(
         child: isTimed
             ? StepperField(
-                label: _editingSecondary ? null : _fmtSec(dur),
+                label: _editingSecondary ? null : fmtSec(dur),
                 editingController: _editingSecondary ? _secondaryCtrl : null,
                 isInteger: true,
                 onDecrement: () => _handleDuration(-5),
@@ -2826,20 +2667,6 @@ class _CheckCircleButtonState extends State<CheckCircleButton> with SingleTicker
       ),
     ]);
   }
-}
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-String _fmtW(double w) =>
-    w == w.roundToDouble() ? w.toInt().toString() : w.toStringAsFixed(1);
-
-String _fmtRpe(double rpe) =>
-    rpe == rpe.roundToDouble() ? rpe.toInt().toString() : rpe.toStringAsFixed(1);
-
-String _fmtSec(int seconds) {
-  final m = seconds ~/ 60;
-  final s = seconds % 60;
-  return '$m:${s.toString().padLeft(2, '0')}';
 }
 
 // ─── RpeSheet ────────────────────────────────────────────────────────────────
