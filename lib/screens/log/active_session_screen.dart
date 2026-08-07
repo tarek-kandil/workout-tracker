@@ -33,6 +33,27 @@ import 'widgets/rest_pill.dart';
 import 'widgets/resume_prompt_overlay.dart';
 import 'widgets/countdown_overlay.dart';
 
+enum _ProgramChangeScope { temporary, permanent }
+
+class _ProgramOrderItem {
+  final String key;
+  final int sortOrder;
+  final WodTemplateExercise? exercise;
+  final WodExerciseGroup? group;
+
+  _ProgramOrderItem.exercise(WodTemplateExercise templateExercise)
+      : key = 'e:${templateExercise.id}',
+        sortOrder = templateExercise.sortOrder,
+        exercise = templateExercise,
+        group = null;
+
+  _ProgramOrderItem.group(WodExerciseGroup exerciseGroup)
+      : key = 'g:${exerciseGroup.id}',
+        sortOrder = exerciseGroup.sortOrder,
+        group = exerciseGroup,
+        exercise = null;
+}
+
 // ─── Screen ────────────────────────────────────────────────────────────────────
 
 class ActiveSessionScreen extends ConsumerStatefulWidget {
@@ -1029,14 +1050,59 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     _saveProgress();
   }
 
-  void _removeAdHocItem(int i) {
-    if (!_sessionItems[i].isAdHoc) return;
+  void _removeSessionItem(int i) {
     setState(() {
       _sessionItems.removeAt(i);
       if (_currentItemIdx > i) _currentItemIdx--;
       _currentItemIdx = _currentItemIdx.clamp(0, (_sessionItems.length - 1).clamp(0, 999));
     });
     _saveProgress();
+  }
+
+  Future<void> _removeExerciseWithProgramChoice(int itemIdx) async {
+    if (itemIdx < 0 || itemIdx >= _sessionItems.length) {
+      return;
+    }
+    final si = _sessionItems[itemIdx];
+    final wodItem = si.wodItem;
+    if (wodItem is! StandaloneWodExercise) {
+      return;
+    }
+
+    final templateExerciseId = wodItem.entry.templateExercise.id;
+    final hasProgramEntry = !si.isAdHoc && templateExerciseId > 0;
+    final choice = await _showProgramChangeScopeSheet(
+      title: 'Remove ${wodItem.entry.exercise.name}?',
+      message: hasProgramEntry
+          ? 'Remove it only from this workout, or save the removal to the program so future sessions skip it too.'
+          : 'This exercise was added only for this workout, so removing it will not change the program.',
+      temporaryLabel: 'Just for this workout',
+      temporaryIcon: Icons.delete_sweep_outlined,
+      permanentLabel: 'Save to program permanently',
+      permanentIcon: Icons.playlist_remove_rounded,
+      permanentColor: Colors.red.shade300,
+      showPermanent: hasProgramEntry,
+    );
+    if (!mounted || choice == null) {
+      return;
+    }
+
+    final sessionItemId = si.id;
+    if (choice == _ProgramChangeScope.permanent && hasProgramEntry) {
+      await ref
+          .read(databaseProvider)
+          .programsDao
+          .deleteWodTemplateExercise(templateExerciseId);
+      ref.invalidate(nextWodProvider);
+      ref.invalidate(allCurrentPhaseWodsProvider);
+      if (!mounted) {
+        return;
+      }
+    }
+    final currentIndex = _sessionItems.indexWhere((item) => item.id == sessionItemId);
+    if (currentIndex != -1) {
+      _removeSessionItem(currentIndex);
+    }
   }
 
   // ── Action sheets ─────────────────────────────────────────────────────────────
@@ -1064,9 +1130,9 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                 onTap: () { Navigator.pop(ctx); _showAddExerciseSheet(itemIdx + 1); }),
             ActionTile(icon: Icons.skip_next, label: 'Skip Exercise',
                 onTap: () { Navigator.pop(ctx); _skipExercise(itemIdx); }),
-            if (si.isAdHoc)
+            if (wodItem is StandaloneWodExercise)
               ActionTile(icon: Icons.delete_outline, label: 'Remove', color: Colors.red.shade300,
-                  onTap: () { Navigator.pop(ctx); _removeAdHocItem(itemIdx); }),
+                  onTap: () { Navigator.pop(ctx); _removeExerciseWithProgramChoice(itemIdx); }),
             const SizedBox(height: 4),
           ]),
         ),
@@ -1340,6 +1406,193 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     });
   }
 
+  Future<_ProgramChangeScope?> _showProgramChangeScopeSheet({
+    required String title,
+    required String message,
+    required String temporaryLabel,
+    required IconData temporaryIcon,
+    required String permanentLabel,
+    required IconData permanentIcon,
+    Color? permanentColor,
+    bool showPermanent = true,
+  }) {
+    return showModalBottomSheet<_ProgramChangeScope>(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Center(
+              child: Container(width: 36, height: 3, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
+            Text(message),
+            const SizedBox(height: 12),
+            ActionTile(
+              icon: temporaryIcon,
+              label: temporaryLabel,
+              onTap: () => Navigator.pop(ctx, _ProgramChangeScope.temporary),
+            ),
+            if (showPermanent)
+              ActionTile(
+                icon: permanentIcon,
+                label: permanentLabel,
+                color: permanentColor,
+                onTap: () => Navigator.pop(ctx, _ProgramChangeScope.permanent),
+              ),
+            const SizedBox(height: 4),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  String? _programOrderKeyForSessionItem(SessionItem item) {
+    switch (item.wodItem) {
+      case StandaloneWodExercise(:final entry):
+        final id = entry.templateExercise.id;
+        return !item.isAdHoc && id > 0 ? 'e:$id' : null;
+      case WodCircuit(:final groupId):
+        return groupId > 0 ? 'g:$groupId' : null;
+    }
+  }
+
+  Future<WodTemplateExercise> _insertProgramExercise(
+    int insertAt,
+    Exercise exercise,
+    int sets,
+    int repMin,
+    int repMax,
+  ) async {
+    final db = ref.read(databaseProvider);
+    final id = await db.programsDao.insertWodTemplateExercise(
+      WodTemplateExercisesCompanion(
+        wodTemplateId: Value(widget.result.wodTemplate.id),
+        exerciseId: Value(exercise.id),
+        groupId: const Value(null),
+        sortOrder: Value(insertAt + 1),
+        targetSets: Value(sets),
+        repRangeMin: Value(repMin),
+        repRangeMax: Value(repMax),
+      ),
+    );
+    return _moveProgramExerciseToSessionPosition(id, insertAt);
+  }
+
+  Future<WodTemplateExercise> _moveProgramExerciseToSessionPosition(
+    int templateExerciseId,
+    int insertAt,
+  ) async {
+    final db = ref.read(databaseProvider);
+    final safeInsertAt = insertAt.clamp(0, _sessionItems.length).toInt();
+    final standaloneExercises =
+        await db.programsDao.getTemplateExercises(widget.result.wodTemplate.id);
+    final groups = await db.programsDao.getGroupsForWod(widget.result.wodTemplate.id);
+    final orderItems = <_ProgramOrderItem>[
+      for (final exercise in standaloneExercises) _ProgramOrderItem.exercise(exercise),
+      for (final group in groups) _ProgramOrderItem.group(group),
+    ]..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
+    final newKey = 'e:$templateExerciseId';
+    final newItemIndex = orderItems.indexWhere((item) => item.key == newKey);
+    if (newItemIndex == -1) {
+      throw StateError('Inserted exercise was not found in the WOD template.');
+    }
+    final newItem = orderItems.removeAt(newItemIndex);
+
+    String? previousKey;
+    for (int i = safeInsertAt - 1; i >= 0; i--) {
+      previousKey = _programOrderKeyForSessionItem(_sessionItems[i]);
+      if (previousKey != null) {
+        break;
+      }
+    }
+
+    String? nextKey;
+    for (int i = safeInsertAt; i < _sessionItems.length; i++) {
+      nextKey = _programOrderKeyForSessionItem(_sessionItems[i]);
+      if (nextKey != null) {
+        break;
+      }
+    }
+
+    var targetIndex = orderItems.length;
+    if (nextKey != null) {
+      final nextIndex = orderItems.indexWhere((item) => item.key == nextKey);
+      if (nextIndex != -1) {
+        targetIndex = nextIndex;
+      }
+    } else if (previousKey != null) {
+      final previousIndex = orderItems.indexWhere((item) => item.key == previousKey);
+      if (previousIndex != -1) {
+        targetIndex = previousIndex + 1;
+      }
+    } else {
+      targetIndex = 0;
+    }
+
+    orderItems.insert(targetIndex, newItem);
+    await _rewriteProgramOrder(orderItems);
+    return (await db.programsDao.getTemplateExercises(widget.result.wodTemplate.id))
+        .firstWhere((exercise) => exercise.id == templateExerciseId);
+  }
+
+  Future<void> _rewriteProgramOrder(List<_ProgramOrderItem> orderItems) async {
+    final db = ref.read(databaseProvider);
+    for (int i = 0; i < orderItems.length; i++) {
+      final sortOrder = i + 1;
+      final orderItem = orderItems[i];
+      final exercise = orderItem.exercise;
+      if (exercise != null) {
+        if (exercise.sortOrder == sortOrder) {
+          continue;
+        }
+        await db.programsDao.updateWodTemplateExercise(
+          WodTemplateExercisesCompanion(
+            id: Value(exercise.id),
+            wodTemplateId: Value(exercise.wodTemplateId),
+            exerciseId: Value(exercise.exerciseId),
+            groupId: Value(exercise.groupId),
+            sortOrder: Value(sortOrder),
+            targetSets: Value(exercise.targetSets),
+            repRangeMin: Value(exercise.repRangeMin),
+            repRangeMax: Value(exercise.repRangeMax),
+            notes: Value(exercise.notes),
+            restSeconds: Value(exercise.restSeconds),
+            restBetweenSetsSeconds: Value(exercise.restBetweenSetsSeconds),
+            targetRpe: Value(exercise.targetRpe),
+            videoUrl: Value(exercise.videoUrl),
+          ),
+        );
+        continue;
+      }
+
+      final group = orderItem.group;
+      if (group != null && group.sortOrder != sortOrder) {
+        await db.programsDao.updateGroup(
+          WodExerciseGroupsCompanion(
+            id: Value(group.id),
+            wodTemplateId: Value(group.wodTemplateId),
+            sortOrder: Value(sortOrder),
+            name: Value(group.name),
+            rounds: Value(group.rounds),
+            restBetweenExercisesSeconds: Value(group.restBetweenExercisesSeconds),
+            restBetweenRoundsSeconds: Value(group.restBetweenRoundsSeconds),
+          ),
+        );
+      }
+    }
+  }
+
   // ── Add exercise ──────────────────────────────────────────────────────────────
 
   void _showAddExerciseSheet(int insertAt) {
@@ -1383,7 +1636,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
             SizedBox(width: double.infinity, child: FilledButton(
               onPressed: () {
                 Navigator.pop(ctx);
-                _insertAdHocExercise(
+                _addExerciseWithProgramChoice(
                   insertAt, exercise, sets,
                   isTimed ? durationSecs : (repMax * 0.8).round(),
                   isTimed ? durationSecs : repMax,
@@ -1397,6 +1650,40 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     );
   }
 
+  Future<void> _addExerciseWithProgramChoice(
+    int insertAt,
+    Exercise exercise,
+    int sets,
+    int repMin,
+    int repMax,
+  ) async {
+    final choice = await _showProgramChangeScopeSheet(
+      title: 'Add ${exercise.name}?',
+      message: 'Add it only to this workout, or save it to the program so it appears in future sessions too.',
+      temporaryLabel: 'Just for this workout',
+      temporaryIcon: Icons.add_circle_outline_rounded,
+      permanentLabel: 'Save to program permanently',
+      permanentIcon: Icons.playlist_add_rounded,
+    );
+    if (!mounted || choice == null) {
+      return;
+    }
+
+    if (choice == _ProgramChangeScope.temporary) {
+      _insertAdHocExercise(insertAt, exercise, sets, repMin, repMax);
+      return;
+    }
+
+    final templateExercise =
+        await _insertProgramExercise(insertAt, exercise, sets, repMin, repMax);
+    ref.invalidate(nextWodProvider);
+    ref.invalidate(allCurrentPhaseWodsProvider);
+    if (!mounted) {
+      return;
+    }
+    _insertSessionExercise(insertAt, exercise, templateExercise, isAdHoc: false);
+  }
+
   void _insertAdHocExercise(int insertAt, Exercise exercise, int sets, int repMin, int repMax) {
     final fakeTe = WodTemplateExercise(
       id: -(DateTime.now().millisecondsSinceEpoch),
@@ -1407,21 +1694,31 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       repRangeMin: repMin,
       repRangeMax: repMax,
     );
+    _insertSessionExercise(insertAt, exercise, fakeTe, isAdHoc: true);
+  }
+
+  void _insertSessionExercise(
+    int insertAt,
+    Exercise exercise,
+    WodTemplateExercise templateExercise, {
+    required bool isAdHoc,
+  }) {
     final entry = WodExerciseEntry(
-      templateExercise: fakeTe, exercise: exercise, suggestion: WeightSuggestion.noHistory,
+      templateExercise: templateExercise, exercise: exercise, suggestion: WeightSuggestion.noHistory,
     );
-    final si = SessionItem(id: _nextItemId++, wodItem: StandaloneWodExercise(entry: entry, restSeconds: null), isAdHoc: true);
+    final si = SessionItem(id: _nextItemId++, wodItem: StandaloneWodExercise(entry: entry, restSeconds: null), isAdHoc: isAdHoc);
+    final safeInsertAt = insertAt.clamp(0, _sessionItems.length).toInt();
     setState(() {
-      _sessionItems.insert(insertAt, si);
-      _setData[exercise.id] = List.generate(sets, (_) => SetData(weightKg: 0, reps: 0));
+      _sessionItems.insert(safeInsertAt, si);
+      _setData[exercise.id] = List.generate(templateExercise.targetSets, (_) => SetData(weightKg: 0, reps: 0));
       _lastSets[exercise.id] = [];
       _prData[exercise.id] = null;
       if (_allExercisesDone) {
         // All previous exercises were finished — make the new item active.
-        _currentItemIdx = insertAt;
+        _currentItemIdx = safeInsertAt;
         _currentSetIdx = 0;
         _allExercisesDone = false;
-      } else if (insertAt < _currentItemIdx) {
+      } else if (safeInsertAt < _currentItemIdx) {
         // Inserting before the current item shifts it forward.
         _currentItemIdx++;
       }
