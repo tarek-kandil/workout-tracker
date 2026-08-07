@@ -27,6 +27,7 @@ import 'widgets/exercise_card.dart';
 import 'widgets/circuit_card.dart';
 import 'widgets/config_stepper.dart';
 import 'widgets/exercise_library_sheet.dart';
+import 'widgets/exercise_notes_sheet.dart';
 import 'widgets/rest_pill.dart';
 import 'widgets/resume_prompt_overlay.dart';
 import 'widgets/countdown_overlay.dart';
@@ -1041,6 +1042,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
 
   void _showExerciseActions(BuildContext context, int itemIdx) {
     final si = _sessionItems[itemIdx];
+    final wodItem = si.wodItem;
+    final standalone = wodItem is StandaloneWodExercise ? wodItem.entry : null;
     showModalBottomSheet(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -1051,6 +1054,9 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Container(width: 36, height: 3, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 14),
+            if (standalone != null)
+              ActionTile(icon: Icons.notes_rounded, label: 'Notes',
+                  onTap: () { Navigator.pop(ctx); _showExerciseNotesSheet(standalone); }),
             ActionTile(icon: Icons.swap_horiz, label: 'Swap Exercise',
                 onTap: () { Navigator.pop(ctx); _showSwapExerciseSheet(itemIdx); }),
             ActionTile(icon: Icons.add, label: 'Add Exercise',
@@ -1068,6 +1074,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   }
 
   void _showCircuitExerciseActions(BuildContext context, int itemIdx, int exIdx) {
+    final circuit = _sessionItems[itemIdx].wodItem as WodCircuit;
+    final entry = circuit.exercises[exIdx];
     showModalBottomSheet(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -1078,11 +1086,25 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Container(width: 36, height: 3, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 14),
+            ActionTile(icon: Icons.notes_rounded, label: 'Notes',
+                onTap: () { Navigator.pop(ctx); _showExerciseNotesSheet(entry); }),
             ActionTile(icon: Icons.swap_horiz, label: 'Swap Exercise',
                 onTap: () { Navigator.pop(ctx); _showSwapCircuitExerciseSheet(itemIdx, exIdx); }),
             const SizedBox(height: 4),
           ]),
         ),
+      ),
+    );
+  }
+
+  void _showExerciseNotesSheet(WodExerciseEntry entry) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ExerciseNotesSheet(
+        exerciseId: entry.templateExercise.exerciseId,
+        exerciseName: entry.exercise.name,
       ),
     );
   }
