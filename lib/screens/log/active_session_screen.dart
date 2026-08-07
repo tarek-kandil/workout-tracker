@@ -8,6 +8,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../database/app_database.dart';
 import '../../services/notification_service.dart';
+import '../../services/personal_record_detection.dart';
 import '../../models/next_wod_result.dart';
 import '../../models/weight_suggestion.dart';
 import '../../models/wod_item.dart';
@@ -215,7 +216,11 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       if (entry.exercise.isTimed) {
         _prDurationData[exerciseId] = await db.setsDao.getPersonalRecordDuration(exerciseId);
       } else {
-        _prData[exerciseId] = await db.setsDao.getPersonalRecord(exerciseId);
+        final pr = await db.setsDao.getPersonalRecord(exerciseId);
+        _prData[exerciseId] = pr;
+        if (pr != null && pr > 0) {
+          _prBestReps[exerciseId] = await db.setsDao.getBestRepsAtWeight(exerciseId, pr);
+        }
       }
       final numSets = slotsNeeded[exerciseId] ?? te.targetSets;
       final isTimed = entry.exercise.isTimed;
@@ -246,6 +251,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       _pendingResumeJson = savedJson;
       if (widget.autoResume) {
         _applyResumeData(data);
+        await _refreshAllPrBaselines(notify: false);
         setState(() { _loading = false; _pendingResumeJson = null; });
       } else {
         setState(() { _loading = false; _showResumePrompt = true; });
@@ -292,31 +298,109 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
 
   // ── PR helpers ────────────────────────────────────────────────────────────────
 
-  int _bestRepsAtPrWeight(int exerciseId) {
-    final pr = _prData[exerciseId];
-    if (pr == null || pr == 0) return 0;
-    int best = _prBestReps[exerciseId] ?? 0;
-    for (final s in (_lastSets[exerciseId] ?? [])) {
-      if (s.weightKg == pr && s.reps > best) best = s.reps;
-    }
-    for (final s in (_setData[exerciseId] ?? [])) {
-      if (s.weightKg == pr && s.reps > best) best = s.reps;
-    }
-    return best;
-  }
-
   /// Returns true if this set is a new PR; updates _prData / _prBestReps when it is.
   bool _checkPrAndUpdate(int exerciseId, double weightKg, int reps) {
-    final currentPr = _prData[exerciseId] ?? 0.0;
-    final isNewWeight = weightKg > currentPr;
-    final isMoreReps = weightKg == currentPr && reps > _bestRepsAtPrWeight(exerciseId);
-    if (isNewWeight) {
+    final result = evaluateWeightPersonalRecord(
+      currentTopWeightKg: _prData[exerciseId],
+      bestRepsAtCurrentTopWeight: _prBestReps[exerciseId] ?? 0,
+      weightKg: weightKg,
+      reps: reps,
+    );
+    if (result.isNewTopWeight) {
       _prData[exerciseId] = weightKg;
-      _prBestReps.remove(exerciseId);
-    } else if (isMoreReps) {
+      _prBestReps[exerciseId] = reps;
+    } else if (result.isMoreRepsAtTopWeight) {
       _prBestReps[exerciseId] = reps;
     }
-    return isNewWeight || isMoreReps;
+    return result.isPersonalRecord;
+  }
+
+  Iterable<SetData> _loggedSetDataForExercise(int exerciseId) sync* {
+    for (int itemIdx = 0; itemIdx < _sessionItems.length; itemIdx++) {
+      final item = _sessionItems[itemIdx];
+      if (item.skipped) continue;
+      switch (item.wodItem) {
+        case StandaloneWodExercise(:final entry):
+          if (entry.templateExercise.exerciseId != exerciseId) continue;
+          final sets = _setData[exerciseId] ?? [];
+          for (int setIdx = 0; setIdx < sets.length; setIdx++) {
+            if (item.skippedSets.contains(setIdx)) continue;
+            final isLogged = itemIdx < _currentItemIdx ||
+                (_allExercisesDone && itemIdx == _currentItemIdx) ||
+                (itemIdx == _currentItemIdx && setIdx < _currentSetIdx);
+            if (isLogged) yield sets[setIdx];
+          }
+        case WodCircuit(:final rounds, :final exercises):
+          for (int exIdx = 0; exIdx < exercises.length; exIdx++) {
+            final entry = exercises[exIdx];
+            if (entry.templateExercise.exerciseId != exerciseId) continue;
+            final sets = _setData[exerciseId] ?? [];
+            for (int round = 0; round < rounds && round < sets.length; round++) {
+              final isLogged = itemIdx < _currentItemIdx ||
+                  (_allExercisesDone && itemIdx == _currentItemIdx) ||
+                  (itemIdx == _currentItemIdx &&
+                      (round < _currentSetIdx ||
+                          (round == _currentSetIdx && exIdx < _circuitExerciseIdx)));
+              if (isLogged) yield sets[round];
+            }
+          }
+      }
+    }
+  }
+
+  Future<({double? topWeightKg, int bestRepsAtTopWeight})>
+      _calculatePrBaseline(int exerciseId) async {
+    final db = ref.read(databaseProvider);
+    double topWeight = await db.setsDao.getPersonalRecord(exerciseId) ?? 0.0;
+    int bestReps = topWeight > 0
+        ? await db.setsDao.getBestRepsAtWeight(exerciseId, topWeight)
+        : 0;
+
+    for (final set in _loggedSetDataForExercise(exerciseId)) {
+      final result = evaluateWeightPersonalRecord(
+        currentTopWeightKg: topWeight,
+        bestRepsAtCurrentTopWeight: bestReps,
+        weightKg: set.weightKg,
+        reps: set.reps,
+      );
+      if (result.isNewTopWeight) {
+        topWeight = set.weightKg;
+        bestReps = set.reps;
+      } else if (result.isMoreRepsAtTopWeight) {
+        bestReps = set.reps;
+      }
+    }
+
+    return (
+      topWeightKg: topWeight > 0 ? topWeight : null,
+      bestRepsAtTopWeight: bestReps,
+    );
+  }
+
+  Future<void> _refreshPrBaseline(int exerciseId, {bool notify = true}) async {
+    final baseline = await _calculatePrBaseline(exerciseId);
+    if (!mounted) return;
+    void applyBaseline() {
+      _prData[exerciseId] = baseline.topWeightKg;
+      if (baseline.bestRepsAtTopWeight > 0) {
+        _prBestReps[exerciseId] = baseline.bestRepsAtTopWeight;
+      } else {
+        _prBestReps.remove(exerciseId);
+      }
+    }
+    if (notify) {
+      setState(applyBaseline);
+    } else {
+      applyBaseline();
+    }
+  }
+
+  Future<void> _refreshAllPrBaselines({bool notify = true}) async {
+    final exerciseIds = _prData.keys.toList();
+    for (final exerciseId in exerciseIds) {
+      await _refreshPrBaseline(exerciseId, notify: false);
+    }
+    if (notify && mounted) setState(() {});
   }
 
   Future<double?> _showRpeSheet(String exerciseName, int setNumber) {
@@ -814,7 +898,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     _saveProgress();
   }
 
-  Future<void> _editSet(BuildContext context, int itemIdx, int setIdx) async {
+  Future<void> _editSet(BuildContext parentContext, int itemIdx, int setIdx) async {
     final si = _sessionItems[itemIdx];
     if (si.wodItem is! StandaloneWodExercise) return;
     final entry = (si.wodItem as StandaloneWodExercise).entry;
@@ -830,7 +914,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
             : (current.reps > 0 ? '${current.reps}' : ''));
 
     final saved = await showModalBottomSheet<SetData>(
-      context: context,
+      context: parentContext,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Padding(
@@ -896,7 +980,32 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     secondaryCtrl.dispose();
 
     if (saved != null && mounted) {
-      _onSetChanged(entry.templateExercise.exerciseId, setIdx, saved);
+      final changed = !isTimed &&
+          (!sameRecordWeight(saved.weightKg, current.weightKg) ||
+              saved.reps != current.reps);
+      final baseline = changed ? await _calculatePrBaseline(exerciseId) : null;
+      final oldPrKg = baseline?.topWeightKg;
+      final prResult = baseline == null
+          ? PersonalRecordAttemptResult.none
+          : evaluateWeightPersonalRecord(
+              currentTopWeightKg: baseline.topWeightKg,
+              bestRepsAtCurrentTopWeight: baseline.bestRepsAtTopWeight,
+              weightKg: saved.weightKg,
+              reps: saved.reps,
+            );
+      if (!mounted) return;
+      _onSetChanged(exerciseId, setIdx, saved);
+      await _refreshPrBaseline(exerciseId);
+      if (prResult.isPersonalRecord && mounted) {
+        HapticFeedback.heavyImpact();
+        await showPrOverlay(
+          context,
+          exerciseName: entry.exercise.name,
+          newWeightKg: saved.weightKg,
+          reps: saved.reps,
+          oldWeightKg: oldPrKg,
+        );
+      }
     }
   }
 
@@ -1071,7 +1180,18 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     final db = ref.read(databaseProvider);
     final lastSets = await db.setsDao.getLastSetsForExerciseInWod(exerciseId, widget.result.wodTemplate.id);
     final pr = await db.setsDao.getPersonalRecord(exerciseId);
-    if (mounted) setState(() { _lastSets[exerciseId] = lastSets; _prData[exerciseId] = pr; });
+    final bestReps = pr != null && pr > 0
+        ? await db.setsDao.getBestRepsAtWeight(exerciseId, pr)
+        : 0;
+    if (mounted) setState(() {
+      _lastSets[exerciseId] = lastSets;
+      _prData[exerciseId] = pr;
+      if (bestReps > 0) {
+        _prBestReps[exerciseId] = bestReps;
+      } else {
+        _prBestReps.remove(exerciseId);
+      }
+    });
   }
 
   // ── Add exercise ──────────────────────────────────────────────────────────────
@@ -1162,6 +1282,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       // insertAt >= _currentItemIdx and not all done → new item is upcoming,
       // current item stays active (user will reach it naturally).
     });
+    _loadExerciseHistory(exercise.id);
     _saveProgress();
   }
 

@@ -1,9 +1,12 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../database/app_database.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/session_providers.dart';
+import '../../services/personal_record_detection.dart';
+import '../../widgets/celebration_overlay.dart';
 import '../../widgets/glass_background.dart';
 import '../../widgets/liquid_glass_container.dart';
 import '../../widgets/vibrant_text.dart';
@@ -92,6 +95,17 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
               .then((v) {
             if (mounted) setState(() => _priorVolume = v);
           });
+        },
+        onPersonalRecord: (weightKg, reps, oldWeightKg) async {
+          if (!mounted) return;
+          HapticFeedback.heavyImpact();
+          await showPrOverlay(
+            context,
+            exerciseName: exercise?.name ?? 'Exercise',
+            newWeightKg: weightKg,
+            reps: reps,
+            oldWeightKg: oldWeightKg,
+          );
         },
       ),
     );
@@ -548,11 +562,13 @@ class _EditSetSheet extends ConsumerStatefulWidget {
   final String exerciseName;
   final bool isTimed;
   final VoidCallback onSaved;
+  final Future<void> Function(double weightKg, int reps, double? oldWeightKg) onPersonalRecord;
   const _EditSetSheet({
     required this.set,
     required this.exerciseName,
     required this.isTimed,
     required this.onSaved,
+    required this.onPersonalRecord,
   });
 
   @override
@@ -585,7 +601,26 @@ class _EditSetSheetState extends ConsumerState<_EditSetSheet> {
 
   Future<void> _save() async {
     setState(() => _saving = true);
-    await ref.read(databaseProvider).setsDao.updateSet(WorkoutSetsCompanion(
+    final db = ref.read(databaseProvider);
+    final changedWeightOrReps = !widget.isTimed &&
+        (!sameRecordWeight(_weight, widget.set.weightKg) ||
+            _reps != widget.set.reps);
+    final oldPrKg = changedWeightOrReps
+        ? await db.setsDao.getPersonalRecord(widget.set.exerciseId)
+        : null;
+    final oldBestReps = oldPrKg != null && oldPrKg > 0
+        ? await db.setsDao.getBestRepsAtWeight(widget.set.exerciseId, oldPrKg)
+        : 0;
+    final prResult = changedWeightOrReps
+        ? evaluateWeightPersonalRecord(
+            currentTopWeightKg: oldPrKg,
+            bestRepsAtCurrentTopWeight: oldBestReps,
+            weightKg: _weight,
+            reps: _reps,
+          )
+        : PersonalRecordAttemptResult.none;
+
+    await db.setsDao.updateSet(WorkoutSetsCompanion(
           id: Value(widget.set.id),
           sessionId: Value(widget.set.sessionId),
           exerciseId: Value(widget.set.exerciseId),
@@ -601,6 +636,9 @@ class _EditSetSheetState extends ConsumerState<_EditSetSheet> {
         ));
     widget.onSaved();
     if (mounted) Navigator.of(context).pop();
+    if (prResult.isPersonalRecord) {
+      await widget.onPersonalRecord(_weight, _reps, oldPrKg);
+    }
   }
 
   Widget _stepper({
