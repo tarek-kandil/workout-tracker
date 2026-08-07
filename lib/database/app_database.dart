@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 
 import 'tables/exercises_table.dart';
 import 'tables/exercise_notes_table.dart';
+import 'tables/exercise_sisters_table.dart';
 import 'tables/sessions_table.dart';
 import 'tables/sets_table.dart';
 import 'tables/bodyweight_table.dart';
@@ -20,6 +21,7 @@ import 'tables/user_profile_table.dart';
 import 'tables/exercise_muscles_table.dart';
 import 'daos/exercises_dao.dart';
 import 'daos/exercise_notes_dao.dart';
+import 'daos/exercise_sisters_dao.dart';
 import 'daos/programs_dao.dart';
 import 'daos/sessions_dao.dart';
 import 'daos/sets_dao.dart';
@@ -45,6 +47,7 @@ part 'app_database.g.dart';
     UserProfiles,
     ExerciseMuscles,
     ExerciseNotes,
+    ExerciseSisters,
   ],
   daos: [
     ExercisesDao,
@@ -55,6 +58,7 @@ part 'app_database.g.dart';
     DailyTasksDao,
     UserProfileDao,
     ExerciseNotesDao,
+    ExerciseSistersDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -64,7 +68,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -168,6 +172,16 @@ class AppDatabase extends _$AppDatabase {
                 tables.any((r) => r.read<String>('name') == 'exercise_notes');
             if (!exists) {
               await m.createTable(exerciseNotes);
+            }
+          }
+          if (from < 16) {
+            final tables = await customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table'",
+            ).get();
+            final exists =
+                tables.any((r) => r.read<String>('name') == 'exercise_sisters');
+            if (!exists) {
+              await m.createTable(exerciseSisters);
             }
           }
           if (from >= 3 && from < 8) {

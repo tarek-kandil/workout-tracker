@@ -9,8 +9,15 @@ final exercisesProvider = StreamProvider<List<Exercise>>((ref) {
 
 /// Reactive map: exerciseId → [primary muscle, ...secondary muscles].
 /// Empty list means no muscles assigned for that exercise.
-final exerciseMuscleMapProvider =
-    StreamProvider<Map<int, List<String>>>((ref) {
+final exerciseMuscleMapProvider = StreamProvider<Map<int, List<String>>>((ref) {
   final db = ref.watch(databaseProvider);
   return db.exercisesDao.watchAllMuscleMap();
+});
+
+final sistersForExerciseProvider = FutureProvider.family<List<Exercise>, int>((
+  ref,
+  exerciseId,
+) {
+  final db = ref.watch(databaseProvider);
+  return db.exerciseSistersDao.getSisters(exerciseId);
 });
