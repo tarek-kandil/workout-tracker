@@ -1217,7 +1217,7 @@ class _ExerciseConfig {
   });
 }
 
-class _EditExerciseDialog extends StatefulWidget {
+class _EditExerciseDialog extends ConsumerStatefulWidget {
   final WodTemplateExercise entry;
   final Exercise exercise;
   final bool inCircuit;
@@ -1228,10 +1228,10 @@ class _EditExerciseDialog extends StatefulWidget {
   });
 
   @override
-  State<_EditExerciseDialog> createState() => _EditExerciseDialogState();
+  ConsumerState<_EditExerciseDialog> createState() => _EditExerciseDialogState();
 }
 
-class _EditExerciseDialogState extends State<_EditExerciseDialog> {
+class _EditExerciseDialogState extends ConsumerState<_EditExerciseDialog> {
   static const List<int> _steps = [
     10, 20, 30, 45,
     60, 90, 120, 150, 180, 210, 240, 270, 300,
@@ -1333,6 +1333,137 @@ class _EditExerciseDialogState extends State<_EditExerciseDialog> {
     ));
   }
 
+  Future<Exercise?> _createAndPickSisterExercise(
+      String name, String category, bool isTimed) async {
+    final db = ref.read(databaseProvider);
+    final id = await db.exercisesDao.insertExercise(ExercisesCompanion(
+      name: Value(name),
+      category: Value(category),
+      isTimed: Value(isTimed),
+    ));
+    ref.invalidate(exercisesProvider);
+    final allExercises = await db.exercisesDao.getAllExercises();
+    return allExercises.where((e) => e.id == id).firstOrNull;
+  }
+
+  Future<void> _showAddSisterPicker(
+      List<Exercise> allExercises, List<Exercise> sisters) async {
+    final sisterIds = sisters.map((s) => s.id).toSet();
+    final choices = allExercises
+        .where((e) => e.id != widget.exercise.id && !sisterIds.contains(e.id))
+        .toList();
+    final messenger = ScaffoldMessenger.of(context);
+    final picked = await showModalBottomSheet<Exercise>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => _ExercisePickerSheet(
+        exercises: choices,
+        onCreateNew: _createAndPickSisterExercise,
+      ),
+    );
+    if (picked == null || !mounted) return;
+    await ref
+        .read(databaseProvider)
+        .exerciseSistersDao
+        .addSister(widget.exercise.id, picked.id);
+    if (!mounted) return;
+    ref.invalidate(sistersForExerciseProvider(widget.exercise.id));
+    messenger.showSnackBar(
+      SnackBar(content: Text('${picked.name} added to sister exercises')),
+    );
+  }
+
+  Future<void> _removeSister(Exercise sister) async {
+    await ref
+        .read(databaseProvider)
+        .exerciseSistersDao
+        .removeSister(widget.exercise.id, sister.id);
+    if (!mounted) return;
+    ref.invalidate(sistersForExerciseProvider(widget.exercise.id));
+  }
+
+  Widget _buildSistersSection() {
+    final allExercisesAsync = ref.watch(exercisesProvider);
+    final sistersAsync =
+        ref.watch(sistersForExerciseProvider(widget.exercise.id));
+    final allExercises = allExercisesAsync.valueOrNull ?? const <Exercise>[];
+
+    return sistersAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 8),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, _) => Text(
+        'Could not load sisters: $e',
+        style: TextStyle(color: Theme.of(context).colorScheme.error),
+      ),
+      data: (sisters) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const _Label('SISTER EXERCISES'),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: allExercisesAsync.hasValue
+                    ? () => _showAddSisterPicker(allExercises, sisters)
+                    : null,
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('Add'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          if (sisters.isEmpty)
+            Text(
+              'No sister exercises yet.',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.white.withValues(alpha: 0.35),
+              ),
+            )
+          else
+            ...sisters.map(
+              (sister) => Container(
+                margin: const EdgeInsets.only(bottom: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.08),
+                  ),
+                ),
+                child: ListTile(
+                  dense: true,
+                  contentPadding: const EdgeInsets.only(left: 12, right: 4),
+                  title: Text(
+                    sister.name,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  subtitle: Text(
+                    sister.category,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.35),
+                    ),
+                  ),
+                  trailing: IconButton(
+                    icon: Icon(
+                      Icons.remove_circle_outline,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .error
+                          .withValues(alpha: 0.75),
+                    ),
+                    onPressed: () => _removeSister(sister),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final exercise = widget.exercise;
@@ -1383,6 +1514,11 @@ class _EditExerciseDialogState extends State<_EditExerciseDialog> {
                 ),
               ),
               const SizedBox(height: 22),
+
+              _buildSistersSection(),
+              const SizedBox(height: 18),
+              Divider(color: Colors.white.withValues(alpha: 0.08)),
+              const SizedBox(height: 20),
 
               // SETS (hidden for circuit exercises)
               if (!widget.inCircuit) ...[
