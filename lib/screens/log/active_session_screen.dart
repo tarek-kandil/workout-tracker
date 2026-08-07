@@ -1502,6 +1502,9 @@ class _HistoryChipRow extends StatelessWidget {
                     isTimed ? _fmtSec(lastSets[i].durationSeconds ?? 0) : '× ${lastSets[i].reps} reps',
                     style: const TextStyle(fontSize: 11, color: Colors.white54),
                   )),
+                  if (lastSets[i].rpe != null)
+                    Text('RPE ${_fmtRpe(lastSets[i].rpe!)}',
+                        style: const TextStyle(fontSize: 11, color: Colors.white38, fontWeight: FontWeight.w600)),
                 ]),
               ),
           ]),
@@ -2865,6 +2868,9 @@ class _CheckCircleButtonState extends State<_CheckCircleButton> with SingleTicke
 
 String _fmtW(double w) =>
     w == w.roundToDouble() ? w.toInt().toString() : w.toStringAsFixed(1);
+
+String _fmtRpe(double rpe) =>
+    rpe == rpe.roundToDouble() ? rpe.toInt().toString() : rpe.toStringAsFixed(1);
 
 String _fmtSec(int seconds) {
   final m = seconds ~/ 60;
