@@ -5907,12 +5907,12 @@ class ExerciseNotesCompanion extends UpdateCompanion<ExerciseNote> {
   }
 }
 
-class $ExerciseSistersTable extends ExerciseSisters
-    with TableInfo<$ExerciseSistersTable, ExerciseSister> {
+class $ExerciseVariationsTable extends ExerciseVariations
+    with TableInfo<$ExerciseVariationsTable, ExerciseVariation> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $ExerciseSistersTable(this.attachedDatabase, [this._alias]);
+  $ExerciseVariationsTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<int> id = GeneratedColumn<int>(
@@ -5940,12 +5940,11 @@ class $ExerciseSistersTable extends ExerciseSisters
       'REFERENCES exercises (id) ON DELETE CASCADE',
     ),
   );
-  static const VerificationMeta _sisterExerciseIdMeta = const VerificationMeta(
-    'sisterExerciseId',
-  );
+  static const VerificationMeta _variationExerciseIdMeta =
+      const VerificationMeta('variationExerciseId');
   @override
-  late final GeneratedColumn<int> sisterExerciseId = GeneratedColumn<int>(
-    'sister_exercise_id',
+  late final GeneratedColumn<int> variationExerciseId = GeneratedColumn<int>(
+    'variation_exercise_id',
     aliasedName,
     false,
     type: DriftSqlType.int,
@@ -5955,15 +5954,15 @@ class $ExerciseSistersTable extends ExerciseSisters
     ),
   );
   @override
-  List<GeneratedColumn> get $columns => [id, exerciseId, sisterExerciseId];
+  List<GeneratedColumn> get $columns => [id, exerciseId, variationExerciseId];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'exercise_sisters';
+  static const String $name = 'exercise_variations';
   @override
   VerificationContext validateIntegrity(
-    Insertable<ExerciseSister> instance, {
+    Insertable<ExerciseVariation> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -5979,16 +5978,16 @@ class $ExerciseSistersTable extends ExerciseSisters
     } else if (isInserting) {
       context.missing(_exerciseIdMeta);
     }
-    if (data.containsKey('sister_exercise_id')) {
+    if (data.containsKey('variation_exercise_id')) {
       context.handle(
-        _sisterExerciseIdMeta,
-        sisterExerciseId.isAcceptableOrUnknown(
-          data['sister_exercise_id']!,
-          _sisterExerciseIdMeta,
+        _variationExerciseIdMeta,
+        variationExerciseId.isAcceptableOrUnknown(
+          data['variation_exercise_id']!,
+          _variationExerciseIdMeta,
         ),
       );
     } else if (isInserting) {
-      context.missing(_sisterExerciseIdMeta);
+      context.missing(_variationExerciseIdMeta);
     }
     return context;
   }
@@ -5997,12 +5996,12 @@ class $ExerciseSistersTable extends ExerciseSisters
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
   List<Set<GeneratedColumn>> get uniqueKeys => [
-    {exerciseId, sisterExerciseId},
+    {exerciseId, variationExerciseId},
   ];
   @override
-  ExerciseSister map(Map<String, dynamic> data, {String? tablePrefix}) {
+  ExerciseVariation map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return ExerciseSister(
+    return ExerciseVariation(
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}id'],
@@ -6011,54 +6010,57 @@ class $ExerciseSistersTable extends ExerciseSisters
         DriftSqlType.int,
         data['${effectivePrefix}exercise_id'],
       )!,
-      sisterExerciseId: attachedDatabase.typeMapping.read(
+      variationExerciseId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
-        data['${effectivePrefix}sister_exercise_id'],
+        data['${effectivePrefix}variation_exercise_id'],
       )!,
     );
   }
 
   @override
-  $ExerciseSistersTable createAlias(String alias) {
-    return $ExerciseSistersTable(attachedDatabase, alias);
+  $ExerciseVariationsTable createAlias(String alias) {
+    return $ExerciseVariationsTable(attachedDatabase, alias);
   }
 }
 
-class ExerciseSister extends DataClass implements Insertable<ExerciseSister> {
+class ExerciseVariation extends DataClass
+    implements Insertable<ExerciseVariation> {
   final int id;
   final int exerciseId;
-  final int sisterExerciseId;
-  const ExerciseSister({
+  final int variationExerciseId;
+  const ExerciseVariation({
     required this.id,
     required this.exerciseId,
-    required this.sisterExerciseId,
+    required this.variationExerciseId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['exercise_id'] = Variable<int>(exerciseId);
-    map['sister_exercise_id'] = Variable<int>(sisterExerciseId);
+    map['variation_exercise_id'] = Variable<int>(variationExerciseId);
     return map;
   }
 
-  ExerciseSistersCompanion toCompanion(bool nullToAbsent) {
-    return ExerciseSistersCompanion(
+  ExerciseVariationsCompanion toCompanion(bool nullToAbsent) {
+    return ExerciseVariationsCompanion(
       id: Value(id),
       exerciseId: Value(exerciseId),
-      sisterExerciseId: Value(sisterExerciseId),
+      variationExerciseId: Value(variationExerciseId),
     );
   }
 
-  factory ExerciseSister.fromJson(
+  factory ExerciseVariation.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return ExerciseSister(
+    return ExerciseVariation(
       id: serializer.fromJson<int>(json['id']),
       exerciseId: serializer.fromJson<int>(json['exerciseId']),
-      sisterExerciseId: serializer.fromJson<int>(json['sisterExerciseId']),
+      variationExerciseId: serializer.fromJson<int>(
+        json['variationExerciseId'],
+      ),
     );
   }
   @override
@@ -6067,85 +6069,89 @@ class ExerciseSister extends DataClass implements Insertable<ExerciseSister> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'exerciseId': serializer.toJson<int>(exerciseId),
-      'sisterExerciseId': serializer.toJson<int>(sisterExerciseId),
+      'variationExerciseId': serializer.toJson<int>(variationExerciseId),
     };
   }
 
-  ExerciseSister copyWith({int? id, int? exerciseId, int? sisterExerciseId}) =>
-      ExerciseSister(
-        id: id ?? this.id,
-        exerciseId: exerciseId ?? this.exerciseId,
-        sisterExerciseId: sisterExerciseId ?? this.sisterExerciseId,
-      );
-  ExerciseSister copyWithCompanion(ExerciseSistersCompanion data) {
-    return ExerciseSister(
+  ExerciseVariation copyWith({
+    int? id,
+    int? exerciseId,
+    int? variationExerciseId,
+  }) => ExerciseVariation(
+    id: id ?? this.id,
+    exerciseId: exerciseId ?? this.exerciseId,
+    variationExerciseId: variationExerciseId ?? this.variationExerciseId,
+  );
+  ExerciseVariation copyWithCompanion(ExerciseVariationsCompanion data) {
+    return ExerciseVariation(
       id: data.id.present ? data.id.value : this.id,
       exerciseId: data.exerciseId.present
           ? data.exerciseId.value
           : this.exerciseId,
-      sisterExerciseId: data.sisterExerciseId.present
-          ? data.sisterExerciseId.value
-          : this.sisterExerciseId,
+      variationExerciseId: data.variationExerciseId.present
+          ? data.variationExerciseId.value
+          : this.variationExerciseId,
     );
   }
 
   @override
   String toString() {
-    return (StringBuffer('ExerciseSister(')
+    return (StringBuffer('ExerciseVariation(')
           ..write('id: $id, ')
           ..write('exerciseId: $exerciseId, ')
-          ..write('sisterExerciseId: $sisterExerciseId')
+          ..write('variationExerciseId: $variationExerciseId')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, exerciseId, sisterExerciseId);
+  int get hashCode => Object.hash(id, exerciseId, variationExerciseId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is ExerciseSister &&
+      (other is ExerciseVariation &&
           other.id == this.id &&
           other.exerciseId == this.exerciseId &&
-          other.sisterExerciseId == this.sisterExerciseId);
+          other.variationExerciseId == this.variationExerciseId);
 }
 
-class ExerciseSistersCompanion extends UpdateCompanion<ExerciseSister> {
+class ExerciseVariationsCompanion extends UpdateCompanion<ExerciseVariation> {
   final Value<int> id;
   final Value<int> exerciseId;
-  final Value<int> sisterExerciseId;
-  const ExerciseSistersCompanion({
+  final Value<int> variationExerciseId;
+  const ExerciseVariationsCompanion({
     this.id = const Value.absent(),
     this.exerciseId = const Value.absent(),
-    this.sisterExerciseId = const Value.absent(),
+    this.variationExerciseId = const Value.absent(),
   });
-  ExerciseSistersCompanion.insert({
+  ExerciseVariationsCompanion.insert({
     this.id = const Value.absent(),
     required int exerciseId,
-    required int sisterExerciseId,
+    required int variationExerciseId,
   }) : exerciseId = Value(exerciseId),
-       sisterExerciseId = Value(sisterExerciseId);
-  static Insertable<ExerciseSister> custom({
+       variationExerciseId = Value(variationExerciseId);
+  static Insertable<ExerciseVariation> custom({
     Expression<int>? id,
     Expression<int>? exerciseId,
-    Expression<int>? sisterExerciseId,
+    Expression<int>? variationExerciseId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (exerciseId != null) 'exercise_id': exerciseId,
-      if (sisterExerciseId != null) 'sister_exercise_id': sisterExerciseId,
+      if (variationExerciseId != null)
+        'variation_exercise_id': variationExerciseId,
     });
   }
 
-  ExerciseSistersCompanion copyWith({
+  ExerciseVariationsCompanion copyWith({
     Value<int>? id,
     Value<int>? exerciseId,
-    Value<int>? sisterExerciseId,
+    Value<int>? variationExerciseId,
   }) {
-    return ExerciseSistersCompanion(
+    return ExerciseVariationsCompanion(
       id: id ?? this.id,
       exerciseId: exerciseId ?? this.exerciseId,
-      sisterExerciseId: sisterExerciseId ?? this.sisterExerciseId,
+      variationExerciseId: variationExerciseId ?? this.variationExerciseId,
     );
   }
 
@@ -6158,18 +6164,18 @@ class ExerciseSistersCompanion extends UpdateCompanion<ExerciseSister> {
     if (exerciseId.present) {
       map['exercise_id'] = Variable<int>(exerciseId.value);
     }
-    if (sisterExerciseId.present) {
-      map['sister_exercise_id'] = Variable<int>(sisterExerciseId.value);
+    if (variationExerciseId.present) {
+      map['variation_exercise_id'] = Variable<int>(variationExerciseId.value);
     }
     return map;
   }
 
   @override
   String toString() {
-    return (StringBuffer('ExerciseSistersCompanion(')
+    return (StringBuffer('ExerciseVariationsCompanion(')
           ..write('id: $id, ')
           ..write('exerciseId: $exerciseId, ')
-          ..write('sisterExerciseId: $sisterExerciseId')
+          ..write('variationExerciseId: $variationExerciseId')
           ..write(')'))
         .toString();
   }
@@ -6200,9 +6206,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this,
   );
   late final $ExerciseNotesTable exerciseNotes = $ExerciseNotesTable(this);
-  late final $ExerciseSistersTable exerciseSisters = $ExerciseSistersTable(
-    this,
-  );
+  late final $ExerciseVariationsTable exerciseVariations =
+      $ExerciseVariationsTable(this);
   late final ExercisesDao exercisesDao = ExercisesDao(this as AppDatabase);
   late final ProgramsDao programsDao = ProgramsDao(this as AppDatabase);
   late final SessionsDao sessionsDao = SessionsDao(this as AppDatabase);
@@ -6215,9 +6220,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final ExerciseNotesDao exerciseNotesDao = ExerciseNotesDao(
     this as AppDatabase,
   );
-  late final ExerciseSistersDao exerciseSistersDao = ExerciseSistersDao(
-    this as AppDatabase,
-  );
+  late final ExerciseVariationsDao exerciseVariationsDao =
+      ExerciseVariationsDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -6237,7 +6241,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     userProfiles,
     exerciseMuscles,
     exerciseNotes,
-    exerciseSisters,
+    exerciseVariations,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -6253,14 +6257,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         'exercises',
         limitUpdateKind: UpdateKind.delete,
       ),
-      result: [TableUpdate('exercise_sisters', kind: UpdateKind.delete)],
+      result: [TableUpdate('exercise_variations', kind: UpdateKind.delete)],
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
         'exercises',
         limitUpdateKind: UpdateKind.delete,
       ),
-      result: [TableUpdate('exercise_sisters', kind: UpdateKind.delete)],
+      result: [TableUpdate('exercise_variations', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -6376,48 +6380,52 @@ final class $$ExercisesTableReferences
     );
   }
 
-  static MultiTypedResultKey<$ExerciseSistersTable, List<ExerciseSister>>
-  _exerciseSisterSourcesTable(_$AppDatabase db) =>
+  static MultiTypedResultKey<$ExerciseVariationsTable, List<ExerciseVariation>>
+  _exerciseVariationSourcesTable(_$AppDatabase db) =>
       MultiTypedResultKey.fromTable(
-        db.exerciseSisters,
+        db.exerciseVariations,
         aliasName: $_aliasNameGenerator(
           db.exercises.id,
-          db.exerciseSisters.exerciseId,
+          db.exerciseVariations.exerciseId,
         ),
       );
 
-  $$ExerciseSistersTableProcessedTableManager get exerciseSisterSources {
-    final manager = $$ExerciseSistersTableTableManager(
+  $$ExerciseVariationsTableProcessedTableManager get exerciseVariationSources {
+    final manager = $$ExerciseVariationsTableTableManager(
       $_db,
-      $_db.exerciseSisters,
+      $_db.exerciseVariations,
     ).filter((f) => f.exerciseId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(
-      _exerciseSisterSourcesTable($_db),
+      _exerciseVariationSourcesTable($_db),
     );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
 
-  static MultiTypedResultKey<$ExerciseSistersTable, List<ExerciseSister>>
-  _exerciseSisterAlternativesTable(_$AppDatabase db) =>
+  static MultiTypedResultKey<$ExerciseVariationsTable, List<ExerciseVariation>>
+  _exerciseVariationAlternativesTable(_$AppDatabase db) =>
       MultiTypedResultKey.fromTable(
-        db.exerciseSisters,
+        db.exerciseVariations,
         aliasName: $_aliasNameGenerator(
           db.exercises.id,
-          db.exerciseSisters.sisterExerciseId,
+          db.exerciseVariations.variationExerciseId,
         ),
       );
 
-  $$ExerciseSistersTableProcessedTableManager get exerciseSisterAlternatives {
-    final manager = $$ExerciseSistersTableTableManager(
-      $_db,
-      $_db.exerciseSisters,
-    ).filter((f) => f.sisterExerciseId.id.sqlEquals($_itemColumn<int>('id')!));
+  $$ExerciseVariationsTableProcessedTableManager
+  get exerciseVariationAlternatives {
+    final manager =
+        $$ExerciseVariationsTableTableManager(
+          $_db,
+          $_db.exerciseVariations,
+        ).filter(
+          (f) => f.variationExerciseId.id.sqlEquals($_itemColumn<int>('id')!),
+        );
 
     final cache = $_typedResult.readTableOrNull(
-      _exerciseSisterAlternativesTable($_db),
+      _exerciseVariationAlternativesTable($_db),
     );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
@@ -6559,22 +6567,22 @@ class $$ExercisesTableFilterComposer
     return f(composer);
   }
 
-  Expression<bool> exerciseSisterSources(
-    Expression<bool> Function($$ExerciseSistersTableFilterComposer f) f,
+  Expression<bool> exerciseVariationSources(
+    Expression<bool> Function($$ExerciseVariationsTableFilterComposer f) f,
   ) {
-    final $$ExerciseSistersTableFilterComposer composer = $composerBuilder(
+    final $$ExerciseVariationsTableFilterComposer composer = $composerBuilder(
       composer: this,
       getCurrentColumn: (t) => t.id,
-      referencedTable: $db.exerciseSisters,
+      referencedTable: $db.exerciseVariations,
       getReferencedColumn: (t) => t.exerciseId,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$ExerciseSistersTableFilterComposer(
+          }) => $$ExerciseVariationsTableFilterComposer(
             $db: $db,
-            $table: $db.exerciseSisters,
+            $table: $db.exerciseVariations,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -6584,22 +6592,22 @@ class $$ExercisesTableFilterComposer
     return f(composer);
   }
 
-  Expression<bool> exerciseSisterAlternatives(
-    Expression<bool> Function($$ExerciseSistersTableFilterComposer f) f,
+  Expression<bool> exerciseVariationAlternatives(
+    Expression<bool> Function($$ExerciseVariationsTableFilterComposer f) f,
   ) {
-    final $$ExerciseSistersTableFilterComposer composer = $composerBuilder(
+    final $$ExerciseVariationsTableFilterComposer composer = $composerBuilder(
       composer: this,
       getCurrentColumn: (t) => t.id,
-      referencedTable: $db.exerciseSisters,
-      getReferencedColumn: (t) => t.sisterExerciseId,
+      referencedTable: $db.exerciseVariations,
+      getReferencedColumn: (t) => t.variationExerciseId,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$ExerciseSistersTableFilterComposer(
+          }) => $$ExerciseVariationsTableFilterComposer(
             $db: $db,
-            $table: $db.exerciseSisters,
+            $table: $db.exerciseVariations,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -6770,53 +6778,55 @@ class $$ExercisesTableAnnotationComposer
     return f(composer);
   }
 
-  Expression<T> exerciseSisterSources<T extends Object>(
-    Expression<T> Function($$ExerciseSistersTableAnnotationComposer a) f,
+  Expression<T> exerciseVariationSources<T extends Object>(
+    Expression<T> Function($$ExerciseVariationsTableAnnotationComposer a) f,
   ) {
-    final $$ExerciseSistersTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.exerciseSisters,
-      getReferencedColumn: (t) => t.exerciseId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ExerciseSistersTableAnnotationComposer(
-            $db: $db,
-            $table: $db.exerciseSisters,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
+    final $$ExerciseVariationsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.exerciseVariations,
+          getReferencedColumn: (t) => t.exerciseId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
                 $removeJoinBuilderFromRootComposer,
-          ),
-    );
+              }) => $$ExerciseVariationsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.exerciseVariations,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 
-  Expression<T> exerciseSisterAlternatives<T extends Object>(
-    Expression<T> Function($$ExerciseSistersTableAnnotationComposer a) f,
+  Expression<T> exerciseVariationAlternatives<T extends Object>(
+    Expression<T> Function($$ExerciseVariationsTableAnnotationComposer a) f,
   ) {
-    final $$ExerciseSistersTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.exerciseSisters,
-      getReferencedColumn: (t) => t.sisterExerciseId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ExerciseSistersTableAnnotationComposer(
-            $db: $db,
-            $table: $db.exerciseSisters,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
+    final $$ExerciseVariationsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.exerciseVariations,
+          getReferencedColumn: (t) => t.variationExerciseId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
                 $removeJoinBuilderFromRootComposer,
-          ),
-    );
+              }) => $$ExerciseVariationsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.exerciseVariations,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 }
@@ -6839,8 +6849,8 @@ class $$ExercisesTableTableManager
             bool wodTemplateExercisesRefs,
             bool exerciseMusclesRefs,
             bool exerciseNotesRefs,
-            bool exerciseSisterSources,
-            bool exerciseSisterAlternatives,
+            bool exerciseVariationSources,
+            bool exerciseVariationAlternatives,
           })
         > {
   $$ExercisesTableTableManager(_$AppDatabase db, $ExercisesTable table)
@@ -6896,8 +6906,8 @@ class $$ExercisesTableTableManager
                 wodTemplateExercisesRefs = false,
                 exerciseMusclesRefs = false,
                 exerciseNotesRefs = false,
-                exerciseSisterSources = false,
-                exerciseSisterAlternatives = false,
+                exerciseVariationSources = false,
+                exerciseVariationAlternatives = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -6906,8 +6916,8 @@ class $$ExercisesTableTableManager
                     if (wodTemplateExercisesRefs) db.wodTemplateExercises,
                     if (exerciseMusclesRefs) db.exerciseMuscles,
                     if (exerciseNotesRefs) db.exerciseNotes,
-                    if (exerciseSisterSources) db.exerciseSisters,
-                    if (exerciseSisterAlternatives) db.exerciseSisters,
+                    if (exerciseVariationSources) db.exerciseVariations,
+                    if (exerciseVariationAlternatives) db.exerciseVariations,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -6996,45 +7006,45 @@ class $$ExercisesTableTableManager
                               ),
                           typedResults: items,
                         ),
-                      if (exerciseSisterSources)
+                      if (exerciseVariationSources)
                         await $_getPrefetchedData<
                           Exercise,
                           $ExercisesTable,
-                          ExerciseSister
+                          ExerciseVariation
                         >(
                           currentTable: table,
                           referencedTable: $$ExercisesTableReferences
-                              ._exerciseSisterSourcesTable(db),
+                              ._exerciseVariationSourcesTable(db),
                           managerFromTypedResult: (p0) =>
                               $$ExercisesTableReferences(
                                 db,
                                 table,
                                 p0,
-                              ).exerciseSisterSources,
+                              ).exerciseVariationSources,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
                                 (e) => e.exerciseId == item.id,
                               ),
                           typedResults: items,
                         ),
-                      if (exerciseSisterAlternatives)
+                      if (exerciseVariationAlternatives)
                         await $_getPrefetchedData<
                           Exercise,
                           $ExercisesTable,
-                          ExerciseSister
+                          ExerciseVariation
                         >(
                           currentTable: table,
                           referencedTable: $$ExercisesTableReferences
-                              ._exerciseSisterAlternativesTable(db),
+                              ._exerciseVariationAlternativesTable(db),
                           managerFromTypedResult: (p0) =>
                               $$ExercisesTableReferences(
                                 db,
                                 table,
                                 p0,
-                              ).exerciseSisterAlternatives,
+                              ).exerciseVariationAlternatives,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
-                                (e) => e.sisterExerciseId == item.id,
+                                (e) => e.variationExerciseId == item.id,
                               ),
                           typedResults: items,
                         ),
@@ -7063,8 +7073,8 @@ typedef $$ExercisesTableProcessedTableManager =
         bool wodTemplateExercisesRefs,
         bool exerciseMusclesRefs,
         bool exerciseNotesRefs,
-        bool exerciseSisterSources,
-        bool exerciseSisterAlternatives,
+        bool exerciseVariationSources,
+        bool exerciseVariationAlternatives,
       })
     >;
 typedef $$ProgramsTableCreateCompanionBuilder =
@@ -11999,23 +12009,27 @@ typedef $$ExerciseNotesTableProcessedTableManager =
       ExerciseNote,
       PrefetchHooks Function({bool exerciseId})
     >;
-typedef $$ExerciseSistersTableCreateCompanionBuilder =
-    ExerciseSistersCompanion Function({
+typedef $$ExerciseVariationsTableCreateCompanionBuilder =
+    ExerciseVariationsCompanion Function({
       Value<int> id,
       required int exerciseId,
-      required int sisterExerciseId,
+      required int variationExerciseId,
     });
-typedef $$ExerciseSistersTableUpdateCompanionBuilder =
-    ExerciseSistersCompanion Function({
+typedef $$ExerciseVariationsTableUpdateCompanionBuilder =
+    ExerciseVariationsCompanion Function({
       Value<int> id,
       Value<int> exerciseId,
-      Value<int> sisterExerciseId,
+      Value<int> variationExerciseId,
     });
 
-final class $$ExerciseSistersTableReferences
+final class $$ExerciseVariationsTableReferences
     extends
-        BaseReferences<_$AppDatabase, $ExerciseSistersTable, ExerciseSister> {
-  $$ExerciseSistersTableReferences(
+        BaseReferences<
+          _$AppDatabase,
+          $ExerciseVariationsTable,
+          ExerciseVariation
+        > {
+  $$ExerciseVariationsTableReferences(
     super.$_db,
     super.$_table,
     super.$_typedResult,
@@ -12023,7 +12037,7 @@ final class $$ExerciseSistersTableReferences
 
   static $ExercisesTable _exerciseIdTable(_$AppDatabase db) =>
       db.exercises.createAlias(
-        $_aliasNameGenerator(db.exerciseSisters.exerciseId, db.exercises.id),
+        $_aliasNameGenerator(db.exerciseVariations.exerciseId, db.exercises.id),
       );
 
   $$ExercisesTableProcessedTableManager get exerciseId {
@@ -12040,22 +12054,22 @@ final class $$ExerciseSistersTableReferences
     );
   }
 
-  static $ExercisesTable _sisterExerciseIdTable(_$AppDatabase db) =>
+  static $ExercisesTable _variationExerciseIdTable(_$AppDatabase db) =>
       db.exercises.createAlias(
         $_aliasNameGenerator(
-          db.exerciseSisters.sisterExerciseId,
+          db.exerciseVariations.variationExerciseId,
           db.exercises.id,
         ),
       );
 
-  $$ExercisesTableProcessedTableManager get sisterExerciseId {
-    final $_column = $_itemColumn<int>('sister_exercise_id')!;
+  $$ExercisesTableProcessedTableManager get variationExerciseId {
+    final $_column = $_itemColumn<int>('variation_exercise_id')!;
 
     final manager = $$ExercisesTableTableManager(
       $_db,
       $_db.exercises,
     ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_sisterExerciseIdTable($_db));
+    final item = $_typedResult.readTableOrNull(_variationExerciseIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -12063,9 +12077,9 @@ final class $$ExerciseSistersTableReferences
   }
 }
 
-class $$ExerciseSistersTableFilterComposer
-    extends Composer<_$AppDatabase, $ExerciseSistersTable> {
-  $$ExerciseSistersTableFilterComposer({
+class $$ExerciseVariationsTableFilterComposer
+    extends Composer<_$AppDatabase, $ExerciseVariationsTable> {
+  $$ExerciseVariationsTableFilterComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -12100,10 +12114,10 @@ class $$ExerciseSistersTableFilterComposer
     return composer;
   }
 
-  $$ExercisesTableFilterComposer get sisterExerciseId {
+  $$ExercisesTableFilterComposer get variationExerciseId {
     final $$ExercisesTableFilterComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.sisterExerciseId,
+      getCurrentColumn: (t) => t.variationExerciseId,
       referencedTable: $db.exercises,
       getReferencedColumn: (t) => t.id,
       builder:
@@ -12124,9 +12138,9 @@ class $$ExerciseSistersTableFilterComposer
   }
 }
 
-class $$ExerciseSistersTableOrderingComposer
-    extends Composer<_$AppDatabase, $ExerciseSistersTable> {
-  $$ExerciseSistersTableOrderingComposer({
+class $$ExerciseVariationsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ExerciseVariationsTable> {
+  $$ExerciseVariationsTableOrderingComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -12161,10 +12175,10 @@ class $$ExerciseSistersTableOrderingComposer
     return composer;
   }
 
-  $$ExercisesTableOrderingComposer get sisterExerciseId {
+  $$ExercisesTableOrderingComposer get variationExerciseId {
     final $$ExercisesTableOrderingComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.sisterExerciseId,
+      getCurrentColumn: (t) => t.variationExerciseId,
       referencedTable: $db.exercises,
       getReferencedColumn: (t) => t.id,
       builder:
@@ -12185,9 +12199,9 @@ class $$ExerciseSistersTableOrderingComposer
   }
 }
 
-class $$ExerciseSistersTableAnnotationComposer
-    extends Composer<_$AppDatabase, $ExerciseSistersTable> {
-  $$ExerciseSistersTableAnnotationComposer({
+class $$ExerciseVariationsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ExerciseVariationsTable> {
+  $$ExerciseVariationsTableAnnotationComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -12220,10 +12234,10 @@ class $$ExerciseSistersTableAnnotationComposer
     return composer;
   }
 
-  $$ExercisesTableAnnotationComposer get sisterExerciseId {
+  $$ExercisesTableAnnotationComposer get variationExerciseId {
     final $$ExercisesTableAnnotationComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.sisterExerciseId,
+      getCurrentColumn: (t) => t.variationExerciseId,
       referencedTable: $db.exercises,
       getReferencedColumn: (t) => t.id,
       builder:
@@ -12244,64 +12258,67 @@ class $$ExerciseSistersTableAnnotationComposer
   }
 }
 
-class $$ExerciseSistersTableTableManager
+class $$ExerciseVariationsTableTableManager
     extends
         RootTableManager<
           _$AppDatabase,
-          $ExerciseSistersTable,
-          ExerciseSister,
-          $$ExerciseSistersTableFilterComposer,
-          $$ExerciseSistersTableOrderingComposer,
-          $$ExerciseSistersTableAnnotationComposer,
-          $$ExerciseSistersTableCreateCompanionBuilder,
-          $$ExerciseSistersTableUpdateCompanionBuilder,
-          (ExerciseSister, $$ExerciseSistersTableReferences),
-          ExerciseSister,
-          PrefetchHooks Function({bool exerciseId, bool sisterExerciseId})
+          $ExerciseVariationsTable,
+          ExerciseVariation,
+          $$ExerciseVariationsTableFilterComposer,
+          $$ExerciseVariationsTableOrderingComposer,
+          $$ExerciseVariationsTableAnnotationComposer,
+          $$ExerciseVariationsTableCreateCompanionBuilder,
+          $$ExerciseVariationsTableUpdateCompanionBuilder,
+          (ExerciseVariation, $$ExerciseVariationsTableReferences),
+          ExerciseVariation,
+          PrefetchHooks Function({bool exerciseId, bool variationExerciseId})
         > {
-  $$ExerciseSistersTableTableManager(
+  $$ExerciseVariationsTableTableManager(
     _$AppDatabase db,
-    $ExerciseSistersTable table,
+    $ExerciseVariationsTable table,
   ) : super(
         TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
-              $$ExerciseSistersTableFilterComposer($db: db, $table: table),
+              $$ExerciseVariationsTableFilterComposer($db: db, $table: table),
           createOrderingComposer: () =>
-              $$ExerciseSistersTableOrderingComposer($db: db, $table: table),
+              $$ExerciseVariationsTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
-              $$ExerciseSistersTableAnnotationComposer($db: db, $table: table),
+              $$ExerciseVariationsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
           updateCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
                 Value<int> exerciseId = const Value.absent(),
-                Value<int> sisterExerciseId = const Value.absent(),
-              }) => ExerciseSistersCompanion(
+                Value<int> variationExerciseId = const Value.absent(),
+              }) => ExerciseVariationsCompanion(
                 id: id,
                 exerciseId: exerciseId,
-                sisterExerciseId: sisterExerciseId,
+                variationExerciseId: variationExerciseId,
               ),
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
                 required int exerciseId,
-                required int sisterExerciseId,
-              }) => ExerciseSistersCompanion.insert(
+                required int variationExerciseId,
+              }) => ExerciseVariationsCompanion.insert(
                 id: id,
                 exerciseId: exerciseId,
-                sisterExerciseId: sisterExerciseId,
+                variationExerciseId: variationExerciseId,
               ),
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
                   e.readTable(table),
-                  $$ExerciseSistersTableReferences(db, table, e),
+                  $$ExerciseVariationsTableReferences(db, table, e),
                 ),
               )
               .toList(),
           prefetchHooksCallback:
-              ({exerciseId = false, sisterExerciseId = false}) {
+              ({exerciseId = false, variationExerciseId = false}) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [],
@@ -12327,26 +12344,26 @@ class $$ExerciseSistersTableTableManager
                                     currentTable: table,
                                     currentColumn: table.exerciseId,
                                     referencedTable:
-                                        $$ExerciseSistersTableReferences
+                                        $$ExerciseVariationsTableReferences
                                             ._exerciseIdTable(db),
                                     referencedColumn:
-                                        $$ExerciseSistersTableReferences
+                                        $$ExerciseVariationsTableReferences
                                             ._exerciseIdTable(db)
                                             .id,
                                   )
                                   as T;
                         }
-                        if (sisterExerciseId) {
+                        if (variationExerciseId) {
                           state =
                               state.withJoin(
                                     currentTable: table,
-                                    currentColumn: table.sisterExerciseId,
+                                    currentColumn: table.variationExerciseId,
                                     referencedTable:
-                                        $$ExerciseSistersTableReferences
-                                            ._sisterExerciseIdTable(db),
+                                        $$ExerciseVariationsTableReferences
+                                            ._variationExerciseIdTable(db),
                                     referencedColumn:
-                                        $$ExerciseSistersTableReferences
-                                            ._sisterExerciseIdTable(db)
+                                        $$ExerciseVariationsTableReferences
+                                            ._variationExerciseIdTable(db)
                                             .id,
                                   )
                                   as T;
@@ -12363,19 +12380,19 @@ class $$ExerciseSistersTableTableManager
       );
 }
 
-typedef $$ExerciseSistersTableProcessedTableManager =
+typedef $$ExerciseVariationsTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
-      $ExerciseSistersTable,
-      ExerciseSister,
-      $$ExerciseSistersTableFilterComposer,
-      $$ExerciseSistersTableOrderingComposer,
-      $$ExerciseSistersTableAnnotationComposer,
-      $$ExerciseSistersTableCreateCompanionBuilder,
-      $$ExerciseSistersTableUpdateCompanionBuilder,
-      (ExerciseSister, $$ExerciseSistersTableReferences),
-      ExerciseSister,
-      PrefetchHooks Function({bool exerciseId, bool sisterExerciseId})
+      $ExerciseVariationsTable,
+      ExerciseVariation,
+      $$ExerciseVariationsTableFilterComposer,
+      $$ExerciseVariationsTableOrderingComposer,
+      $$ExerciseVariationsTableAnnotationComposer,
+      $$ExerciseVariationsTableCreateCompanionBuilder,
+      $$ExerciseVariationsTableUpdateCompanionBuilder,
+      (ExerciseVariation, $$ExerciseVariationsTableReferences),
+      ExerciseVariation,
+      PrefetchHooks Function({bool exerciseId, bool variationExerciseId})
     >;
 
 class $AppDatabaseManager {
@@ -12409,6 +12426,6 @@ class $AppDatabaseManager {
       $$ExerciseMusclesTableTableManager(_db, _db.exerciseMuscles);
   $$ExerciseNotesTableTableManager get exerciseNotes =>
       $$ExerciseNotesTableTableManager(_db, _db.exerciseNotes);
-  $$ExerciseSistersTableTableManager get exerciseSisters =>
-      $$ExerciseSistersTableTableManager(_db, _db.exerciseSisters);
+  $$ExerciseVariationsTableTableManager get exerciseVariations =>
+      $$ExerciseVariationsTableTableManager(_db, _db.exerciseVariations);
 }

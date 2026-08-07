@@ -1333,7 +1333,7 @@ class _EditExerciseDialogState extends ConsumerState<_EditExerciseDialog> {
     ));
   }
 
-  Future<Exercise?> _createAndPickSisterExercise(
+  Future<Exercise?> _createAndPickVariationExercise(
       String name, String category, bool isTimed) async {
     final db = ref.read(databaseProvider);
     final id = await db.exercisesDao.insertExercise(ExercisesCompanion(
@@ -1346,11 +1346,11 @@ class _EditExerciseDialogState extends ConsumerState<_EditExerciseDialog> {
     return allExercises.where((e) => e.id == id).firstOrNull;
   }
 
-  Future<void> _showAddSisterPicker(
-      List<Exercise> allExercises, List<Exercise> sisters) async {
-    final sisterIds = sisters.map((s) => s.id).toSet();
+  Future<void> _showAddVariationPicker(
+      List<Exercise> allExercises, List<Exercise> variations) async {
+    final variationIds = variations.map((s) => s.id).toSet();
     final choices = allExercises
-        .where((e) => e.id != widget.exercise.id && !sisterIds.contains(e.id))
+        .where((e) => e.id != widget.exercise.id && !variationIds.contains(e.id))
         .toList();
     final messenger = ScaffoldMessenger.of(context);
     final picked = await showModalBottomSheet<Exercise>(
@@ -1358,55 +1358,55 @@ class _EditExerciseDialogState extends ConsumerState<_EditExerciseDialog> {
       isScrollControlled: true,
       builder: (ctx) => _ExercisePickerSheet(
         exercises: choices,
-        onCreateNew: _createAndPickSisterExercise,
+        onCreateNew: _createAndPickVariationExercise,
       ),
     );
     if (picked == null || !mounted) return;
     await ref
         .read(databaseProvider)
-        .exerciseSistersDao
-        .addSister(widget.exercise.id, picked.id);
+        .exerciseVariationsDao
+        .addVariation(widget.exercise.id, picked.id);
     if (!mounted) return;
-    ref.invalidate(sistersForExerciseProvider(widget.exercise.id));
+    ref.invalidate(variationsForExerciseProvider(widget.exercise.id));
     messenger.showSnackBar(
-      SnackBar(content: Text('${picked.name} added to sister exercises')),
+      SnackBar(content: Text('${picked.name} added as a variation')),
     );
   }
 
-  Future<void> _removeSister(Exercise sister) async {
+  Future<void> _removeVariation(Exercise variation) async {
     await ref
         .read(databaseProvider)
-        .exerciseSistersDao
-        .removeSister(widget.exercise.id, sister.id);
+        .exerciseVariationsDao
+        .removeVariation(widget.exercise.id, variation.id);
     if (!mounted) return;
-    ref.invalidate(sistersForExerciseProvider(widget.exercise.id));
+    ref.invalidate(variationsForExerciseProvider(widget.exercise.id));
   }
 
-  Widget _buildSistersSection() {
+  Widget _buildVariationsSection() {
     final allExercisesAsync = ref.watch(exercisesProvider);
-    final sistersAsync =
-        ref.watch(sistersForExerciseProvider(widget.exercise.id));
+    final variationsAsync =
+        ref.watch(variationsForExerciseProvider(widget.exercise.id));
     final allExercises = allExercisesAsync.valueOrNull ?? const <Exercise>[];
 
-    return sistersAsync.when(
+    return variationsAsync.when(
       loading: () => const Padding(
         padding: EdgeInsets.symmetric(vertical: 8),
         child: Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => Text(
-        'Could not load sisters: $e',
+        'Could not load variations: $e',
         style: TextStyle(color: Theme.of(context).colorScheme.error),
       ),
-      data: (sisters) => Column(
+      data: (variations) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const _Label('SISTER EXERCISES'),
+              const _Label('VARIATIONS'),
               const Spacer(),
               TextButton.icon(
                 onPressed: allExercisesAsync.hasValue
-                    ? () => _showAddSisterPicker(allExercises, sisters)
+                    ? () => _showAddVariationPicker(allExercises, variations)
                     : null,
                 icon: const Icon(Icons.add, size: 16),
                 label: const Text('Add'),
@@ -1414,17 +1414,17 @@ class _EditExerciseDialogState extends ConsumerState<_EditExerciseDialog> {
             ],
           ),
           const SizedBox(height: 6),
-          if (sisters.isEmpty)
+          if (variations.isEmpty)
             Text(
-              'No sister exercises yet.',
+              'No variations yet.',
               style: TextStyle(
                 fontSize: 13,
                 color: Colors.white.withValues(alpha: 0.35),
               ),
             )
           else
-            ...sisters.map(
-              (sister) => Container(
+            ...variations.map(
+              (variation) => Container(
                 margin: const EdgeInsets.only(bottom: 6),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.04),
@@ -1437,11 +1437,11 @@ class _EditExerciseDialogState extends ConsumerState<_EditExerciseDialog> {
                   dense: true,
                   contentPadding: const EdgeInsets.only(left: 12, right: 4),
                   title: Text(
-                    sister.name,
+                    variation.name,
                     style: const TextStyle(color: Colors.white),
                   ),
                   subtitle: Text(
-                    sister.category,
+                    variation.category,
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.35),
                     ),
@@ -1454,7 +1454,7 @@ class _EditExerciseDialogState extends ConsumerState<_EditExerciseDialog> {
                           .error
                           .withValues(alpha: 0.75),
                     ),
-                    onPressed: () => _removeSister(sister),
+                    onPressed: () => _removeVariation(variation),
                   ),
                 ),
               ),
@@ -1515,7 +1515,7 @@ class _EditExerciseDialogState extends ConsumerState<_EditExerciseDialog> {
               ),
               const SizedBox(height: 22),
 
-              _buildSistersSection(),
+              _buildVariationsSection(),
               const SizedBox(height: 18),
               Divider(color: Colors.white.withValues(alpha: 0.08)),
               const SizedBox(height: 20),

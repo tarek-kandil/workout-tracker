@@ -14,10 +14,10 @@ final exerciseMuscleMapProvider = StreamProvider<Map<int, List<String>>>((ref) {
   return db.exercisesDao.watchAllMuscleMap();
 });
 
-final sistersForExerciseProvider = FutureProvider.family<List<Exercise>, int>((
+final variationsForExerciseProvider = FutureProvider.family<List<Exercise>, int>((
   ref,
   exerciseId,
 ) {
   final db = ref.watch(databaseProvider);
-  return db.exerciseSistersDao.getSisters(exerciseId);
+  return db.exerciseVariationsDao.getVariations(exerciseId);
 });

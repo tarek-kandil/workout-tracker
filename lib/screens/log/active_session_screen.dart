@@ -1190,7 +1190,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       builder: (_) => ExerciseSwapSheet(
         exerciseId: entry.templateExercise.exerciseId,
         exerciseName: entry.exercise.name,
-        onSisterSelected: (exercise) {
+        onVariationSelected: (exercise) {
           Navigator.pop(context);
           _swapExercise(itemIdx, exercise);
         },
@@ -1225,7 +1225,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
             _swapExercise(itemIdx, exercise);
             return;
           }
-          _showAddSisterPrompt(
+          _showAddVariationPrompt(
             itemIdx,
             originalExerciseId,
             originalExerciseName,
@@ -1236,7 +1236,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     );
   }
 
-  void _showAddSisterPrompt(
+  void _showAddVariationPrompt(
     int itemIdx,
     int originalExerciseId,
     String originalExerciseName,
@@ -1257,12 +1257,12 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
             ),
             const SizedBox(height: 16),
             Text(
-              'Add to sisters?',
+              'Save as variation?',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 8),
             Text(
-              'Save ${exercise.name} as a sister exercise for '
+              'Save ${exercise.name} as a variation of '
               '$originalExerciseName so it appears as a quick swap next time.',
             ),
             const SizedBox(height: 18),
@@ -1270,14 +1270,14 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
               width: double.infinity,
               child: FilledButton.icon(
                 icon: const Icon(Icons.playlist_add_rounded),
-                label: const Text('Swap & Add to Sisters'),
+                label: const Text('Swap & Save Variation'),
                 onPressed: () async {
                   final navigator = Navigator.of(ctx);
                   final messenger = ScaffoldMessenger.of(context);
                   await ref
                       .read(databaseProvider)
-                      .exerciseSistersDao
-                      .addSister(originalExerciseId, exercise.id);
+                      .exerciseVariationsDao
+                      .addVariation(originalExerciseId, exercise.id);
                   if (!mounted) {
                     return;
                   }
@@ -1286,7 +1286,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                   messenger.showSnackBar(
                     SnackBar(
                       content: Text(
-                        '${exercise.name} added to sisters for '
+                        '${exercise.name} saved as a variation of '
                         '$originalExerciseName',
                       ),
                     ),

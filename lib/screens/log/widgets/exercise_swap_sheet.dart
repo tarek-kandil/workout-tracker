@@ -7,14 +7,14 @@ import '../../../providers/database_provider.dart';
 class ExerciseSwapSheet extends ConsumerStatefulWidget {
   final int exerciseId;
   final String exerciseName;
-  final void Function(Exercise) onSisterSelected;
+  final void Function(Exercise) onVariationSelected;
   final VoidCallback onOtherExercise;
 
   const ExerciseSwapSheet({
     super.key,
     required this.exerciseId,
     required this.exerciseName,
-    required this.onSisterSelected,
+    required this.onVariationSelected,
     required this.onOtherExercise,
   });
 
@@ -23,23 +23,23 @@ class ExerciseSwapSheet extends ConsumerStatefulWidget {
 }
 
 class _ExerciseSwapSheetState extends ConsumerState<ExerciseSwapSheet> {
-  List<Exercise> _sisters = [];
+  List<Exercise> _variations = [];
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadSisters();
+    _loadVariations();
   }
 
-  Future<void> _loadSisters() async {
-    final sisters = await ref
+  Future<void> _loadVariations() async {
+    final variations = await ref
         .read(databaseProvider)
-        .exerciseSistersDao
-        .getSisters(widget.exerciseId);
+        .exerciseVariationsDao
+        .getVariations(widget.exerciseId);
     if (mounted) {
       setState(() {
-        _sisters = sisters;
+        _variations = variations;
         _loading = false;
       });
     }
@@ -97,14 +97,14 @@ class _ExerciseSwapSheetState extends ConsumerState<ExerciseSwapSheet> {
                       : ListView(
                           controller: scroll,
                           children: [
-                            if (_sisters.isEmpty)
+                            if (_variations.isEmpty)
                               Padding(
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 20,
                                 ),
                                 child: Center(
                                   child: Text(
-                                    'No sister exercises saved yet.',
+                                    'No variations saved yet.',
                                     style: TextStyle(
                                       color: scheme.onSurface.withValues(
                                         alpha: 0.45,
@@ -114,16 +114,17 @@ class _ExerciseSwapSheetState extends ConsumerState<ExerciseSwapSheet> {
                                 ),
                               )
                             else
-                              for (final sister in _sisters)
+                              for (final variation in _variations)
                                 ListTile(
                                   contentPadding: EdgeInsets.zero,
                                   leading: const Icon(Icons.sync_alt_rounded),
-                                  title: Text(sister.name),
+                                  title: Text(variation.name),
                                   subtitle: Text(
-                                    sister.isTimed ? 'Timed' : 'Weighted',
+                                    variation.isTimed ? 'Timed' : 'Weighted',
                                     style: const TextStyle(fontSize: 11),
                                   ),
-                                  onTap: () => widget.onSisterSelected(sister),
+                                  onTap: () =>
+                                      widget.onVariationSelected(variation),
                                 ),
                             const Divider(height: 24),
                             ListTile(
@@ -137,7 +138,7 @@ class _ExerciseSwapSheetState extends ConsumerState<ExerciseSwapSheet> {
                                 style: TextStyle(fontWeight: FontWeight.w700),
                               ),
                               subtitle: const Text(
-                                'Search the full library and optionally add it to sisters',
+                                'Search the full library and optionally save it as a variation',
                               ),
                               onTap: widget.onOtherExercise,
                             ),

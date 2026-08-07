@@ -6,7 +6,7 @@ import 'package:path/path.dart' as p;
 
 import 'tables/exercises_table.dart';
 import 'tables/exercise_notes_table.dart';
-import 'tables/exercise_sisters_table.dart';
+import 'tables/exercise_variations_table.dart';
 import 'tables/sessions_table.dart';
 import 'tables/sets_table.dart';
 import 'tables/bodyweight_table.dart';
@@ -21,7 +21,7 @@ import 'tables/user_profile_table.dart';
 import 'tables/exercise_muscles_table.dart';
 import 'daos/exercises_dao.dart';
 import 'daos/exercise_notes_dao.dart';
-import 'daos/exercise_sisters_dao.dart';
+import 'daos/exercise_variations_dao.dart';
 import 'daos/programs_dao.dart';
 import 'daos/sessions_dao.dart';
 import 'daos/sets_dao.dart';
@@ -47,7 +47,7 @@ part 'app_database.g.dart';
     UserProfiles,
     ExerciseMuscles,
     ExerciseNotes,
-    ExerciseSisters,
+    ExerciseVariations,
   ],
   daos: [
     ExercisesDao,
@@ -58,7 +58,7 @@ part 'app_database.g.dart';
     DailyTasksDao,
     UserProfileDao,
     ExerciseNotesDao,
-    ExerciseSistersDao,
+    ExerciseVariationsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -68,7 +68,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 17;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -178,10 +178,31 @@ class AppDatabase extends _$AppDatabase {
             final tables = await customSelect(
               "SELECT name FROM sqlite_master WHERE type='table'",
             ).get();
-            final exists =
-                tables.any((r) => r.read<String>('name') == 'exercise_sisters');
-            if (!exists) {
-              await m.createTable(exerciseSisters);
+            final names = tables.map((r) => r.read<String>('name')).toSet();
+            // Fresh v16 upgrades create the table under its current name.
+            // (Installs that already have the old 'exercise_sisters' table are
+            // handled by the v17 rename below.)
+            if (!names.contains('exercise_variations') &&
+                !names.contains('exercise_sisters')) {
+              await m.createTable(exerciseVariations);
+            }
+          }
+          if (from < 17) {
+            final tables = await customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table'",
+            ).get();
+            final names = tables.map((r) => r.read<String>('name')).toSet();
+            // Rename the table (and its column) introduced in v16 from the old
+            // 'sister' terminology to 'variation', preserving existing links.
+            if (names.contains('exercise_sisters') &&
+                !names.contains('exercise_variations')) {
+              await customStatement(
+                'ALTER TABLE exercise_sisters RENAME TO exercise_variations',
+              );
+              await customStatement(
+                'ALTER TABLE exercise_variations '
+                'RENAME COLUMN sister_exercise_id TO variation_exercise_id',
+              );
             }
           }
           if (from >= 3 && from < 8) {
