@@ -5907,6 +5907,274 @@ class ExerciseNotesCompanion extends UpdateCompanion<ExerciseNote> {
   }
 }
 
+class $ExerciseSistersTable extends ExerciseSisters
+    with TableInfo<$ExerciseSistersTable, ExerciseSister> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ExerciseSistersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _exerciseIdMeta = const VerificationMeta(
+    'exerciseId',
+  );
+  @override
+  late final GeneratedColumn<int> exerciseId = GeneratedColumn<int>(
+    'exercise_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES exercises (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _sisterExerciseIdMeta = const VerificationMeta(
+    'sisterExerciseId',
+  );
+  @override
+  late final GeneratedColumn<int> sisterExerciseId = GeneratedColumn<int>(
+    'sister_exercise_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES exercises (id) ON DELETE CASCADE',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, exerciseId, sisterExerciseId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'exercise_sisters';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ExerciseSister> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('exercise_id')) {
+      context.handle(
+        _exerciseIdMeta,
+        exerciseId.isAcceptableOrUnknown(data['exercise_id']!, _exerciseIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_exerciseIdMeta);
+    }
+    if (data.containsKey('sister_exercise_id')) {
+      context.handle(
+        _sisterExerciseIdMeta,
+        sisterExerciseId.isAcceptableOrUnknown(
+          data['sister_exercise_id']!,
+          _sisterExerciseIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_sisterExerciseIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {exerciseId, sisterExerciseId},
+  ];
+  @override
+  ExerciseSister map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ExerciseSister(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      exerciseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}exercise_id'],
+      )!,
+      sisterExerciseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sister_exercise_id'],
+      )!,
+    );
+  }
+
+  @override
+  $ExerciseSistersTable createAlias(String alias) {
+    return $ExerciseSistersTable(attachedDatabase, alias);
+  }
+}
+
+class ExerciseSister extends DataClass implements Insertable<ExerciseSister> {
+  final int id;
+  final int exerciseId;
+  final int sisterExerciseId;
+  const ExerciseSister({
+    required this.id,
+    required this.exerciseId,
+    required this.sisterExerciseId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['exercise_id'] = Variable<int>(exerciseId);
+    map['sister_exercise_id'] = Variable<int>(sisterExerciseId);
+    return map;
+  }
+
+  ExerciseSistersCompanion toCompanion(bool nullToAbsent) {
+    return ExerciseSistersCompanion(
+      id: Value(id),
+      exerciseId: Value(exerciseId),
+      sisterExerciseId: Value(sisterExerciseId),
+    );
+  }
+
+  factory ExerciseSister.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ExerciseSister(
+      id: serializer.fromJson<int>(json['id']),
+      exerciseId: serializer.fromJson<int>(json['exerciseId']),
+      sisterExerciseId: serializer.fromJson<int>(json['sisterExerciseId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'exerciseId': serializer.toJson<int>(exerciseId),
+      'sisterExerciseId': serializer.toJson<int>(sisterExerciseId),
+    };
+  }
+
+  ExerciseSister copyWith({int? id, int? exerciseId, int? sisterExerciseId}) =>
+      ExerciseSister(
+        id: id ?? this.id,
+        exerciseId: exerciseId ?? this.exerciseId,
+        sisterExerciseId: sisterExerciseId ?? this.sisterExerciseId,
+      );
+  ExerciseSister copyWithCompanion(ExerciseSistersCompanion data) {
+    return ExerciseSister(
+      id: data.id.present ? data.id.value : this.id,
+      exerciseId: data.exerciseId.present
+          ? data.exerciseId.value
+          : this.exerciseId,
+      sisterExerciseId: data.sisterExerciseId.present
+          ? data.sisterExerciseId.value
+          : this.sisterExerciseId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExerciseSister(')
+          ..write('id: $id, ')
+          ..write('exerciseId: $exerciseId, ')
+          ..write('sisterExerciseId: $sisterExerciseId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, exerciseId, sisterExerciseId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ExerciseSister &&
+          other.id == this.id &&
+          other.exerciseId == this.exerciseId &&
+          other.sisterExerciseId == this.sisterExerciseId);
+}
+
+class ExerciseSistersCompanion extends UpdateCompanion<ExerciseSister> {
+  final Value<int> id;
+  final Value<int> exerciseId;
+  final Value<int> sisterExerciseId;
+  const ExerciseSistersCompanion({
+    this.id = const Value.absent(),
+    this.exerciseId = const Value.absent(),
+    this.sisterExerciseId = const Value.absent(),
+  });
+  ExerciseSistersCompanion.insert({
+    this.id = const Value.absent(),
+    required int exerciseId,
+    required int sisterExerciseId,
+  }) : exerciseId = Value(exerciseId),
+       sisterExerciseId = Value(sisterExerciseId);
+  static Insertable<ExerciseSister> custom({
+    Expression<int>? id,
+    Expression<int>? exerciseId,
+    Expression<int>? sisterExerciseId,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (exerciseId != null) 'exercise_id': exerciseId,
+      if (sisterExerciseId != null) 'sister_exercise_id': sisterExerciseId,
+    });
+  }
+
+  ExerciseSistersCompanion copyWith({
+    Value<int>? id,
+    Value<int>? exerciseId,
+    Value<int>? sisterExerciseId,
+  }) {
+    return ExerciseSistersCompanion(
+      id: id ?? this.id,
+      exerciseId: exerciseId ?? this.exerciseId,
+      sisterExerciseId: sisterExerciseId ?? this.sisterExerciseId,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (exerciseId.present) {
+      map['exercise_id'] = Variable<int>(exerciseId.value);
+    }
+    if (sisterExerciseId.present) {
+      map['sister_exercise_id'] = Variable<int>(sisterExerciseId.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExerciseSistersCompanion(')
+          ..write('id: $id, ')
+          ..write('exerciseId: $exerciseId, ')
+          ..write('sisterExerciseId: $sisterExerciseId')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -5932,6 +6200,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this,
   );
   late final $ExerciseNotesTable exerciseNotes = $ExerciseNotesTable(this);
+  late final $ExerciseSistersTable exerciseSisters = $ExerciseSistersTable(
+    this,
+  );
   late final ExercisesDao exercisesDao = ExercisesDao(this as AppDatabase);
   late final ProgramsDao programsDao = ProgramsDao(this as AppDatabase);
   late final SessionsDao sessionsDao = SessionsDao(this as AppDatabase);
@@ -5942,6 +6213,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this as AppDatabase,
   );
   late final ExerciseNotesDao exerciseNotesDao = ExerciseNotesDao(
+    this as AppDatabase,
+  );
+  late final ExerciseSistersDao exerciseSistersDao = ExerciseSistersDao(
     this as AppDatabase,
   );
   @override
@@ -5963,6 +6237,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     userProfiles,
     exerciseMuscles,
     exerciseNotes,
+    exerciseSisters,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -5972,6 +6247,20 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('exercise_muscles', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'exercises',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('exercise_sisters', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'exercises',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('exercise_sisters', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -6082,6 +6371,54 @@ final class $$ExercisesTableReferences
     ).filter((f) => f.exerciseId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_exerciseNotesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$ExerciseSistersTable, List<ExerciseSister>>
+  _exerciseSisterSourcesTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.exerciseSisters,
+        aliasName: $_aliasNameGenerator(
+          db.exercises.id,
+          db.exerciseSisters.exerciseId,
+        ),
+      );
+
+  $$ExerciseSistersTableProcessedTableManager get exerciseSisterSources {
+    final manager = $$ExerciseSistersTableTableManager(
+      $_db,
+      $_db.exerciseSisters,
+    ).filter((f) => f.exerciseId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _exerciseSisterSourcesTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$ExerciseSistersTable, List<ExerciseSister>>
+  _exerciseSisterAlternativesTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.exerciseSisters,
+        aliasName: $_aliasNameGenerator(
+          db.exercises.id,
+          db.exerciseSisters.sisterExerciseId,
+        ),
+      );
+
+  $$ExerciseSistersTableProcessedTableManager get exerciseSisterAlternatives {
+    final manager = $$ExerciseSistersTableTableManager(
+      $_db,
+      $_db.exerciseSisters,
+    ).filter((f) => f.sisterExerciseId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _exerciseSisterAlternativesTable($_db),
+    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -6213,6 +6550,56 @@ class $$ExercisesTableFilterComposer
           }) => $$ExerciseNotesTableFilterComposer(
             $db: $db,
             $table: $db.exerciseNotes,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> exerciseSisterSources(
+    Expression<bool> Function($$ExerciseSistersTableFilterComposer f) f,
+  ) {
+    final $$ExerciseSistersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.exerciseSisters,
+      getReferencedColumn: (t) => t.exerciseId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExerciseSistersTableFilterComposer(
+            $db: $db,
+            $table: $db.exerciseSisters,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> exerciseSisterAlternatives(
+    Expression<bool> Function($$ExerciseSistersTableFilterComposer f) f,
+  ) {
+    final $$ExerciseSistersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.exerciseSisters,
+      getReferencedColumn: (t) => t.sisterExerciseId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExerciseSistersTableFilterComposer(
+            $db: $db,
+            $table: $db.exerciseSisters,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -6382,6 +6769,56 @@ class $$ExercisesTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> exerciseSisterSources<T extends Object>(
+    Expression<T> Function($$ExerciseSistersTableAnnotationComposer a) f,
+  ) {
+    final $$ExerciseSistersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.exerciseSisters,
+      getReferencedColumn: (t) => t.exerciseId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExerciseSistersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.exerciseSisters,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> exerciseSisterAlternatives<T extends Object>(
+    Expression<T> Function($$ExerciseSistersTableAnnotationComposer a) f,
+  ) {
+    final $$ExerciseSistersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.exerciseSisters,
+      getReferencedColumn: (t) => t.sisterExerciseId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExerciseSistersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.exerciseSisters,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ExercisesTableTableManager
@@ -6402,6 +6839,8 @@ class $$ExercisesTableTableManager
             bool wodTemplateExercisesRefs,
             bool exerciseMusclesRefs,
             bool exerciseNotesRefs,
+            bool exerciseSisterSources,
+            bool exerciseSisterAlternatives,
           })
         > {
   $$ExercisesTableTableManager(_$AppDatabase db, $ExercisesTable table)
@@ -6457,6 +6896,8 @@ class $$ExercisesTableTableManager
                 wodTemplateExercisesRefs = false,
                 exerciseMusclesRefs = false,
                 exerciseNotesRefs = false,
+                exerciseSisterSources = false,
+                exerciseSisterAlternatives = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -6465,6 +6906,8 @@ class $$ExercisesTableTableManager
                     if (wodTemplateExercisesRefs) db.wodTemplateExercises,
                     if (exerciseMusclesRefs) db.exerciseMuscles,
                     if (exerciseNotesRefs) db.exerciseNotes,
+                    if (exerciseSisterSources) db.exerciseSisters,
+                    if (exerciseSisterAlternatives) db.exerciseSisters,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -6553,6 +6996,48 @@ class $$ExercisesTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (exerciseSisterSources)
+                        await $_getPrefetchedData<
+                          Exercise,
+                          $ExercisesTable,
+                          ExerciseSister
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ExercisesTableReferences
+                              ._exerciseSisterSourcesTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ExercisesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).exerciseSisterSources,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.exerciseId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (exerciseSisterAlternatives)
+                        await $_getPrefetchedData<
+                          Exercise,
+                          $ExercisesTable,
+                          ExerciseSister
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ExercisesTableReferences
+                              ._exerciseSisterAlternativesTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ExercisesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).exerciseSisterAlternatives,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.sisterExerciseId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -6578,6 +7063,8 @@ typedef $$ExercisesTableProcessedTableManager =
         bool wodTemplateExercisesRefs,
         bool exerciseMusclesRefs,
         bool exerciseNotesRefs,
+        bool exerciseSisterSources,
+        bool exerciseSisterAlternatives,
       })
     >;
 typedef $$ProgramsTableCreateCompanionBuilder =
@@ -11512,6 +11999,384 @@ typedef $$ExerciseNotesTableProcessedTableManager =
       ExerciseNote,
       PrefetchHooks Function({bool exerciseId})
     >;
+typedef $$ExerciseSistersTableCreateCompanionBuilder =
+    ExerciseSistersCompanion Function({
+      Value<int> id,
+      required int exerciseId,
+      required int sisterExerciseId,
+    });
+typedef $$ExerciseSistersTableUpdateCompanionBuilder =
+    ExerciseSistersCompanion Function({
+      Value<int> id,
+      Value<int> exerciseId,
+      Value<int> sisterExerciseId,
+    });
+
+final class $$ExerciseSistersTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $ExerciseSistersTable, ExerciseSister> {
+  $$ExerciseSistersTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ExercisesTable _exerciseIdTable(_$AppDatabase db) =>
+      db.exercises.createAlias(
+        $_aliasNameGenerator(db.exerciseSisters.exerciseId, db.exercises.id),
+      );
+
+  $$ExercisesTableProcessedTableManager get exerciseId {
+    final $_column = $_itemColumn<int>('exercise_id')!;
+
+    final manager = $$ExercisesTableTableManager(
+      $_db,
+      $_db.exercises,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_exerciseIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ExercisesTable _sisterExerciseIdTable(_$AppDatabase db) =>
+      db.exercises.createAlias(
+        $_aliasNameGenerator(
+          db.exerciseSisters.sisterExerciseId,
+          db.exercises.id,
+        ),
+      );
+
+  $$ExercisesTableProcessedTableManager get sisterExerciseId {
+    final $_column = $_itemColumn<int>('sister_exercise_id')!;
+
+    final manager = $$ExercisesTableTableManager(
+      $_db,
+      $_db.exercises,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_sisterExerciseIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ExerciseSistersTableFilterComposer
+    extends Composer<_$AppDatabase, $ExerciseSistersTable> {
+  $$ExerciseSistersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ExercisesTableFilterComposer get exerciseId {
+    final $$ExercisesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.exerciseId,
+      referencedTable: $db.exercises,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExercisesTableFilterComposer(
+            $db: $db,
+            $table: $db.exercises,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ExercisesTableFilterComposer get sisterExerciseId {
+    final $$ExercisesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sisterExerciseId,
+      referencedTable: $db.exercises,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExercisesTableFilterComposer(
+            $db: $db,
+            $table: $db.exercises,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ExerciseSistersTableOrderingComposer
+    extends Composer<_$AppDatabase, $ExerciseSistersTable> {
+  $$ExerciseSistersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ExercisesTableOrderingComposer get exerciseId {
+    final $$ExercisesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.exerciseId,
+      referencedTable: $db.exercises,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExercisesTableOrderingComposer(
+            $db: $db,
+            $table: $db.exercises,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ExercisesTableOrderingComposer get sisterExerciseId {
+    final $$ExercisesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sisterExerciseId,
+      referencedTable: $db.exercises,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExercisesTableOrderingComposer(
+            $db: $db,
+            $table: $db.exercises,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ExerciseSistersTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ExerciseSistersTable> {
+  $$ExerciseSistersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  $$ExercisesTableAnnotationComposer get exerciseId {
+    final $$ExercisesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.exerciseId,
+      referencedTable: $db.exercises,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExercisesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.exercises,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ExercisesTableAnnotationComposer get sisterExerciseId {
+    final $$ExercisesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sisterExerciseId,
+      referencedTable: $db.exercises,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExercisesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.exercises,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ExerciseSistersTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ExerciseSistersTable,
+          ExerciseSister,
+          $$ExerciseSistersTableFilterComposer,
+          $$ExerciseSistersTableOrderingComposer,
+          $$ExerciseSistersTableAnnotationComposer,
+          $$ExerciseSistersTableCreateCompanionBuilder,
+          $$ExerciseSistersTableUpdateCompanionBuilder,
+          (ExerciseSister, $$ExerciseSistersTableReferences),
+          ExerciseSister,
+          PrefetchHooks Function({bool exerciseId, bool sisterExerciseId})
+        > {
+  $$ExerciseSistersTableTableManager(
+    _$AppDatabase db,
+    $ExerciseSistersTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ExerciseSistersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ExerciseSistersTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ExerciseSistersTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> exerciseId = const Value.absent(),
+                Value<int> sisterExerciseId = const Value.absent(),
+              }) => ExerciseSistersCompanion(
+                id: id,
+                exerciseId: exerciseId,
+                sisterExerciseId: sisterExerciseId,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int exerciseId,
+                required int sisterExerciseId,
+              }) => ExerciseSistersCompanion.insert(
+                id: id,
+                exerciseId: exerciseId,
+                sisterExerciseId: sisterExerciseId,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$ExerciseSistersTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({exerciseId = false, sisterExerciseId = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (exerciseId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.exerciseId,
+                                    referencedTable:
+                                        $$ExerciseSistersTableReferences
+                                            ._exerciseIdTable(db),
+                                    referencedColumn:
+                                        $$ExerciseSistersTableReferences
+                                            ._exerciseIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (sisterExerciseId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.sisterExerciseId,
+                                    referencedTable:
+                                        $$ExerciseSistersTableReferences
+                                            ._sisterExerciseIdTable(db),
+                                    referencedColumn:
+                                        $$ExerciseSistersTableReferences
+                                            ._sisterExerciseIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$ExerciseSistersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ExerciseSistersTable,
+      ExerciseSister,
+      $$ExerciseSistersTableFilterComposer,
+      $$ExerciseSistersTableOrderingComposer,
+      $$ExerciseSistersTableAnnotationComposer,
+      $$ExerciseSistersTableCreateCompanionBuilder,
+      $$ExerciseSistersTableUpdateCompanionBuilder,
+      (ExerciseSister, $$ExerciseSistersTableReferences),
+      ExerciseSister,
+      PrefetchHooks Function({bool exerciseId, bool sisterExerciseId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -11544,4 +12409,6 @@ class $AppDatabaseManager {
       $$ExerciseMusclesTableTableManager(_db, _db.exerciseMuscles);
   $$ExerciseNotesTableTableManager get exerciseNotes =>
       $$ExerciseNotesTableTableManager(_db, _db.exerciseNotes);
+  $$ExerciseSistersTableTableManager get exerciseSisters =>
+      $$ExerciseSistersTableTableManager(_db, _db.exerciseSisters);
 }

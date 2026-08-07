@@ -28,6 +28,7 @@ import 'widgets/circuit_card.dart';
 import 'widgets/config_stepper.dart';
 import 'widgets/exercise_library_sheet.dart';
 import 'widgets/exercise_notes_sheet.dart';
+import 'widgets/exercise_swap_sheet.dart';
 import 'widgets/rest_pill.dart';
 import 'widgets/resume_prompt_overlay.dart';
 import 'widgets/countdown_overlay.dart';
@@ -1112,11 +1113,134 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   // ── Swap exercise ─────────────────────────────────────────────────────────────
 
   void _showSwapExerciseSheet(int itemIdx) {
+    final original = _sessionItems[itemIdx].wodItem;
+    if (original is! StandaloneWodExercise) {
+      _showSwapExercisePicker(itemIdx, null, null);
+      return;
+    }
+    final entry = original.entry;
     showModalBottomSheet(
       context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
+      builder: (_) => ExerciseSwapSheet(
+        exerciseId: entry.templateExercise.exerciseId,
+        exerciseName: entry.exercise.name,
+        onSisterSelected: (exercise) {
+          Navigator.pop(context);
+          _swapExercise(itemIdx, exercise);
+        },
+        onOtherExercise: () {
+          Navigator.pop(context);
+          _showSwapExercisePicker(
+            itemIdx,
+            entry.templateExercise.exerciseId,
+            entry.exercise.name,
+          );
+        },
+      ),
+    );
+  }
+
+  void _showSwapExercisePicker(
+    int itemIdx,
+    int? originalExerciseId,
+    String? originalExerciseName,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (_) => ExerciseLibrarySheet(
-        title: 'Swap Exercise',
-        onSelected: (exercise) { Navigator.pop(context); _swapExercise(itemIdx, exercise); },
+        title: 'Choose Swap Exercise',
+        onSelected: (exercise) {
+          Navigator.pop(context);
+          if (originalExerciseId == null ||
+              originalExerciseName == null ||
+              exercise.id == originalExerciseId) {
+            _swapExercise(itemIdx, exercise);
+            return;
+          }
+          _showAddSisterPrompt(
+            itemIdx,
+            originalExerciseId,
+            originalExerciseName,
+            exercise,
+          );
+        },
+      ),
+    );
+  }
+
+  void _showAddSisterPrompt(
+    int itemIdx,
+    int originalExerciseId,
+    String originalExerciseName,
+    Exercise exercise,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Center(
+              child: Container(width: 36, height: 3, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Add to sisters?',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Save ${exercise.name} as a sister exercise for '
+              '$originalExerciseName so it appears as a quick swap next time.',
+            ),
+            const SizedBox(height: 18),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                icon: const Icon(Icons.playlist_add_rounded),
+                label: const Text('Swap & Add to Sisters'),
+                onPressed: () async {
+                  final navigator = Navigator.of(ctx);
+                  final messenger = ScaffoldMessenger.of(context);
+                  await ref
+                      .read(databaseProvider)
+                      .exerciseSistersDao
+                      .addSister(originalExerciseId, exercise.id);
+                  if (!mounted) {
+                    return;
+                  }
+                  navigator.pop();
+                  _swapExercise(itemIdx, exercise);
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '${exercise.name} added to sisters for '
+                        '$originalExerciseName',
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                child: const Text('Swap once'),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _swapExercise(itemIdx, exercise);
+                },
+              ),
+            ),
+          ]),
+        ),
       ),
     );
   }
