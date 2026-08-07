@@ -218,6 +218,17 @@ class SetsDao extends DatabaseAccessor<AppDatabase> with _$SetsDaoMixin {
     return result?.read<double?>('pr');
   }
 
+  Future<int> getBestRepsAtWeight(int exerciseId, double weightKg) async {
+    final result = await customSelect(
+      'SELECT COALESCE(MAX(reps), 0) AS reps '
+      'FROM workout_sets '
+      'WHERE exercise_id = ? AND ABS(weight_kg - ?) <= 0.0001 AND reps > 0',
+      variables: [Variable.withInt(exerciseId), Variable.withReal(weightKg)],
+      readsFrom: {workoutSets},
+    ).getSingle();
+    return result.read<int>('reps');
+  }
+
   /// Personal record (max duration) for a timed exercise across all sessions.
   Future<int?> getPersonalRecordDuration(int exerciseId) async {
     final result = await customSelect(
