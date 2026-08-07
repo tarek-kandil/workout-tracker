@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
-import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,7 +18,7 @@ import '../../providers/program_providers.dart';
 import '../../widgets/celebration_overlay.dart';
 import '../../widgets/glass_background.dart';
 import 'models/session_models.dart';
-import 'audio/session_sounds.dart';
+import 'audio/session_sound_player.dart';
 import 'session_formatters.dart';
 import 'widgets/session_common.dart';
 import 'widgets/rpe_sheet.dart';
@@ -81,11 +80,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   bool _timedStopped = false;
 
   // ── Audio ──────────────────────────────────────────────────────────────────────
-  final AudioPlayer _audioPlayer = AudioPlayer();
-  final AudioPlayer _sfxPlayer = AudioPlayer();
-  Uint8List? _beepBytes;
-  Uint8List? _tickBytes;
-  Uint8List? _doneBytes;
+  final SessionSoundPlayer _sound = SessionSoundPlayer();
 
   // ── Circuit autopilot ──────────────────────────────────────────────────────────
   bool _countingDown = false;
@@ -166,9 +161,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _load();
-    _beepBytes = generateBeepWav();
-    _tickBytes = generateTickBeepWav();
-    _doneBytes = generateDoneBeepWav();
+    _sound.load();
   }
 
   @override
@@ -177,8 +170,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     _restTimer?.cancel();
     _exerciseTicker?.cancel();
     _countdownTimer?.cancel();
-    _audioPlayer.dispose();
-    _sfxPlayer.dispose();
+    _sound.dispose();
     NotificationService.cancelWorkoutStatus();
     super.dispose();
   }
@@ -190,7 +182,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       if (remaining <= 0) {
         _restTimer?.cancel();
         setState(() { _resting = false; _restSecondsLeft = 0; });
-        _playBeep();
+        _sound.playBeep();
       } else {
         setState(() => _restSecondsLeft = remaining);
       }
@@ -512,7 +504,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       _timedStopped = true;
       _setData[exerciseId]![_currentSetIdx] = SetData(weightKg: 0, reps: 0, durationSeconds: _timedElapsed);
     });
-    _playDoneSound();
+    _sound.playDoneSound();
     Future.delayed(const Duration(milliseconds: 700), () {
       if (mounted) _onDoneSet();
     });
@@ -520,32 +512,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
 
   // ── Audio ─────────────────────────────────────────────────────────────────────
 
-  Future<void> _playBeep() async {
-    HapticFeedback.heavyImpact();
-    await Future.delayed(const Duration(milliseconds: 110));
-    HapticFeedback.heavyImpact();
-    await Future.delayed(const Duration(milliseconds: 110));
-    HapticFeedback.heavyImpact();
-    if (_beepBytes != null) await _audioPlayer.play(BytesSource(_beepBytes!));
-  }
-
-  Future<void> _playTick() async {
-    HapticFeedback.lightImpact();
-    if (_tickBytes != null) await _sfxPlayer.play(BytesSource(_tickBytes!));
-  }
-
-  Future<void> _playGoSound() async {
-    HapticFeedback.mediumImpact();
-    if (_beepBytes != null) await _sfxPlayer.play(BytesSource(_beepBytes!));
-  }
-
-  Future<void> _playDoneSound() async {
-    HapticFeedback.heavyImpact();
-    if (_doneBytes != null) await _sfxPlayer.play(BytesSource(_doneBytes!));
-  }
-
   void _onRestComplete() {
-    _playBeep();
+    _sound.playBeep();
     _updateNotification();
     Future.delayed(const Duration(milliseconds: 600), () {
       if (mounted && !_resting) _maybeAutoStartCountdown();
@@ -562,17 +530,17 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   void _startCountdown() {
     _countdownTimer?.cancel();
     setState(() { _countingDown = true; _countdownLeft = 3; });
-    _playTick();
+    _sound.playTick();
     _updateNotification();
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (!mounted) { t.cancel(); return; }
       setState(() => _countdownLeft--);
       if (_countdownLeft > 0) {
-        _playTick();
+        _sound.playTick();
       } else {
         t.cancel();
         setState(() => _countingDown = false);
-        _playGoSound();
+        _sound.playGoSound();
         _startExerciseTimer();
       }
     });

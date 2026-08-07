@@ -17,6 +17,7 @@ lib/screens/log/
     session_models.dart          # SetData, SessionItem, CardState (in-memory session state)
   audio/
     session_sounds.dart          # WAV tone generators for beeps/ticks/done cues
+    session_sound_player.dart    # SessionSoundPlayer service (players + haptics + play* cues)
   widgets/                        # Presentational widgets (no business logic)
     session_common.dart          # Shared leaves: StatusBadge, ReadOnlyField, ActionTile,
                                   #   TimedSetInput, SuggestionBadge
