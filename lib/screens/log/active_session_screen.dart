@@ -22,23 +22,23 @@ import '../../widgets/glass_background.dart';
 
 // ─── Local data models ─────────────────────────────────────────────────────────
 
-class _SetData {
+class SetData {
   double weightKg;
   int reps;
   int durationSeconds;
   double? rpe;
-  _SetData({required this.weightKg, required this.reps, this.durationSeconds = 0, this.rpe});
+  SetData({required this.weightKg, required this.reps, this.durationSeconds = 0, this.rpe});
 }
 
 /// Wraps a [WodItem] with mutable session metadata.
-class _SessionItem {
+class SessionItem {
   final int id;
   WodItem wodItem;
   bool skipped;
   bool isAdHoc;
   final Set<int> skippedSets;
 
-  _SessionItem({
+  SessionItem({
     required this.id,
     required this.wodItem,
     this.skipped = false,
@@ -48,7 +48,7 @@ class _SessionItem {
 
 // ─── WAV generators ────────────────────────────────────────────────────────────
 
-Uint8List _makeBeepWav({required int hz, required int ms, int amplitude = 26000}) {
+Uint8List makeBeepWav({required int hz, required int ms, int amplitude = 26000}) {
   const sampleRate = 44100;
   final numSamples = sampleRate * ms ~/ 1000;
   final totalSize = 44 + numSamples * 2;
@@ -75,10 +75,10 @@ Uint8List _makeBeepWav({required int hz, required int ms, int amplitude = 26000}
   return buf.buffer.asUint8List();
 }
 
-Uint8List _generateBeepWav() => _makeBeepWav(hz: 880, ms: 350);
-Uint8List _generateTickBeepWav() => _makeBeepWav(hz: 440, ms: 120, amplitude: 20000);
+Uint8List generateBeepWav() => makeBeepWav(hz: 880, ms: 350);
+Uint8List generateTickBeepWav() => makeBeepWav(hz: 440, ms: 120, amplitude: 20000);
 
-Uint8List _generateDoneBeepWav() {
+Uint8List generateDoneBeepWav() {
   const sampleRate = 44100;
   const durationMs = 600;
   final numSamples = sampleRate * durationMs ~/ 1000;
@@ -108,7 +108,7 @@ Uint8List _generateDoneBeepWav() {
 
 // ─── Screen ────────────────────────────────────────────────────────────────────
 
-enum _CardState { active, completed, upcoming }
+enum CardState { active, completed, upcoming }
 
 class ActiveSessionScreen extends ConsumerStatefulWidget {
   final NextWodResult result;
@@ -122,7 +122,7 @@ class ActiveSessionScreen extends ConsumerStatefulWidget {
 class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     with WidgetsBindingObserver {
   // ── Data maps ─────────────────────────────────────────────────────────────────
-  final Map<int, List<_SetData>> _setData = {};
+  final Map<int, List<SetData>> _setData = {};
   final Map<int, List<WorkoutSet>> _lastSets = {};
   final Map<int, double?> _prData = {};
   final Map<int, int> _prBestReps = {};
@@ -130,7 +130,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   final Map<int, bool> _historyExpanded = {};
 
   // ── Mutable session items ──────────────────────────────────────────────────────
-  final List<_SessionItem> _sessionItems = [];
+  final List<SessionItem> _sessionItems = [];
   int _nextItemId = 0;
 
   bool _loading = true;
@@ -177,11 +177,11 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
 
   // ── Helpers ───────────────────────────────────────────────────────────────────
 
-  _CardState _cardStateFor(int i) {
-    if (_sessionItems[i].skipped) return _CardState.completed;
-    if (i < _currentItemIdx) return _CardState.completed;
-    if (i == _currentItemIdx) return _CardState.active;
-    return _CardState.upcoming;
+  CardState _cardStateFor(int i) {
+    if (_sessionItems[i].skipped) return CardState.completed;
+    if (i < _currentItemIdx) return CardState.completed;
+    if (i == _currentItemIdx) return CardState.active;
+    return CardState.upcoming;
   }
 
   int _nextNonSkippedSet(int itemIdx, int fromSet, int totalSets) {
@@ -243,9 +243,9 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _load();
-    _beepBytes = _generateBeepWav();
-    _tickBytes = _generateTickBeepWav();
-    _doneBytes = _generateDoneBeepWav();
+    _beepBytes = generateBeepWav();
+    _tickBytes = generateTickBeepWav();
+    _doneBytes = generateDoneBeepWav();
   }
 
   @override
@@ -307,21 +307,21 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       _setData[exerciseId] = List.generate(numSets, (idx) {
         if (idx < lastSets.length) {
           final ls = lastSets[idx];
-          return _SetData(
+          return SetData(
             weightKg: ls.weightKg,
             reps: isTimed ? 0 : ls.reps,
             durationSeconds: isTimed ? (ls.durationSeconds ?? te.repRangeMin) : 0,
           );
         }
         if (idx == 0 && !isTimed) {
-          return _SetData(weightKg: entry.suggestion.suggestedKg ?? 0.0, reps: (te.repRangeMax * 0.8).round());
+          return SetData(weightKg: entry.suggestion.suggestedKg ?? 0.0, reps: (te.repRangeMax * 0.8).round());
         }
-        return _SetData(weightKg: 0, reps: 0);
+        return SetData(weightKg: 0, reps: 0);
       });
     }
 
     // Build mutable session items from the original result
-    _sessionItems.addAll(widget.result.items.map((i) => _SessionItem(id: _nextItemId++, wodItem: i)));
+    _sessionItems.addAll(widget.result.items.map((i) => SessionItem(id: _nextItemId++, wodItem: i)));
 
     final prefs = await SharedPreferences.getInstance();
     final savedJson = prefs.getString('workout_progress_${widget.result.wodTemplate.id}');
@@ -347,7 +347,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       final exerciseId = int.parse(entry.key);
       final list = (entry.value as List).map((s) {
         final m = s as Map<String, dynamic>;
-        return _SetData(weightKg: (m['w'] as num).toDouble(), reps: m['r'] as int, durationSeconds: m['d'] as int);
+        return SetData(weightKg: (m['w'] as num).toDouble(), reps: m['r'] as int, durationSeconds: m['d'] as int);
       }).toList();
       _setData[exerciseId] = list;
     }
@@ -369,7 +369,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
 
   // ── Set change ────────────────────────────────────────────────────────────────
 
-  void _onSetChanged(int exerciseId, int setIndex, _SetData data) {
+  void _onSetChanged(int exerciseId, int setIndex, SetData data) {
     setState(() => _setData[exerciseId]![setIndex] = data);
   }
 
@@ -410,7 +410,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       isDismissible: true,
       enableDrag: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _RpeSheet(exerciseName: exerciseName, setNumber: setNumber),
+      builder: (_) => RpeSheet(exerciseName: exerciseName, setNumber: setNumber),
     );
   }
 
@@ -515,7 +515,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       final rpe = await _showRpeSheet(capturedName, capturedSetNumber);
       if (rpe != null && mounted) {
         setState(() {
-          _setData[exerciseId]![capturedSetIdx] = _SetData(
+          _setData[exerciseId]![capturedSetIdx] = SetData(
             weightKg: loggedData.weightKg,
             reps: loggedData.reps,
             rpe: rpe,
@@ -587,7 +587,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     setState(() {
       _timedRunning = false;
       _timedStopped = true;
-      _setData[exerciseId]![_currentSetIdx] = _SetData(weightKg: 0, reps: 0, durationSeconds: _timedElapsed);
+      _setData[exerciseId]![_currentSetIdx] = SetData(weightKg: 0, reps: 0, durationSeconds: _timedElapsed);
     });
     _playDoneSound();
     Future.delayed(const Duration(milliseconds: 700), () {
@@ -930,7 +930,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     final exerciseId = entry.templateExercise.exerciseId;
     final isTimed = entry.exercise.isTimed;
     final sets = _setData[exerciseId] ?? [];
-    final current = setIdx < sets.length ? sets[setIdx] : _SetData(weightKg: 0, reps: 0);
+    final current = setIdx < sets.length ? sets[setIdx] : SetData(weightKg: 0, reps: 0);
 
     final weightCtrl = TextEditingController(text: current.weightKg > 0 ? _fmtW(current.weightKg) : '');
     final secondaryCtrl = TextEditingController(
@@ -938,7 +938,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
             ? (current.durationSeconds > 0 ? '${current.durationSeconds}' : '')
             : (current.reps > 0 ? '${current.reps}' : ''));
 
-    final saved = await showModalBottomSheet<_SetData>(
+    final saved = await showModalBottomSheet<SetData>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -986,7 +986,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                 onPressed: () {
                   final w = double.tryParse(weightCtrl.text.replaceAll(',', '.')) ?? current.weightKg;
                   final s = int.tryParse(secondaryCtrl.text);
-                  Navigator.pop(ctx, _SetData(
+                  Navigator.pop(ctx, SetData(
                     weightKg: isTimed ? 0 : w,
                     reps: isTimed ? 0 : (s ?? current.reps),
                     durationSeconds: isTimed ? (s ?? current.durationSeconds) : 0,
@@ -1051,14 +1051,14 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Container(width: 36, height: 3, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 14),
-            _ActionTile(icon: Icons.swap_horiz, label: 'Swap Exercise',
+            ActionTile(icon: Icons.swap_horiz, label: 'Swap Exercise',
                 onTap: () { Navigator.pop(ctx); _showSwapExerciseSheet(itemIdx); }),
-            _ActionTile(icon: Icons.add, label: 'Add Exercise',
+            ActionTile(icon: Icons.add, label: 'Add Exercise',
                 onTap: () { Navigator.pop(ctx); _showAddExerciseSheet(itemIdx + 1); }),
-            _ActionTile(icon: Icons.skip_next, label: 'Skip Exercise',
+            ActionTile(icon: Icons.skip_next, label: 'Skip Exercise',
                 onTap: () { Navigator.pop(ctx); _skipExercise(itemIdx); }),
             if (si.isAdHoc)
-              _ActionTile(icon: Icons.delete_outline, label: 'Remove', color: Colors.red.shade300,
+              ActionTile(icon: Icons.delete_outline, label: 'Remove', color: Colors.red.shade300,
                   onTap: () { Navigator.pop(ctx); _removeAdHocItem(itemIdx); }),
             const SizedBox(height: 4),
           ]),
@@ -1078,7 +1078,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Container(width: 36, height: 3, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 14),
-            _ActionTile(icon: Icons.swap_horiz, label: 'Swap Exercise',
+            ActionTile(icon: Icons.swap_horiz, label: 'Swap Exercise',
                 onTap: () { Navigator.pop(ctx); _showSwapCircuitExerciseSheet(itemIdx, exIdx); }),
             const SizedBox(height: 4),
           ]),
@@ -1092,7 +1092,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   void _showSwapExerciseSheet(int itemIdx) {
     showModalBottomSheet(
       context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
-      builder: (_) => _ExerciseLibrarySheet(
+      builder: (_) => ExerciseLibrarySheet(
         title: 'Swap Exercise',
         onSelected: (exercise) { Navigator.pop(context); _swapExercise(itemIdx, exercise); },
       ),
@@ -1117,12 +1117,12 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       templateExercise: fakeTe, exercise: exercise, suggestion: WeightSuggestion.noHistory,
     );
     setState(() {
-      _sessionItems[itemIdx] = _SessionItem(
+      _sessionItems[itemIdx] = SessionItem(
         id: _sessionItems[itemIdx].id,
         wodItem: StandaloneWodExercise(entry: newEntry, restSeconds: original.restSeconds),
         isAdHoc: true,
       );
-      _setData[exercise.id] = List.generate(origEntry.templateExercise.targetSets, (_) => _SetData(weightKg: 0, reps: 0));
+      _setData[exercise.id] = List.generate(origEntry.templateExercise.targetSets, (_) => SetData(weightKg: 0, reps: 0));
       _lastSets[exercise.id] = [];
       _prData[exercise.id] = null;
       if (itemIdx == _currentItemIdx) { _currentSetIdx = 0; _circuitExerciseIdx = 0; }
@@ -1134,7 +1134,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   void _showSwapCircuitExerciseSheet(int itemIdx, int exIdx) {
     showModalBottomSheet(
       context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
-      builder: (_) => _ExerciseLibrarySheet(
+      builder: (_) => ExerciseLibrarySheet(
         title: 'Swap Exercise',
         onSelected: (exercise) { Navigator.pop(context); _swapCircuitExercise(itemIdx, exIdx, exercise); },
       ),
@@ -1166,8 +1166,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       exercises: newExercises,
     );
     setState(() {
-      _sessionItems[itemIdx] = _SessionItem(id: _sessionItems[itemIdx].id, wodItem: newCircuit, isAdHoc: _sessionItems[itemIdx].isAdHoc);
-      _setData[newExercise.id] = List.generate(circuit.rounds, (_) => _SetData(weightKg: 0, reps: 0));
+      _sessionItems[itemIdx] = SessionItem(id: _sessionItems[itemIdx].id, wodItem: newCircuit, isAdHoc: _sessionItems[itemIdx].isAdHoc);
+      _setData[newExercise.id] = List.generate(circuit.rounds, (_) => SetData(weightKg: 0, reps: 0));
       _lastSets[newExercise.id] = [];
       _prData[newExercise.id] = null;
       if (itemIdx == _currentItemIdx && exIdx == _circuitExerciseIdx) _currentSetIdx = 0;
@@ -1188,7 +1188,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   void _showAddExerciseSheet(int insertAt) {
     showModalBottomSheet(
       context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
-      builder: (_) => _ExerciseLibrarySheet(
+      builder: (_) => ExerciseLibrarySheet(
         title: 'Add Exercise',
         onSelected: (exercise) { Navigator.pop(context); _showAddExerciseConfig(insertAt, exercise); },
       ),
@@ -1212,15 +1212,15 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
             const SizedBox(height: 20),
             if (isTimed)
               Row(children: [
-                Expanded(child: _ConfigStepper(label: 'Sets', value: sets, min: 1, max: 10, onChanged: (v) => setM(() => sets = v))),
+                Expanded(child: ConfigStepper(label: 'Sets', value: sets, min: 1, max: 10, onChanged: (v) => setM(() => sets = v))),
                 const SizedBox(width: 12),
-                Expanded(child: _ConfigStepper(label: 'Duration (s)', value: durationSecs, min: 5, max: 600, step: 5, onChanged: (v) => setM(() => durationSecs = v))),
+                Expanded(child: ConfigStepper(label: 'Duration (s)', value: durationSecs, min: 5, max: 600, step: 5, onChanged: (v) => setM(() => durationSecs = v))),
               ])
             else
               Row(children: [
-                Expanded(child: _ConfigStepper(label: 'Sets', value: sets, min: 1, max: 10, onChanged: (v) => setM(() => sets = v))),
+                Expanded(child: ConfigStepper(label: 'Sets', value: sets, min: 1, max: 10, onChanged: (v) => setM(() => sets = v))),
                 const SizedBox(width: 12),
-                Expanded(child: _ConfigStepper(label: 'Reps', value: repMax, min: 1, max: 100, onChanged: (v) => setM(() => repMax = v))),
+                Expanded(child: ConfigStepper(label: 'Reps', value: repMax, min: 1, max: 100, onChanged: (v) => setM(() => repMax = v))),
               ]),
             const SizedBox(height: 20),
             SizedBox(width: double.infinity, child: FilledButton(
@@ -1253,10 +1253,10 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     final entry = WodExerciseEntry(
       templateExercise: fakeTe, exercise: exercise, suggestion: WeightSuggestion.noHistory,
     );
-    final si = _SessionItem(id: _nextItemId++, wodItem: StandaloneWodExercise(entry: entry, restSeconds: null), isAdHoc: true);
+    final si = SessionItem(id: _nextItemId++, wodItem: StandaloneWodExercise(entry: entry, restSeconds: null), isAdHoc: true);
     setState(() {
       _sessionItems.insert(insertAt, si);
-      _setData[exercise.id] = List.generate(sets, (_) => _SetData(weightKg: 0, reps: 0));
+      _setData[exercise.id] = List.generate(sets, (_) => SetData(weightKg: 0, reps: 0));
       _lastSets[exercise.id] = [];
       _prData[exercise.id] = null;
       if (_allExercisesDone) {
@@ -1338,11 +1338,11 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                   key: ValueKey(si.id),
                   padding: const EdgeInsets.only(bottom: 10),
                   child: switch (si.wodItem) {
-                    StandaloneWodExercise(:final entry) => _ExerciseCard(
+                    StandaloneWodExercise(:final entry) => ExerciseCard(
                         entry: entry,
                         cardState: state,
                         itemIndex: itemIdx,
-                        dragIndex: state == _CardState.completed ? null : itemIdx,
+                        dragIndex: state == CardState.completed ? null : itemIdx,
                         setData: _setData[entry.templateExercise.exerciseId] ?? [],
                         currentSetIdx: itemIdx == _currentItemIdx ? _currentSetIdx : -1,
                         lastSets: _lastSets[entry.templateExercise.exerciseId] ?? [],
@@ -1366,11 +1366,11 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                         onEditSet: (setIdx) => _editSet(context, itemIdx, setIdx),
                         onShowActions: () => _showExerciseActions(context, itemIdx),
                       ),
-                    WodCircuit() => _CircuitCard(
+                    WodCircuit() => CircuitCard(
                         circuit: si.wodItem as WodCircuit,
                         cardState: state,
                         itemIndex: itemIdx,
-                        dragIndex: state == _CardState.completed ? null : itemIdx,
+                        dragIndex: state == CardState.completed ? null : itemIdx,
                         currentItemIdx: _currentItemIdx,
                         currentSetIdx: _currentSetIdx,
                         currentCircuitExIdx: _circuitExerciseIdx,
@@ -1406,7 +1406,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
               child: AnimatedOpacity(
                 duration: const Duration(milliseconds: 220),
                 opacity: _resting ? 1.0 : 0.0,
-                child: _RestPill(
+                child: RestPill(
                   secondsLeft: _restSecondsLeft,
                   totalSeconds: _restTotalSeconds,
                   currentLabel: _getCurrentRestLabel(),
@@ -1416,14 +1416,14 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
               ),
             ),
           if (_showResumePrompt && !_loading)
-            _ResumePromptOverlay(
+            ResumePromptOverlay(
               savedAtMs: _savedAtMs,
               onResume: _resumeWorkout,
               onRestart: _restartWorkout,
               onDiscard: _discardWorkout,
             ),
           if (_countingDown && !_loading && _sessionItems.isNotEmpty)
-            _CountdownOverlay(
+            CountdownOverlay(
               secondsLeft: _countdownLeft,
               exerciseName: _currentEntry.exercise.name,
               setLabel: _circuitContext ?? 'Set ${_currentSetIdx + 1} / ${_currentEntry.templateExercise.targetSets}',
@@ -1435,12 +1435,12 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   }
 }
 
-// ─── _StatusBadge ─────────────────────────────────────────────────────────────
+// ─── StatusBadge ─────────────────────────────────────────────────────────────
 
-class _StatusBadge extends StatelessWidget {
+class StatusBadge extends StatelessWidget {
   final String label;
   final Color color;
-  const _StatusBadge({required this.label, required this.color});
+  const StatusBadge({super.key, required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) => Container(
@@ -1454,15 +1454,15 @@ class _StatusBadge extends StatelessWidget {
   );
 }
 
-// ─── _ReadOnlyField ───────────────────────────────────────────────────────────
+// ─── ReadOnlyField ───────────────────────────────────────────────────────────
 
-class _ReadOnlyField extends StatelessWidget {
+class ReadOnlyField extends StatelessWidget {
   final String label;
   final String value;
   final bool dim;
   final bool strikethrough;
   final Color? accent;
-  const _ReadOnlyField({required this.label, required this.value, this.dim = false, this.strikethrough = false, this.accent});
+  const ReadOnlyField({super.key, required this.label, required this.value, this.dim = false, this.strikethrough = false, this.accent});
 
   @override
   Widget build(BuildContext context) => Container(
@@ -1482,9 +1482,9 @@ class _ReadOnlyField extends StatelessWidget {
   );
 }
 
-// ─── _HistoryChipRow ──────────────────────────────────────────────────────────
+// ─── HistoryChipRow ──────────────────────────────────────────────────────────
 
-class _HistoryChipRow extends StatelessWidget {
+class HistoryChipRow extends StatelessWidget {
   final List<WorkoutSet> lastSets;
   final bool isTimed;
   final double? prKg;
@@ -1492,7 +1492,7 @@ class _HistoryChipRow extends StatelessWidget {
   final bool expanded;
   final VoidCallback onToggle;
 
-  const _HistoryChipRow({
+  const HistoryChipRow({super.key, 
     required this.lastSets, required this.isTimed,
     required this.prKg, required this.prDurationSeconds,
     required this.expanded, required this.onToggle,
@@ -1571,21 +1571,21 @@ class _HistoryChipRow extends StatelessWidget {
   }
 }
 
-// ─── _SetRowItem ──────────────────────────────────────────────────────────────
+// ─── SetRowItem ──────────────────────────────────────────────────────────────
 
-class _SetRowItem extends StatelessWidget {
+class SetRowItem extends StatelessWidget {
   final int setIndex;
   final bool isTimed;
   final bool isActive;
   final bool isDone;
   final bool isSkipped;
   final bool canSkip;
-  final _SetData data;
-  final void Function(_SetData)? onChanged;
+  final SetData data;
+  final void Function(SetData)? onChanged;
   final VoidCallback onSkip;
   final VoidCallback? onEdit;
 
-  const _SetRowItem({
+  const SetRowItem({
     super.key,
     required this.setIndex, required this.isTimed,
     required this.isActive, required this.isDone, required this.isSkipped,
@@ -1615,21 +1615,21 @@ class _SetRowItem extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           if (isActive && onChanged != null)
-            Expanded(child: _SetRow(
+            Expanded(child: SetRow(
               key: ValueKey('srinput-$setIndex'),
               setNumber: setIndex + 1, isTimed: isTimed,
               data: data, onChanged: onChanged!,
             ))
           else ...[
             if (!isTimed) ...[
-              Expanded(child: _ReadOnlyField(
+              Expanded(child: ReadOnlyField(
                 label: 'WEIGHT',
                 value: isSkipped || data.weightKg == 0 ? '—' : '${_fmtW(data.weightKg)} kg',
                 dim: !isDone,
               )),
               const SizedBox(width: 6),
             ],
-            Expanded(child: _ReadOnlyField(
+            Expanded(child: ReadOnlyField(
               label: isTimed ? 'DURATION' : 'REPS',
               value: isSkipped ? 'skip'
                   : isTimed ? (data.durationSeconds > 0 ? _fmtSec(data.durationSeconds) : '—')
@@ -1650,14 +1650,14 @@ class _SetRowItem extends StatelessWidget {
   }
 }
 
-// ─── _ExerciseCard ────────────────────────────────────────────────────────────
+// ─── ExerciseCard ────────────────────────────────────────────────────────────
 
-class _ExerciseCard extends StatelessWidget {
+class ExerciseCard extends StatelessWidget {
   final WodExerciseEntry entry;
-  final _CardState cardState;
+  final CardState cardState;
   final int itemIndex;
   final int? dragIndex;
-  final List<_SetData> setData;
+  final List<SetData> setData;
   final int currentSetIdx;
   final List<WorkoutSet> lastSets;
   final double? prKg;
@@ -1669,7 +1669,7 @@ class _ExerciseCard extends StatelessWidget {
   final bool timedStopped;
   final bool historyExpanded;
   final VoidCallback onToggleHistory;
-  final void Function(int, _SetData) onSetDataChanged;
+  final void Function(int, SetData) onSetDataChanged;
   final VoidCallback? onDoneSet;
   final VoidCallback? onStartTimer;
   final VoidCallback? onStopTimer;
@@ -1677,7 +1677,7 @@ class _ExerciseCard extends StatelessWidget {
   final void Function(int) onEditSet;
   final VoidCallback onShowActions;
 
-  const _ExerciseCard({
+  const ExerciseCard({super.key, 
     required this.entry, required this.cardState, required this.itemIndex,
     this.dragIndex,
     required this.setData, required this.currentSetIdx, required this.lastSets,
@@ -1770,8 +1770,8 @@ class _ExerciseCard extends StatelessWidget {
     final te = entry.templateExercise;
     final isTimed = entry.exercise.isTimed;
     final accent = Theme.of(context).colorScheme.primary;
-    final isActive = cardState == _CardState.active;
-    final isDone = cardState == _CardState.completed;
+    final isActive = cardState == CardState.active;
+    final isDone = cardState == CardState.completed;
 
     final borderColor = isActive
         ? accent.withValues(alpha: 0.6)
@@ -1794,9 +1794,9 @@ class _ExerciseCard extends StatelessWidget {
           // Header
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              if (isActive) _StatusBadge(label: '▶ NOW', color: accent)
-              else if (isDone) const _StatusBadge(label: '✓ DONE', color: Colors.green)
-              else if (isAdHoc) const _StatusBadge(label: '＋ added', color: Colors.orange),
+              if (isActive) StatusBadge(label: '▶ NOW', color: accent)
+              else if (isDone) const StatusBadge(label: '✓ DONE', color: Colors.green)
+              else if (isAdHoc) const StatusBadge(label: '＋ added', color: Colors.orange),
               Text(entry.exercise.name,
                   style: Theme.of(context).textTheme.titleLarge!.copyWith(fontWeight: FontWeight.w800)),
               const SizedBox(height: 2),
@@ -1841,12 +1841,12 @@ class _ExerciseCard extends StatelessWidget {
                   ),
                 ],
               ),
-              if (!isTimed) _SuggestionBadge(suggestion: entry.suggestion),
+              if (!isTimed) SuggestionBadge(suggestion: entry.suggestion),
             ]),
           ]),
           const SizedBox(height: 8),
           // History chip
-          _HistoryChipRow(
+          HistoryChipRow(
             lastSets: lastSets, isTimed: isTimed,
             prKg: prKg, prDurationSeconds: prDurationSeconds,
             expanded: historyExpanded, onToggle: onToggleHistory,
@@ -1886,12 +1886,12 @@ class _ExerciseCard extends StatelessWidget {
             final isSetDone = (isActive && setIdx < currentSetIdx) ||
                 (isDone && !skippedSets.contains(setIdx));
             final isSetSkipped = skippedSets.contains(setIdx);
-            return _SetRowItem(
+            return SetRowItem(
               key: ValueKey('set-${te.exerciseId}-$itemIndex-$setIdx'),
               setIndex: setIdx, isTimed: isTimed,
               isActive: isSetActive, isDone: isSetDone, isSkipped: isSetSkipped,
               canSkip: !isSetActive && !isSetDone && !isSetSkipped && isActive,
-              data: setIdx < setData.length ? setData[setIdx] : _SetData(weightKg: 0, reps: 0),
+              data: setIdx < setData.length ? setData[setIdx] : SetData(weightKg: 0, reps: 0),
               onChanged: isSetActive ? (data) => onSetDataChanged(setIdx, data) : null,
               onSkip: () => onSkipSet(setIdx),
               onEdit: isSetDone ? () => onEditSet(setIdx) : null,
@@ -1901,13 +1901,13 @@ class _ExerciseCard extends StatelessWidget {
           if (isActive && onDoneSet != null) ...[
             const SizedBox(height: 12),
             if (isTimed)
-              _TimedSetInput(
+              TimedSetInput(
                 running: timedRunning, elapsed: timedElapsed, stopped: timedStopped,
                 target: te.repRangeMin, isCircuit: false,
                 onStart: onStartTimer ?? () {}, onStop: onStopTimer ?? () {},
               )
             else
-              Center(child: _CheckCircleButton(
+              Center(child: CheckCircleButton(
                 key: ValueKey('check-${entry.exercise.id}-$currentSetIdx'),
                 onDone: onDoneSet!,
               )),
@@ -1918,17 +1918,17 @@ class _ExerciseCard extends StatelessWidget {
   }
 }
 
-// ─── _RoundRowItem ────────────────────────────────────────────────────────────
+// ─── RoundRowItem ────────────────────────────────────────────────────────────
 
-class _RoundRowItem extends StatelessWidget {
+class RoundRowItem extends StatelessWidget {
   final int roundIndex;
   final bool isTimed;
   final bool isActive;
   final bool isDone;
-  final _SetData data;
-  final void Function(_SetData)? onChanged;
+  final SetData data;
+  final void Function(SetData)? onChanged;
 
-  const _RoundRowItem({
+  const RoundRowItem({super.key, 
     required this.roundIndex, required this.isTimed,
     required this.isActive, required this.isDone,
     required this.data, required this.onChanged,
@@ -1950,18 +1950,18 @@ class _RoundRowItem extends StatelessWidget {
             size: 13, color: isDone ? teal : isActive ? accent : Colors.white24),
         const SizedBox(width: 8),
         if (isActive && onChanged != null)
-          Expanded(child: _SetRow(
+          Expanded(child: SetRow(
             key: ValueKey('round-input-$roundIndex'),
             setNumber: roundIndex + 1, isTimed: isTimed,
             data: data, onChanged: onChanged!,
           ))
         else ...[
           if (!isTimed) ...[
-            Expanded(child: _ReadOnlyField(label: 'WEIGHT',
+            Expanded(child: ReadOnlyField(label: 'WEIGHT',
                 value: data.weightKg > 0 ? '${_fmtW(data.weightKg)} kg' : '—', dim: !isDone)),
             const SizedBox(width: 6),
           ],
-          Expanded(child: _ReadOnlyField(
+          Expanded(child: ReadOnlyField(
             label: isTimed ? 'DURATION' : 'REPS',
             value: isTimed ? (data.durationSeconds > 0 ? _fmtSec(data.durationSeconds) : '—')
                            : (data.reps > 0 ? '${data.reps}' : '—'),
@@ -1973,20 +1973,20 @@ class _RoundRowItem extends StatelessWidget {
   }
 }
 
-// ─── _CircuitExerciseSection ──────────────────────────────────────────────────
+// ─── CircuitExerciseSection ──────────────────────────────────────────────────
 
-class _CircuitExerciseSection extends StatelessWidget {
+class CircuitExerciseSection extends StatelessWidget {
   final WodExerciseEntry exercise;
   final int rounds;
   final bool isCurrentExercise;
   final int currentRound;
-  final List<_SetData> setData;
+  final List<SetData> setData;
   final List<WorkoutSet> lastSets;
   final double? prKg;
   final int? prDurationSeconds;
   final bool historyExpanded;
   final VoidCallback onToggleHistory;
-  final void Function(int, _SetData) onSetDataChanged;
+  final void Function(int, SetData) onSetDataChanged;
   final VoidCallback? onDoneSet;
   final VoidCallback? onStartTimer;
   final VoidCallback? onStopTimer;
@@ -1995,7 +1995,7 @@ class _CircuitExerciseSection extends StatelessWidget {
   final int timedElapsed;
   final bool timedStopped;
 
-  const _CircuitExerciseSection({
+  const CircuitExerciseSection({super.key, 
     required this.exercise, required this.rounds,
     required this.isCurrentExercise, required this.currentRound,
     required this.setData, required this.lastSets,
@@ -2018,7 +2018,7 @@ class _CircuitExerciseSection extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            if (isCurrentExercise) _StatusBadge(label: '▶ NOW', color: accent),
+            if (isCurrentExercise) StatusBadge(label: '▶ NOW', color: accent),
             Text(exercise.exercise.name,
                 style: Theme.of(context).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w700)),
             Text(
@@ -2034,31 +2034,31 @@ class _CircuitExerciseSection extends StatelessWidget {
           ),
         ]),
         const SizedBox(height: 6),
-        _HistoryChipRow(
+        HistoryChipRow(
           lastSets: lastSets, isTimed: isTimed,
           prKg: prKg, prDurationSeconds: prDurationSeconds,
           expanded: historyExpanded, onToggle: onToggleHistory,
         ),
         const SizedBox(height: 8),
         for (int r = 0; r < rounds; r++)
-          _RoundRowItem(
+          RoundRowItem(
             roundIndex: r, isTimed: isTimed,
             isActive: isCurrentExercise && r == currentRound,
             isDone: r < currentRound || (!isCurrentExercise && r < setData.length &&
                 (isTimed ? setData[r].durationSeconds > 0 : setData[r].reps > 0)),
-            data: r < setData.length ? setData[r] : _SetData(weightKg: 0, reps: 0),
+            data: r < setData.length ? setData[r] : SetData(weightKg: 0, reps: 0),
             onChanged: isCurrentExercise && r == currentRound ? (d) => onSetDataChanged(r, d) : null,
           ),
         if (isCurrentExercise && onDoneSet != null) ...[
           const SizedBox(height: 10),
           if (isTimed)
-            _TimedSetInput(
+            TimedSetInput(
               running: timedRunning, elapsed: timedElapsed, stopped: timedStopped,
               target: te.repRangeMin, isCircuit: true,
               onStart: onStartTimer ?? () {}, onStop: onStopTimer ?? () {},
             )
           else
-            Center(child: _CheckCircleButton(
+            Center(child: CheckCircleButton(
               key: ValueKey('circ-check-${te.exerciseId}-$currentRound'),
               onDone: onDoneSet!,
             )),
@@ -2068,22 +2068,22 @@ class _CircuitExerciseSection extends StatelessWidget {
   }
 }
 
-// ─── _CircuitCard ─────────────────────────────────────────────────────────────
+// ─── CircuitCard ─────────────────────────────────────────────────────────────
 
-class _CircuitCard extends StatelessWidget {
+class CircuitCard extends StatelessWidget {
   final WodCircuit circuit;
-  final _CardState cardState;
+  final CardState cardState;
   final int itemIndex;
   final int currentItemIdx;
   final int currentSetIdx;
   final int currentCircuitExIdx;
-  final Map<int, List<_SetData>> setData;
+  final Map<int, List<SetData>> setData;
   final Map<int, List<WorkoutSet>> lastSets;
   final Map<int, double?> prData;
   final Map<int, int?> prDurationData;
   final Map<int, bool> historyExpanded;
   final void Function(int) onToggleHistory;
-  final void Function(int, int, _SetData) onSetDataChanged;
+  final void Function(int, int, SetData) onSetDataChanged;
   final VoidCallback? onDoneSet;
   final VoidCallback? onStartTimer;
   final VoidCallback? onStopTimer;
@@ -2094,7 +2094,7 @@ class _CircuitCard extends StatelessWidget {
   final bool timedStopped;
   final int? dragIndex;
 
-  const _CircuitCard({
+  const CircuitCard({super.key, 
     required this.circuit, required this.cardState, required this.itemIndex,
     required this.currentItemIdx, required this.currentSetIdx,
     required this.currentCircuitExIdx, required this.setData, required this.lastSets,
@@ -2109,8 +2109,8 @@ class _CircuitCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final teal = Theme.of(context).colorScheme.secondary;
-    final isActive = cardState == _CardState.active && itemIndex == currentItemIdx;
-    final isDone = cardState == _CardState.completed;
+    final isActive = cardState == CardState.active && itemIndex == currentItemIdx;
+    final isDone = cardState == CardState.completed;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 280),
@@ -2140,7 +2140,7 @@ class _CircuitCard extends StatelessWidget {
                 style: TextStyle(fontSize: 9, color: teal.withValues(alpha: 0.6)),
               ),
             ])),
-            if (isDone) const _StatusBadge(label: '✓ DONE', color: Colors.green),
+            if (isDone) const StatusBadge(label: '✓ DONE', color: Colors.green),
             if (dragIndex != null)
               ReorderableDragStartListener(
                 index: dragIndex!,
@@ -2159,7 +2159,7 @@ class _CircuitCard extends StatelessWidget {
         ),
         Divider(height: 1, color: teal.withValues(alpha: 0.08)),
         for (int exIdx = 0; exIdx < circuit.exercises.length; exIdx++) ...[
-          _CircuitExerciseSection(
+          CircuitExerciseSection(
             exercise: circuit.exercises[exIdx],
             rounds: circuit.rounds,
             isCurrentExercise: isActive && exIdx == currentCircuitExIdx,
@@ -2188,14 +2188,14 @@ class _CircuitCard extends StatelessWidget {
   }
 }
 
-// ─── _ActionTile ──────────────────────────────────────────────────────────────
+// ─── ActionTile ──────────────────────────────────────────────────────────────
 
-class _ActionTile extends StatelessWidget {
+class ActionTile extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
   final Color? color;
-  const _ActionTile({required this.icon, required this.label, required this.onTap, this.color});
+  const ActionTile({super.key, required this.icon, required this.label, required this.onTap, this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -2230,16 +2230,16 @@ Widget _cfgBtn(ColorScheme cs, bool enabled, IconData icon, VoidCallback cb) =>
       ),
     );
 
-// ─── _ConfigStepper ───────────────────────────────────────────────────────────
+// ─── ConfigStepper ───────────────────────────────────────────────────────────
 
-class _ConfigStepper extends StatelessWidget {
+class ConfigStepper extends StatelessWidget {
   final String label;
   final int value;
   final int min;
   final int max;
   final int step;
   final void Function(int) onChanged;
-  const _ConfigStepper({required this.label, required this.value, required this.min, required this.max, required this.onChanged, this.step = 1});
+  const ConfigStepper({super.key, required this.label, required this.value, required this.min, required this.max, required this.onChanged, this.step = 1});
 
   @override
   Widget build(BuildContext context) {
@@ -2256,18 +2256,18 @@ class _ConfigStepper extends StatelessWidget {
   }
 }
 
-// ─── _ExerciseLibrarySheet ────────────────────────────────────────────────────
+// ─── ExerciseLibrarySheet ────────────────────────────────────────────────────
 
-class _ExerciseLibrarySheet extends ConsumerStatefulWidget {
+class ExerciseLibrarySheet extends ConsumerStatefulWidget {
   final String title;
   final void Function(Exercise) onSelected;
-  const _ExerciseLibrarySheet({required this.title, required this.onSelected});
+  const ExerciseLibrarySheet({super.key, required this.title, required this.onSelected});
 
   @override
-  ConsumerState<_ExerciseLibrarySheet> createState() => _ExerciseLibrarySheetState();
+  ConsumerState<ExerciseLibrarySheet> createState() => _ExerciseLibrarySheetState();
 }
 
-class _ExerciseLibrarySheetState extends ConsumerState<_ExerciseLibrarySheet> {
+class _ExerciseLibrarySheetState extends ConsumerState<ExerciseLibrarySheet> {
   String _query = '';
   List<Exercise> _all = [];
   bool _loading = true;
@@ -2354,9 +2354,9 @@ class _ExerciseLibrarySheetState extends ConsumerState<_ExerciseLibrarySheet> {
   }
 }
 
-// ─── _TimedSetInput ───────────────────────────────────────────────────────────
+// ─── TimedSetInput ───────────────────────────────────────────────────────────
 
-class _TimedSetInput extends StatelessWidget {
+class TimedSetInput extends StatelessWidget {
   final bool running;
   final int elapsed;
   final bool stopped;
@@ -2365,7 +2365,7 @@ class _TimedSetInput extends StatelessWidget {
   final VoidCallback onStart;
   final VoidCallback onStop;
 
-  const _TimedSetInput({
+  const TimedSetInput({super.key, 
     required this.running, required this.elapsed, required this.stopped,
     required this.target, this.isCircuit = false,
     required this.onStart, required this.onStop,
@@ -2407,16 +2407,16 @@ class _TimedSetInput extends StatelessWidget {
   }
 }
 
-// ─── _RestPill ─────────────────────────────────────────────────────────────────
+// ─── RestPill ─────────────────────────────────────────────────────────────────
 
-class _RestPill extends StatelessWidget {
+class RestPill extends StatelessWidget {
   final int secondsLeft;
   final int totalSeconds;
   final String currentLabel;
   final String nextLabel;
   final VoidCallback onSkip;
 
-  const _RestPill({
+  const RestPill({super.key, 
     required this.secondsLeft,
     required this.totalSeconds,
     required this.currentLabel,
@@ -2490,15 +2490,15 @@ class _RestPill extends StatelessWidget {
   }
 }
 
-// ─── _ResumePromptOverlay ─────────────────────────────────────────────────────
+// ─── ResumePromptOverlay ─────────────────────────────────────────────────────
 
-class _ResumePromptOverlay extends StatelessWidget {
+class ResumePromptOverlay extends StatelessWidget {
   final int? savedAtMs;
   final VoidCallback onResume;
   final VoidCallback onRestart;
   final VoidCallback onDiscard;
 
-  const _ResumePromptOverlay({required this.savedAtMs, required this.onResume, required this.onRestart, required this.onDiscard});
+  const ResumePromptOverlay({super.key, required this.savedAtMs, required this.onResume, required this.onRestart, required this.onDiscard});
 
   String get _timeAgo {
     if (savedAtMs == null) return '';
@@ -2535,9 +2535,9 @@ class _ResumePromptOverlay extends StatelessWidget {
               )),
               const SizedBox(height: 28),
               Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                _PromptAction(icon: Icons.restart_alt, label: 'Restart', color: Colors.white70, onTap: onRestart),
+                PromptAction(icon: Icons.restart_alt, label: 'Restart', color: Colors.white70, onTap: onRestart),
                 const SizedBox(width: 40),
-                _PromptAction(icon: Icons.close, label: 'Discard', color: Colors.red.shade300, onTap: onDiscard),
+                PromptAction(icon: Icons.close, label: 'Discard', color: Colors.red.shade300, onTap: onDiscard),
               ]),
             ]),
           ),
@@ -2547,12 +2547,12 @@ class _ResumePromptOverlay extends StatelessWidget {
   }
 }
 
-class _PromptAction extends StatelessWidget {
+class PromptAction extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
   final VoidCallback onTap;
-  const _PromptAction({required this.icon, required this.label, required this.color, required this.onTap});
+  const PromptAction({super.key, required this.icon, required this.label, required this.color, required this.onTap});
 
   @override
   Widget build(BuildContext context) => Column(mainAxisSize: MainAxisSize.min, children: [
@@ -2566,15 +2566,15 @@ class _PromptAction extends StatelessWidget {
   ]);
 }
 
-// ─── _CountdownOverlay ────────────────────────────────────────────────────────
+// ─── CountdownOverlay ────────────────────────────────────────────────────────
 
-class _CountdownOverlay extends StatelessWidget {
+class CountdownOverlay extends StatelessWidget {
   final int secondsLeft;
   final String exerciseName;
   final String setLabel;
   final String? circuitNextLabel;
 
-  const _CountdownOverlay({required this.secondsLeft, required this.exerciseName, required this.setLabel, this.circuitNextLabel});
+  const CountdownOverlay({super.key, required this.secondsLeft, required this.exerciseName, required this.setLabel, this.circuitNextLabel});
 
   @override
   Widget build(BuildContext context) {
@@ -2609,11 +2609,11 @@ class _CountdownOverlay extends StatelessWidget {
   }
 }
 
-// ─── _SuggestionBadge ────────────────────────────────────────────────────────
+// ─── SuggestionBadge ────────────────────────────────────────────────────────
 
-class _SuggestionBadge extends StatelessWidget {
+class SuggestionBadge extends StatelessWidget {
   final WeightSuggestion suggestion;
-  const _SuggestionBadge({required this.suggestion});
+  const SuggestionBadge({super.key, required this.suggestion});
 
   @override
   Widget build(BuildContext context) {
@@ -2648,25 +2648,25 @@ class _SuggestionBadge extends StatelessWidget {
   }
 }
 
-// ─── _SetRow (stepper widget) ─────────────────────────────────────────────────
+// ─── SetRow (stepper widget) ─────────────────────────────────────────────────
 
-class _SetRow extends StatefulWidget {
+class SetRow extends StatefulWidget {
   final int setNumber;
   final bool isTimed;
-  final _SetData data;
-  final void Function(_SetData) onChanged;
+  final SetData data;
+  final void Function(SetData) onChanged;
 
-  const _SetRow({
+  const SetRow({
     super.key,
     required this.setNumber, required this.isTimed,
     required this.data, required this.onChanged,
   });
 
   @override
-  State<_SetRow> createState() => _SetRowState();
+  State<SetRow> createState() => _SetRowState();
 }
 
-class _SetRowState extends State<_SetRow> {
+class _SetRowState extends State<SetRow> {
   bool _editingWeight = false;
   bool _editingSecondary = false;
   late final TextEditingController _weightCtrl;
@@ -2687,7 +2687,7 @@ class _SetRowState extends State<_SetRow> {
   }
 
   void _handleWeight(double delta) {
-    widget.onChanged(_SetData(
+    widget.onChanged(SetData(
       weightKg: (widget.data.weightKg + delta).clamp(0.0, double.infinity),
       reps: widget.data.reps,
       durationSeconds: widget.data.durationSeconds,
@@ -2696,17 +2696,17 @@ class _SetRowState extends State<_SetRow> {
   }
 
   void _handleReps(int delta) {
-    widget.onChanged(_SetData(weightKg: widget.data.weightKg, reps: (widget.data.reps + delta).clamp(1, 999), rpe: widget.data.rpe));
+    widget.onChanged(SetData(weightKg: widget.data.weightKg, reps: (widget.data.reps + delta).clamp(1, 999), rpe: widget.data.rpe));
   }
 
   void _handleDuration(int delta) {
-    widget.onChanged(_SetData(weightKg: widget.data.weightKg, reps: 0, durationSeconds: (widget.data.durationSeconds + delta).clamp(5, 3600), rpe: widget.data.rpe));
+    widget.onChanged(SetData(weightKg: widget.data.weightKg, reps: 0, durationSeconds: (widget.data.durationSeconds + delta).clamp(5, 3600), rpe: widget.data.rpe));
   }
 
   void _commitWeight() {
     final v = double.tryParse(_weightCtrl.text.replaceAll(',', '.'));
     if (v != null && v >= 0) {
-      widget.onChanged(_SetData(weightKg: v, reps: widget.data.reps, durationSeconds: widget.data.durationSeconds, rpe: widget.data.rpe));
+      widget.onChanged(SetData(weightKg: v, reps: widget.data.reps, durationSeconds: widget.data.durationSeconds, rpe: widget.data.rpe));
     }
     if (mounted) setState(() => _editingWeight = false);
   }
@@ -2714,7 +2714,7 @@ class _SetRowState extends State<_SetRow> {
   void _commitReps() {
     final v = int.tryParse(_secondaryCtrl.text);
     if (v != null && v >= 1) {
-      widget.onChanged(_SetData(weightKg: widget.data.weightKg, reps: v, rpe: widget.data.rpe));
+      widget.onChanged(SetData(weightKg: widget.data.weightKg, reps: v, rpe: widget.data.rpe));
     }
     if (mounted) setState(() => _editingSecondary = false);
   }
@@ -2722,7 +2722,7 @@ class _SetRowState extends State<_SetRow> {
   void _commitDuration() {
     final v = int.tryParse(_secondaryCtrl.text);
     if (v != null && v >= 1) {
-      widget.onChanged(_SetData(weightKg: widget.data.weightKg, reps: 0, durationSeconds: v.clamp(5, 3600), rpe: widget.data.rpe));
+      widget.onChanged(SetData(weightKg: widget.data.weightKg, reps: 0, durationSeconds: v.clamp(5, 3600), rpe: widget.data.rpe));
     }
     if (mounted) setState(() => _editingSecondary = false);
   }
@@ -2734,7 +2734,7 @@ class _SetRowState extends State<_SetRow> {
 
     return Row(children: [
       if (!isTimed) ...[
-        Expanded(child: _StepperField(
+        Expanded(child: StepperField(
           label: _editingWeight ? null : '${_fmtW(widget.data.weightKg)} kg',
           editingController: _editingWeight ? _weightCtrl : null,
           onDecrement: () => _handleWeight(-2.5),
@@ -2750,7 +2750,7 @@ class _SetRowState extends State<_SetRow> {
       ],
       Expanded(
         child: isTimed
-            ? _StepperField(
+            ? StepperField(
                 label: _editingSecondary ? null : _fmtSec(dur),
                 editingController: _editingSecondary ? _secondaryCtrl : null,
                 isInteger: true,
@@ -2763,7 +2763,7 @@ class _SetRowState extends State<_SetRow> {
                 }),
                 onCommit: _commitDuration,
               )
-            : _StepperField(
+            : StepperField(
                 label: _editingSecondary ? null : '${widget.data.reps}',
                 editingController: _editingSecondary ? _secondaryCtrl : null,
                 isInteger: true,
@@ -2781,9 +2781,9 @@ class _SetRowState extends State<_SetRow> {
   }
 }
 
-// ─── _StepperField ────────────────────────────────────────────────────────────
+// ─── StepperField ────────────────────────────────────────────────────────────
 
-class _StepperField extends StatelessWidget {
+class StepperField extends StatelessWidget {
   final String? label;
   final TextEditingController? editingController;
   final bool isInteger;
@@ -2792,7 +2792,7 @@ class _StepperField extends StatelessWidget {
   final VoidCallback onTapValue;
   final VoidCallback onCommit;
 
-  const _StepperField({
+  const StepperField({super.key, 
     this.label, this.editingController, this.isInteger = false,
     required this.onDecrement, required this.onIncrement,
     required this.onTapValue, required this.onCommit,
@@ -2801,7 +2801,7 @@ class _StepperField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(children: [
-      _StepBtn(icon: Icons.remove, onTap: onDecrement),
+      StepBtn(icon: Icons.remove, onTap: onDecrement),
       Expanded(
         child: editingController != null
             ? TextField(
@@ -2819,15 +2819,15 @@ class _StepperField extends StatelessWidget {
                     style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
               ),
       ),
-      _StepBtn(icon: Icons.add, onTap: onIncrement),
+      StepBtn(icon: Icons.add, onTap: onIncrement),
     ]);
   }
 }
 
-class _StepBtn extends StatelessWidget {
+class StepBtn extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
-  const _StepBtn({required this.icon, required this.onTap});
+  const StepBtn({super.key, required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) => IconButton(
@@ -2842,17 +2842,17 @@ class _StepBtn extends StatelessWidget {
   );
 }
 
-// ─── _CheckCircleButton ───────────────────────────────────────────────────────
+// ─── CheckCircleButton ───────────────────────────────────────────────────────
 
-class _CheckCircleButton extends StatefulWidget {
+class CheckCircleButton extends StatefulWidget {
   final VoidCallback onDone;
-  const _CheckCircleButton({super.key, required this.onDone});
+  const CheckCircleButton({super.key, required this.onDone});
 
   @override
-  State<_CheckCircleButton> createState() => _CheckCircleButtonState();
+  State<CheckCircleButton> createState() => _CheckCircleButtonState();
 }
 
-class _CheckCircleButtonState extends State<_CheckCircleButton> with SingleTickerProviderStateMixin {
+class _CheckCircleButtonState extends State<CheckCircleButton> with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
   bool _triggered = false;
 
@@ -2929,17 +2929,17 @@ String _fmtSec(int seconds) {
   return '$m:${s.toString().padLeft(2, '0')}';
 }
 
-// ─── _RpeSheet ────────────────────────────────────────────────────────────────
+// ─── RpeSheet ────────────────────────────────────────────────────────────────
 
-class _RpeSheet extends StatefulWidget {
+class RpeSheet extends StatefulWidget {
   final String exerciseName;
   final int setNumber;
-  const _RpeSheet({required this.exerciseName, required this.setNumber});
+  const RpeSheet({super.key, required this.exerciseName, required this.setNumber});
   @override
-  State<_RpeSheet> createState() => _RpeSheetState();
+  State<RpeSheet> createState() => _RpeSheetState();
 }
 
-class _RpeSheetState extends State<_RpeSheet> {
+class _RpeSheetState extends State<RpeSheet> {
   double? _selected;
 
   static const _rpeValues = [6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0];
