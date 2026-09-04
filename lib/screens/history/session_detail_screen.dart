@@ -6,6 +6,7 @@ import '../../database/app_database.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/session_providers.dart';
 import '../../services/personal_record_detection.dart';
+import '../../utils/rir_conversion.dart';
 import '../../widgets/celebration_overlay.dart';
 import '../../widgets/glass_background.dart';
 import '../../widgets/liquid_glass_container.dart';
@@ -243,18 +244,19 @@ class _StatsHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     double totalVolume = 0;
-    double rpeSum = 0;
-    int rpeCount = 0;
+    double rirSum = 0;
+    int rirCount = 0;
     final exerciseIds = <int>{};
     for (final s in sets) {
       totalVolume += s.weightKg * s.reps;
-      if (s.rpe != null) {
-        rpeSum += s.rpe!;
-        rpeCount++;
+      final rir = effectiveRir(s.rir, s.rpe);
+      if (rir != null) {
+        rirSum += rir;
+        rirCount++;
       }
       exerciseIds.add(s.exerciseId);
     }
-    final avgRpe = rpeCount > 0 ? rpeSum / rpeCount : null;
+    final avgRir = rirCount > 0 ? rirSum / rirCount : null;
 
     String? deltaStr;
     Color? deltaColor;
@@ -323,8 +325,8 @@ class _StatsHeader extends StatelessWidget {
             children: [
               _SmallStat(label: 'SETS', value: '${sets.length}'),
               _SmallStat(
-                  label: 'AVG RPE',
-                  value: avgRpe != null ? avgRpe.toStringAsFixed(1) : '—'),
+                  label: 'AVG RIR',
+                  value: avgRir != null ? fmtRir(avgRir) : '—'),
               _SmallStat(
                   label: 'PRs',
                   value: prCount > 0 ? '🏆 $prCount' : '—'),
@@ -513,15 +515,9 @@ class _SetRow extends StatelessWidget {
                         Text('${set.reps} reps',
                             style:
                                 const TextStyle(fontWeight: FontWeight.w600)),
-                        if (set.rpe != null) ...[
+                        if (effectiveRir(set.rir, set.rpe) != null) ...[
                           const SizedBox(width: 8),
-                          Text(
-                            'RPE ${set.rpe!.toStringAsFixed(1)}',
-                            style: const TextStyle(
-                                fontSize: 11,
-                                color: Color(0xFFFFCC00),
-                                fontWeight: FontWeight.w500),
-                          ),
+                          RirPill(rir: effectiveRir(set.rir, set.rpe)!),
                         ],
                       ],
                     ),
@@ -579,7 +575,11 @@ class _EditSetSheetState extends ConsumerState<_EditSetSheet> {
   late double _weight;
   late int _reps;
   late int _durationSeconds;
-  late double _rpe;
+  // Slider always holds a valid 0..5 value; [_rirSet] tracks whether the
+  // user has actually recorded an RIR (distinguishes "not recorded" from
+  // the legitimate RIR value 0 = failure).
+  late double _rir;
+  late bool _rirSet;
   late TextEditingController _notesCtrl;
   bool _saving = false;
 
@@ -589,7 +589,9 @@ class _EditSetSheetState extends ConsumerState<_EditSetSheet> {
     _weight = widget.set.weightKg;
     _reps = widget.set.reps;
     _durationSeconds = widget.set.durationSeconds ?? 0;
-    _rpe = widget.set.rpe ?? 0.0;
+    final initialRir = effectiveRir(widget.set.rir, widget.set.rpe);
+    _rir = initialRir ?? 2.0;
+    _rirSet = initialRir != null;
     _notesCtrl = TextEditingController(text: widget.set.notes ?? '');
   }
 
@@ -629,7 +631,10 @@ class _EditSetSheetState extends ConsumerState<_EditSetSheet> {
           weightKg: Value(_weight),
           durationSeconds: Value(
               widget.isTimed ? _durationSeconds : widget.set.durationSeconds),
-          rpe: Value(_rpe == 0.0 ? null : _rpe),
+          // Dual-write for one release: rir is the source of truth, rpe is
+          // derived so legacy code paths/exports still see a valid value.
+          rir: Value(_rirSet ? _rir : null),
+          rpe: Value(_rirSet ? rpeFromRir(_rir) : null),
           notes: Value(_notesCtrl.text.trim().isEmpty
               ? null
               : _notesCtrl.text.trim()),
@@ -763,7 +768,7 @@ class _EditSetSheetState extends ConsumerState<_EditSetSheet> {
                 SizedBox(
                   width: 90,
                   child: Text(
-                    'RPE',
+                    'RIR',
                     style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -773,33 +778,36 @@ class _EditSetSheetState extends ConsumerState<_EditSetSheet> {
                 ),
                 Expanded(
                   child: Slider(
-                    value: _rpe == 0.0 ? 6.0 : _rpe,
-                    min: 6.0,
-                    max: 10.0,
-                    divisions: 8,
-                    activeColor: const Color(0xFFFFCC00),
-                    onChanged: (v) => setState(() => _rpe = v),
+                    value: _rir,
+                    min: 0.0,
+                    max: 5.0,
+                    divisions: 10,
+                    activeColor: rirColor(_rir),
+                    onChanged: (v) => setState(() {
+                      _rir = v;
+                      _rirSet = true;
+                    }),
                   ),
                 ),
                 SizedBox(
                   width: 36,
                   child: Text(
-                    _rpe == 0.0 ? '—' : _rpe.toStringAsFixed(1),
+                    _rirSet ? fmtRir(_rir) : '—',
                     textAlign: TextAlign.right,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFFFFCC00)),
+                        color: rirColor(_rir)),
                   ),
                 ),
               ],
             ),
           ),
-          if (_rpe != 0.0)
+          if (_rirSet)
             GestureDetector(
-              onTap: () => setState(() => _rpe = 0.0),
+              onTap: () => setState(() => _rirSet = false),
               child: Text(
-                'Clear RPE',
+                'Clear RIR',
                 style: TextStyle(
                     fontSize: 12, color: Colors.white.withValues(alpha: 0.4)),
               ),

@@ -121,22 +121,22 @@ class _SetRowState extends State<SetRow> {
       weightKg: (widget.data.weightKg + delta).clamp(0.0, double.infinity),
       reps: widget.data.reps,
       durationSeconds: widget.data.durationSeconds,
-      rpe: widget.data.rpe,
+      rir: widget.data.rir,
     ));
   }
 
   void _handleReps(int delta) {
-    widget.onChanged(SetData(weightKg: widget.data.weightKg, reps: (widget.data.reps + delta).clamp(1, 999), rpe: widget.data.rpe));
+    widget.onChanged(SetData(weightKg: widget.data.weightKg, reps: (widget.data.reps + delta).clamp(1, 999), rir: widget.data.rir));
   }
 
   void _handleDuration(int delta) {
-    widget.onChanged(SetData(weightKg: widget.data.weightKg, reps: 0, durationSeconds: (widget.data.durationSeconds + delta).clamp(5, 3600), rpe: widget.data.rpe));
+    widget.onChanged(SetData(weightKg: widget.data.weightKg, reps: 0, durationSeconds: (widget.data.durationSeconds + delta).clamp(5, 3600), rir: widget.data.rir));
   }
 
   void _commitWeight() {
     final v = double.tryParse(_weightCtrl.text.replaceAll(',', '.'));
     if (v != null && v >= 0) {
-      widget.onChanged(SetData(weightKg: v, reps: widget.data.reps, durationSeconds: widget.data.durationSeconds, rpe: widget.data.rpe));
+      widget.onChanged(SetData(weightKg: v, reps: widget.data.reps, durationSeconds: widget.data.durationSeconds, rir: widget.data.rir));
     }
     if (mounted) setState(() => _editingWeight = false);
   }
@@ -144,7 +144,7 @@ class _SetRowState extends State<SetRow> {
   void _commitReps() {
     final v = int.tryParse(_secondaryCtrl.text);
     if (v != null && v >= 1) {
-      widget.onChanged(SetData(weightKg: widget.data.weightKg, reps: v, rpe: widget.data.rpe));
+      widget.onChanged(SetData(weightKg: widget.data.weightKg, reps: v, rir: widget.data.rir));
     }
     if (mounted) setState(() => _editingSecondary = false);
   }
@@ -152,7 +152,7 @@ class _SetRowState extends State<SetRow> {
   void _commitDuration() {
     final v = int.tryParse(_secondaryCtrl.text);
     if (v != null && v >= 1) {
-      widget.onChanged(SetData(weightKg: widget.data.weightKg, reps: 0, durationSeconds: v.clamp(5, 3600), rpe: widget.data.rpe));
+      widget.onChanged(SetData(weightKg: widget.data.weightKg, reps: 0, durationSeconds: v.clamp(5, 3600), rir: widget.data.rir));
     }
     if (mounted) setState(() => _editingSecondary = false);
   }

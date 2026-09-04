@@ -6,6 +6,7 @@ import '../../providers/database_provider.dart';
 import '../../providers/home_providers.dart';
 import '../../providers/next_workout_provider.dart';
 import '../../providers/session_providers.dart';
+import '../../utils/rir_conversion.dart';
 import '../../widgets/glass_background.dart';
 import '../../widgets/glass_route.dart';
 import 'session_detail_screen.dart';
@@ -401,10 +402,10 @@ class _StatsStrip extends StatelessWidget {
       _StatCol(label: 'SETS', value: '${stats.setCount}'),
     ];
 
-    if (stats.avgRpe != null) {
+    if (stats.avgRir != null) {
       cols.addAll([
         const _VertDivider(),
-        _StatCol(label: 'AVG RPE', value: stats.avgRpe!.toStringAsFixed(1)),
+        _StatCol(label: 'AVG RIR', value: fmtRir(stats.avgRir!)),
       ]);
     }
 

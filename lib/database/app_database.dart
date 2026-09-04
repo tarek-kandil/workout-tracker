@@ -68,7 +68,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 17;
+  int get schemaVersion => 18;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -190,6 +190,51 @@ class AppDatabase extends _$AppDatabase {
             final names = tables.map((r) => r.read<String>('name')).toSet();
             if (!names.contains('exercise_variations')) {
               await m.createTable(exerciseVariations);
+            }
+          }
+          if (from < 18) {
+            // RPE → RIR migration: additive, keeps the old rpe/targetRpe
+            // columns for one release. RIR = 10 − RPE; nulls stay null.
+            //
+            // Guard on table/column existence (see the from<14 step above for
+            // the same rationale): some devices may be missing these tables
+            // or columns depending on their exact upgrade history, and tests
+            // seed minimal schemas that don't always include every table.
+            final tables = await customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table'",
+            ).get();
+            final tableNames = tables.map((r) => r.read<String>('name')).toSet();
+
+            if (tableNames.contains('workout_sets')) {
+              final cols = await customSelect(
+                'PRAGMA table_info(workout_sets)',
+              ).get();
+              final colNames = cols.map((r) => r.read<String>('name')).toSet();
+              if (!colNames.contains('rir')) {
+                await m.addColumn(workoutSets, workoutSets.rir);
+              }
+              if (colNames.contains('rpe')) {
+                await customStatement(
+                  'UPDATE workout_sets SET rir = 10.0 - rpe WHERE rpe IS NOT NULL;',
+                );
+              }
+            }
+
+            if (tableNames.contains('wod_template_exercises')) {
+              final cols = await customSelect(
+                'PRAGMA table_info(wod_template_exercises)',
+              ).get();
+              final colNames = cols.map((r) => r.read<String>('name')).toSet();
+              if (!colNames.contains('target_rir')) {
+                await m.addColumn(
+                    wodTemplateExercises, wodTemplateExercises.targetRir);
+              }
+              if (colNames.contains('target_rpe')) {
+                await customStatement(
+                  'UPDATE wod_template_exercises SET target_rir = 10.0 - target_rpe '
+                  'WHERE target_rpe IS NOT NULL;',
+                );
+              }
             }
           }
           if (from >= 3 && from < 8) {

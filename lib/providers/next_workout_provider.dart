@@ -4,6 +4,7 @@ import '../database/app_database.dart';
 import '../models/next_wod_result.dart';
 import '../models/weight_suggestion.dart';
 import '../models/wod_item.dart';
+import '../utils/rir_conversion.dart';
 import 'database_provider.dart';
 import 'program_providers.dart';
 
@@ -217,34 +218,35 @@ WeightSuggestion _computeSuggestion({
     (a, b) => a.weightKg * a.reps >= b.weightKg * b.reps ? a : b,
   );
   final bestWeight = bestSet.weightKg;
-  final bestRpe = bestSet.rpe; // null if not logged
+  final bestRir = effectiveRir(bestSet.rir, bestSet.rpe); // null if not logged
 
   final minReps = validSets.map((s) => s.reps).reduce(min);
   final maxReps = validSets.map((s) => s.reps).reduce(max);
 
-  // RPE ≤ 7.5 means they had clear room left — don't push the weight up yet
-  // even if the rep count looks good.
-  final easyEffort = bestRpe != null && bestRpe <= 7.5;
-  final rpeStr = bestRpe != null ? ' @ RPE ${bestRpe.toStringAsFixed(1)}' : '';
+  // RIR ≥ 2.5 means they had clear room left (was RPE ≤ 7.5) — don't push
+  // the weight up yet even if the rep count looks good. Lower RIR = harder,
+  // so this condition is inverted from the old RPE-based check.
+  final easyEffort = bestRir != null && bestRir >= 2.5;
+  final rirStr = bestRir != null ? ' @ RIR ${fmtRir(bestRir)}' : '';
 
   if (minReps >= repRangeMax && !easyEffort) {
     return WeightSuggestion(
       type: SuggestionType.increase,
       suggestedKg: bestWeight + incrementKg,
-      message: 'Hit $maxReps reps$rpeStr — increase to ${bestWeight + incrementKg}kg',
+      message: 'Hit $maxReps reps$rirStr — increase to ${bestWeight + incrementKg}kg',
     );
   } else if (maxReps < repRangeMin) {
     return WeightSuggestion(
       type: SuggestionType.decrease,
       suggestedKg: (bestWeight - incrementKg).clamp(0.0, double.infinity),
-      message: 'Only $minReps reps$rpeStr — reduce to ${bestWeight - incrementKg}kg',
+      message: 'Only $minReps reps$rirStr — reduce to ${bestWeight - incrementKg}kg',
     );
   } else {
     return WeightSuggestion(
       type: SuggestionType.maintain,
       suggestedKg: bestWeight,
       message: easyEffort
-          ? 'Easy effort$rpeStr — maintain ${bestWeight}kg, push to $repRangeMax reps'
+          ? 'Easy effort$rirStr — maintain ${bestWeight}kg, push to $repRangeMax reps'
           : 'Stay at ${bestWeight}kg, aim for $repRangeMax reps',
     );
   }

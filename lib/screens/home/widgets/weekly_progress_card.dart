@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../models/weekly_progress_data.dart';
 import '../../../providers/home_providers.dart';
+import '../../../utils/rir_conversion.dart';
 import '../../../widgets/liquid_glass_container.dart';
 
 String _formatTonnageStatic(double kg) => kg.toStringAsFixed(0);
@@ -182,19 +183,21 @@ class WeeklyProgressCard extends ConsumerWidget {
       ),
     ];
 
-    if (data.avgRpe != null) {
-      final rpeDelta = data.lastWeekAvgRpe != null
-          ? data.avgRpe! - data.lastWeekAvgRpe!
+    if (data.avgRir != null) {
+      final rirDelta = data.lastWeekAvgRir != null
+          ? data.avgRir! - data.lastWeekAvgRir!
           : null;
       tiles.add(_StripTile(
-        value: data.avgRpe!.toStringAsFixed(1),
-        label: 'Avg RPE',
-        delta: rpeDelta == null
+        value: fmtRir(data.avgRir!),
+        label: 'Avg RIR',
+        delta: rirDelta == null
             ? null
-            : '${rpeDelta >= 0 ? '↑' : '↓'} from ${data.lastWeekAvgRpe!.toStringAsFixed(1)}',
-        deltaColor: rpeDelta == null
+            : '${rirDelta >= 0 ? '↑' : '↓'} from ${fmtRir(data.lastWeekAvgRir!)}',
+        // Lower RIR means harder, so a drop vs last week is the "harder" signal
+        // (inverted from the old RPE-based coloring, where a rise meant harder).
+        deltaColor: rirDelta == null
             ? null
-            : rpeDelta > 0
+            : rirDelta < 0
                 ? const Color(0xFFFF9F0A)
                 : const Color(0xFF34C759),
       ));

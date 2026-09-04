@@ -15,12 +15,12 @@ class WeeklyProgressData {
   /// Number of WODs planned per week from the active program.
   final int plannedSessions;
 
-  /// Average RPE across all sets with non-null RPE this week.
-  /// Null if no sets have RPE logged.
-  final double? avgRpe;
+  /// Average RIR (Reps In Reserve) across all sets with a recorded effort
+  /// this week. Null if no sets have RIR/RPE logged. Lower RIR = harder.
+  final double? avgRir;
 
-  /// Average RPE from the previous calendar week. Null if no data.
-  final double? lastWeekAvgRpe;
+  /// Average RIR from the previous calendar week. Null if no data.
+  final double? lastWeekAvgRir;
 
   /// Total set count this week (including timed sets).
   final int totalSets;
@@ -52,8 +52,8 @@ class WeeklyProgressData {
     required this.sparkline,
     required this.sessionCount,
     required this.plannedSessions,
-    required this.avgRpe,
-    required this.lastWeekAvgRpe,
+    required this.avgRir,
+    required this.lastWeekAvgRir,
     required this.totalSets,
     required this.lastWeekTotalSets,
     required this.pushTonnageKg,

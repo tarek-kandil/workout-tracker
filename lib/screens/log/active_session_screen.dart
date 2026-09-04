@@ -22,7 +22,8 @@ import 'models/session_models.dart';
 import 'audio/session_sound_player.dart';
 import 'session_formatters.dart';
 import 'widgets/session_common.dart';
-import 'widgets/rpe_sheet.dart';
+import 'widgets/rir_sheet.dart';
+import '../../utils/rir_conversion.dart';
 import 'widgets/exercise_card.dart';
 import 'widgets/circuit_card.dart';
 import 'widgets/config_stepper.dart';
@@ -468,13 +469,13 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     if (notify && mounted) setState(() {});
   }
 
-  Future<double?> _showRpeSheet(String exerciseName, int setNumber) {
-    return showModalBottomSheet<double>(
+  Future<RirPick?> _showRirSheet(String exerciseName, int setNumber) {
+    return showModalBottomSheet<RirPick>(
       context: context,
       isDismissible: true,
       enableDrag: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => RpeSheet(exerciseName: exerciseName, setNumber: setNumber),
+      builder: (_) => RirSheet(exerciseName: exerciseName, setNumber: setNumber),
     );
   }
 
@@ -575,15 +576,15 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       }
     }
 
-    // ── RPE sheet (non-timed only) ───────────────────────────────────────────
+    // ── RIR sheet (non-timed only) ───────────────────────────────────────────
     if (!isTimed && loggedData != null && loggedData.reps > 0 && mounted) {
-      final rpe = await _showRpeSheet(capturedName, capturedSetNumber);
-      if (rpe != null && mounted) {
+      final picked = await _showRirSheet(capturedName, capturedSetNumber);
+      if (picked != null && mounted) {
         setState(() {
           _setData[exerciseId]![capturedSetIdx] = SetData(
             weightKg: loggedData.weightKg,
             reps: loggedData.reps,
-            rpe: rpe,
+            rir: picked.rir,
           );
         });
       }
@@ -1162,7 +1163,10 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
             setNumber: i + 1,
             reps: isTimed ? 0 : s.reps,
             weightKg: s.weightKg,
-            rpe: Value(s.rpe),
+            // Dual-write for one release: rir is the source of truth, rpe is
+            // derived so legacy code paths/exports still see a valid value.
+            rir: Value(s.rir),
+            rpe: Value(s.rir != null ? rpeFromRir(s.rir!) : null),
             durationSeconds: isTimed ? Value(s.durationSeconds) : const Value.absent(),
           ));
         }
@@ -1916,6 +1920,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
             restSeconds: Value(exercise.restSeconds),
             restBetweenSetsSeconds: Value(exercise.restBetweenSetsSeconds),
             targetRpe: Value(exercise.targetRpe),
+            targetRir: Value(exercise.targetRir),
             videoUrl: Value(exercise.videoUrl),
           ),
         );
@@ -2329,7 +2334,7 @@ class _EditSetSheetState extends State<_EditSetSheet> {
                   weightKg: isTimed ? 0 : w,
                   reps: isTimed ? 0 : (s ?? current.reps),
                   durationSeconds: isTimed ? (s ?? current.durationSeconds) : 0,
-                  rpe: current.rpe,
+                  rir: current.rir,
                 ));
               },
               child: const Text('Save'),

@@ -35,7 +35,7 @@ final setsForSessionProvider =
       .watchSetsForSession(sessionId);
 });
 
-/// Batch stats (volume, sets, RPE, top weight, PR count) for every session.
+/// Batch stats (volume, sets, RIR, top weight, PR count) for every session.
 /// Invalidated after any set edit or delete so the history list stays fresh.
 final allSessionStatsProvider =
     FutureProvider<Map<int, SessionSetStats>>((ref) {

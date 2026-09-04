@@ -12,7 +12,10 @@ class SessionSetStats {
   final int sessionId;
   final double totalVolume;
   final int setCount;
-  final double? avgRpe;
+  /// Average RIR (Reps In Reserve) across sets with a recorded effort.
+  /// Computed as COALESCE(rir, 10 − rpe) so pre-v18 rows (rpe only) still
+  /// contribute. Null if no sets in the session have any effort recorded.
+  final double? avgRir;
   final double topWeight;
   final int exerciseCount;
   final int prCount;
@@ -20,7 +23,7 @@ class SessionSetStats {
     required this.sessionId,
     required this.totalVolume,
     required this.setCount,
-    this.avgRpe,
+    this.avgRir,
     required this.topWeight,
     required this.exerciseCount,
     required this.prCount,
@@ -67,7 +70,7 @@ class SetsDao extends DatabaseAccessor<AppDatabase> with _$SetsDaoMixin {
       '  ws.session_id, '
       '  COALESCE(SUM(ws.weight_kg * ws.reps), 0.0) AS total_volume, '
       '  COUNT(*) AS set_count, '
-      '  AVG(ws.rpe) AS avg_rpe, '
+      '  AVG(COALESCE(ws.rir, 10.0 - ws.rpe)) AS avg_rir, '
       '  COALESCE(MAX(ws.weight_kg), 0.0) AS top_weight, '
       '  COUNT(DISTINCT ws.exercise_id) AS exercise_count, '
       '  COUNT(DISTINCT CASE WHEN ws.weight_kg = ex_max.max_weight '
@@ -89,7 +92,7 @@ class SetsDao extends DatabaseAccessor<AppDatabase> with _$SetsDaoMixin {
           sessionId: r.read<int>('session_id'),
           totalVolume: r.read<double>('total_volume'),
           setCount: r.read<int>('set_count'),
-          avgRpe: r.read<double?>('avg_rpe'),
+          avgRir: r.read<double?>('avg_rir'),
           topWeight: r.read<double>('top_weight'),
           exerciseCount: r.read<int>('exercise_count'),
           prCount: r.read<int>('pr_count'),
@@ -239,16 +242,18 @@ class SetsDao extends DatabaseAccessor<AppDatabase> with _$SetsDaoMixin {
     return result?.read<int?>('pr');
   }
 
-  /// Returns tonnage (kg), average RPE, total sets, and session count
+  /// Returns tonnage (kg), average RIR, total sets, and session count
   /// for sessions whose date falls within [from, to) (exclusive upper bound).
   /// Sets with null/zero weightKg are excluded from tonnage.
-  /// Sets with null RPE are excluded from the RPE average.
-  Future<({double tonnageKg, double? avgRpe, int totalSets, int sessionCount})>
+  /// Sets with no recorded effort (both rir and rpe null) are excluded from
+  /// the RIR average; pre-v18 rows with only rpe still contribute via
+  /// COALESCE(rir, 10 - rpe).
+  Future<({double tonnageKg, double? avgRir, int totalSets, int sessionCount})>
       getWeeklyTonnageAndStats(DateTime from, DateTime to) async {
     final result = await customSelect(
       'SELECT '
       '  COALESCE(SUM(CASE WHEN ws.weight_kg > 0 THEN ws.reps * ws.weight_kg ELSE 0 END), 0.0) AS tonnage, '
-      '  AVG(ws.rpe) AS avg_rpe, '
+      '  AVG(COALESCE(ws.rir, 10.0 - ws.rpe)) AS avg_rir, '
       '  COUNT(*) AS total_sets, '
       '  COUNT(DISTINCT ws.session_id) AS session_count '
       'FROM workout_sets ws '
@@ -263,7 +268,7 @@ class SetsDao extends DatabaseAccessor<AppDatabase> with _$SetsDaoMixin {
 
     return (
       tonnageKg: result.read<double>('tonnage'),
-      avgRpe: result.read<double?>('avg_rpe'),
+      avgRir: result.read<double?>('avg_rir'),
       totalSets: result.read<int>('total_sets'),
       sessionCount: result.read<int>('session_count'),
     );

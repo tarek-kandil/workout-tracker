@@ -21,6 +21,11 @@ class WodTemplateExercises extends Table {
   IntColumn get restSeconds => integer().nullable()();
   // null = use default (90 s). Between sets of the same exercise. Standalone only.
   IntColumn get restBetweenSetsSeconds => integer().nullable()();
+  // Deprecated in favor of [targetRir] as of schema v18; kept for one release
+  // for backward compatibility. Dual-written alongside [targetRir].
   RealColumn get targetRpe => real().nullable()();
+  // RIR: Reps In Reserve (0.0–5.0), optional. RIR = 10 − RPE; lower RIR means
+  // harder (0 = failure). Preferred over [targetRpe] as of schema v18.
+  RealColumn get targetRir => real().nullable()();
   TextColumn get videoUrl => text().nullable()();
 }

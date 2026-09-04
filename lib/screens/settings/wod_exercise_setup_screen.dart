@@ -4,6 +4,7 @@ import 'package:drift/drift.dart' show Value;
 import '../../database/app_database.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/exercise_providers.dart';
+import '../../utils/rir_conversion.dart';
 import '../../widgets/glass_background.dart';
 import '../../widgets/drum_picker.dart';
 
@@ -254,7 +255,9 @@ class _WodExerciseSetupScreenState
             notes: Value(result.notes.isEmpty ? null : result.notes),
             restSeconds: Value(result.restAfterExerciseSeconds),
             restBetweenSetsSeconds: Value(result.restBetweenSetsSeconds),
-            targetRpe: Value(result.targetRpe),
+            targetRpe: Value(
+                result.targetRir != null ? rpeFromRir(result.targetRir!) : null),
+            targetRir: Value(result.targetRir),
             videoUrl: Value(result.videoUrl),
           ),
         );
@@ -760,9 +763,9 @@ class _StandaloneExerciseTile extends StatelessWidget {
                       ),
                       const Spacer(),
                       _RepsPill(te: te, isTimed: exercise.isTimed),
-                      if (te.targetRpe != null) ...[
+                      if (effectiveRir(te.targetRir, te.targetRpe) != null) ...[
                         const SizedBox(width: 5),
-                        _RpePill(rpe: te.targetRpe!),
+                        RirPill(rir: effectiveRir(te.targetRir, te.targetRpe)!),
                       ],
                     ],
                   ),
@@ -930,9 +933,9 @@ class _CircuitBlock extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     _RepsPill(te: te, isTimed: exercise.isTimed),
-                    if (te.targetRpe != null) ...[
+                    if (effectiveRir(te.targetRir, te.targetRpe) != null) ...[
                       const SizedBox(width: 5),
-                      _RpePill(rpe: te.targetRpe!),
+                      RirPill(rir: effectiveRir(te.targetRir, te.targetRpe)!),
                     ],
                     const SizedBox(width: 4),
                     IconButton(
@@ -1202,7 +1205,7 @@ class _ExerciseConfig {
   final bool isTimed;
   final int? restBetweenSetsSeconds;
   final int? restAfterExerciseSeconds;
-  final double? targetRpe;
+  final double? targetRir;
   final String? videoUrl;
   const _ExerciseConfig({
     required this.sets,
@@ -1212,7 +1215,7 @@ class _ExerciseConfig {
     required this.isTimed,
     this.restBetweenSetsSeconds,
     this.restAfterExerciseSeconds,
-    this.targetRpe,
+    this.targetRir,
     this.videoUrl,
   });
 }
@@ -1250,11 +1253,12 @@ class _EditExerciseDialogState extends ConsumerState<_EditExerciseDialog> {
     21,22,23,24,25,26,27,28,29,30,
     35,40,45,50,
   ];
-  static const List<String> _rpeItems = [
-    'NONE','6','6.5','7','7.5','8','8.5','9','9.5','10',
+  // Hardest → easiest, matching the RIR picker sheet's chip ordering.
+  static const List<String> _rirItems = [
+    'NONE','0','0.5','1','1.5','2','2.5','3','3.5','4','4.5','5+',
   ];
-  static const List<double?> _rpeValues = [
-    null,6,6.5,7,7.5,8,8.5,9,9.5,10,
+  static const List<double?> _rirValues = [
+    null,0,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,
   ];
 
   static int _nearestIdx(int seconds) {
@@ -1275,7 +1279,7 @@ class _EditExerciseDialogState extends ConsumerState<_EditExerciseDialog> {
   late int _restBetweenSets;
   late int _restAfterExercise;
   late int _repMaxIndex;
-  late int _rpeIndex;
+  late int _rirIndex;
   late final TextEditingController _notesCtrl;
   late final TextEditingController _videoUrlCtrl;
 
@@ -1297,13 +1301,13 @@ class _EditExerciseDialogState extends ConsumerState<_EditExerciseDialog> {
     _repMaxIndex = _repValues.indexWhere((v) => v >= repMax);
     if (_repMaxIndex < 0) _repMaxIndex = _repValues.length - 1;
 
-    // Find RPE index
-    final rpe = widget.entry.targetRpe;
-    if (rpe == null) {
-      _rpeIndex = 0;
+    // Find RIR index
+    final rir = effectiveRir(widget.entry.targetRir, widget.entry.targetRpe);
+    if (rir == null) {
+      _rirIndex = 0;
     } else {
-      _rpeIndex = _rpeValues.indexWhere((v) => v == rpe);
-      if (_rpeIndex < 0) _rpeIndex = 0;
+      _rirIndex = _rirValues.indexWhere((v) => v == rir);
+      if (_rirIndex < 0) _rirIndex = 0;
     }
 
     _notesCtrl = TextEditingController(text: widget.entry.notes ?? '');
@@ -1328,7 +1332,7 @@ class _EditExerciseDialogState extends ConsumerState<_EditExerciseDialog> {
       isTimed: widget.exercise.isTimed,
       restBetweenSetsSeconds: _restBetweenSets == 90 ? null : _restBetweenSets,
       restAfterExerciseSeconds: _restAfterExercise == 90 ? null : _restAfterExercise,
-      targetRpe: _rpeValues[_rpeIndex],
+      targetRir: _rirValues[_rirIndex],
       videoUrl: _videoUrlCtrl.text.trim().isEmpty ? null : _videoUrlCtrl.text.trim(),
     ));
   }
@@ -1562,7 +1566,7 @@ class _EditExerciseDialogState extends ConsumerState<_EditExerciseDialog> {
                 const SizedBox(height: 20),
               ],
 
-              // DURATION or REPS + RPE
+              // DURATION or REPS + RIR
               if (exercise.isTimed) ...[
                 const _Label('DURATION'),
                 const SizedBox(height: 12),
@@ -1604,17 +1608,26 @@ class _EditExerciseDialogState extends ConsumerState<_EditExerciseDialog> {
                         children: [
                           Row(
                             children: const [
-                              _Label('RPE'),
+                              _Label('TARGET RIR'),
                               SizedBox(width: 4),
                               _OptPill(),
                             ],
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Most working sets use 1–3 RIR.',
+                            style: TextStyle(
+                                fontSize: 9,
+                                color: Colors.white.withValues(alpha: 0.35)),
+                          ),
+                          const SizedBox(height: 8),
                           DrumPicker(
-                            items: _rpeItems,
-                            selectedIndex: _rpeIndex,
-                            onChanged: (i) => setState(() => _rpeIndex = i),
-                            accentColor: const Color(0xFFFBBF24),
+                            items: _rirItems,
+                            selectedIndex: _rirIndex,
+                            onChanged: (i) => setState(() => _rirIndex = i),
+                            accentColor: _rirValues[_rirIndex] != null
+                                ? rirColor(_rirValues[_rirIndex]!)
+                                : const Color(0xFFFBBF24),
                             backgroundColor: const Color(0xFF141428),
                             height: 160,
                             itemExtent: 48,
@@ -1830,35 +1843,6 @@ class _RepsPill extends StatelessWidget {
           fontSize: 11,
           fontWeight: FontWeight.w600,
           color: Colors.white38,
-        ),
-      ),
-    );
-  }
-}
-
-// ── RPE pill ───────────────────────────────────────────────────────────────────
-
-class _RpePill extends StatelessWidget {
-  final double rpe;
-  const _RpePill({required this.rpe});
-
-  @override
-  Widget build(BuildContext context) {
-    final label = '@${rpe == rpe.roundToDouble() ? rpe.toInt() : rpe}';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFBBF24).withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(7),
-        border: Border.all(
-            color: const Color(0xFFFBBF24).withValues(alpha: 0.25)),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: Color(0xFFFBBF24),
         ),
       ),
     );

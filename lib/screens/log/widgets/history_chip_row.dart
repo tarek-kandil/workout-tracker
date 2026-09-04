@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../database/app_database.dart';
+import '../../../utils/rir_conversion.dart';
 import '../session_formatters.dart';
 
 class HistoryChipRow extends StatelessWidget {
@@ -77,9 +78,8 @@ class HistoryChipRow extends StatelessWidget {
                     isTimed ? fmtSec(lastSets[i].durationSeconds ?? 0) : '× ${lastSets[i].reps} reps',
                     style: const TextStyle(fontSize: 11, color: Colors.white54),
                   )),
-                  if (lastSets[i].rpe != null)
-                    Text('RPE ${fmtRpe(lastSets[i].rpe!)}',
-                        style: const TextStyle(fontSize: 11, color: Colors.white38, fontWeight: FontWeight.w600)),
+                  if (effectiveRir(lastSets[i].rir, lastSets[i].rpe) != null)
+                    RirPill(rir: effectiveRir(lastSets[i].rir, lastSets[i].rpe)!),
                 ]),
               ),
           ]),

@@ -6,8 +6,10 @@ class SetData {
   double weightKg;
   int reps;
   int durationSeconds;
-  double? rpe;
-  SetData({required this.weightKg, required this.reps, this.durationSeconds = 0, this.rpe});
+  /// Reps In Reserve — how many more reps could have been done (0 = failure).
+  /// Replaces the old RPE field; lower is harder. Null = not recorded.
+  double? rir;
+  SetData({required this.weightKg, required this.reps, this.durationSeconds = 0, this.rir});
 }
 
 class SessionItem {

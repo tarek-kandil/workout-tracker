@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../database/app_database.dart';
 import '../../../models/next_wod_result.dart';
+import '../../../utils/rir_conversion.dart';
 import '../models/session_models.dart';
 import '../session_formatters.dart';
 import 'session_common.dart';
@@ -96,21 +97,19 @@ class ExerciseCard extends StatelessWidget {
                     height: 1.5),
               ),
             ),
-            if (te.targetRpe != null) ...[
+            if (effectiveRir(te.targetRir, te.targetRpe) != null) ...[
               const SizedBox(height: 14),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Target RPE',
+                  const Text('Target RIR',
                       style: TextStyle(fontSize: 11, color: Colors.white38)),
                   Text(
-                    te.targetRpe! == te.targetRpe!.truncateToDouble()
-                        ? te.targetRpe!.toInt().toString()
-                        : te.targetRpe!.toStringAsFixed(1),
-                    style: const TextStyle(
+                    fmtRir(effectiveRir(te.targetRir, te.targetRpe)!),
+                    style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFFFBBF24)),
+                        color: rirColor(effectiveRir(te.targetRir, te.targetRpe)!)),
                   ),
                 ],
               ),
@@ -208,7 +207,7 @@ class ExerciseCard extends StatelessWidget {
             expanded: historyExpanded, onToggle: onToggleHistory,
           ),
           const SizedBox(height: 10),
-          if (isActive && te.targetRpe != null) ...[
+          if (isActive && effectiveRir(te.targetRir, te.targetRpe) != null) ...[
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -216,21 +215,9 @@ class ExerciseCard extends StatelessWidget {
                   'Set ${currentSetIdx + 1} / ${te.targetSets}',
                   style: TextStyle(fontSize: 8, color: Colors.white.withValues(alpha: 0.3)),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFBBF24).withValues(alpha: 0.1),
-                    border: Border.all(color: const Color(0xFFFBBF24).withValues(alpha: 0.3)),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    'Target RPE ${te.targetRpe! == te.targetRpe!.truncateToDouble() ? te.targetRpe!.toInt() : te.targetRpe!.toStringAsFixed(1)}',
-                    style: const TextStyle(
-                      fontSize: 8,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFFFBBF24),
-                    ),
-                  ),
+                RirPill(
+                  rir: effectiveRir(te.targetRir, te.targetRpe)!,
+                  isTarget: true,
                 ),
               ],
             ),

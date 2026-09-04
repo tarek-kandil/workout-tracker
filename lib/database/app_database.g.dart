@@ -1934,6 +1934,15 @@ class $WorkoutSetsTable extends WorkoutSets
     type: DriftSqlType.double,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _rirMeta = const VerificationMeta('rir');
+  @override
+  late final GeneratedColumn<double> rir = GeneratedColumn<double>(
+    'rir',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _notesMeta = const VerificationMeta('notes');
   @override
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
@@ -1953,6 +1962,7 @@ class $WorkoutSetsTable extends WorkoutSets
     weightKg,
     durationSeconds,
     rpe,
+    rir,
     notes,
   ];
   @override
@@ -2025,6 +2035,12 @@ class $WorkoutSetsTable extends WorkoutSets
         rpe.isAcceptableOrUnknown(data['rpe']!, _rpeMeta),
       );
     }
+    if (data.containsKey('rir')) {
+      context.handle(
+        _rirMeta,
+        rir.isAcceptableOrUnknown(data['rir']!, _rirMeta),
+      );
+    }
     if (data.containsKey('notes')) {
       context.handle(
         _notesMeta,
@@ -2072,6 +2088,10 @@ class $WorkoutSetsTable extends WorkoutSets
         DriftSqlType.double,
         data['${effectivePrefix}rpe'],
       ),
+      rir: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}rir'],
+      ),
       notes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
@@ -2094,6 +2114,7 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
   final double weightKg;
   final int? durationSeconds;
   final double? rpe;
+  final double? rir;
   final String? notes;
   const WorkoutSet({
     required this.id,
@@ -2104,6 +2125,7 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
     required this.weightKg,
     this.durationSeconds,
     this.rpe,
+    this.rir,
     this.notes,
   });
   @override
@@ -2120,6 +2142,9 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
     }
     if (!nullToAbsent || rpe != null) {
       map['rpe'] = Variable<double>(rpe);
+    }
+    if (!nullToAbsent || rir != null) {
+      map['rir'] = Variable<double>(rir);
     }
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
@@ -2139,6 +2164,7 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
           ? const Value.absent()
           : Value(durationSeconds),
       rpe: rpe == null && nullToAbsent ? const Value.absent() : Value(rpe),
+      rir: rir == null && nullToAbsent ? const Value.absent() : Value(rir),
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
@@ -2159,6 +2185,7 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
       weightKg: serializer.fromJson<double>(json['weightKg']),
       durationSeconds: serializer.fromJson<int?>(json['durationSeconds']),
       rpe: serializer.fromJson<double?>(json['rpe']),
+      rir: serializer.fromJson<double?>(json['rir']),
       notes: serializer.fromJson<String?>(json['notes']),
     );
   }
@@ -2174,6 +2201,7 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
       'weightKg': serializer.toJson<double>(weightKg),
       'durationSeconds': serializer.toJson<int?>(durationSeconds),
       'rpe': serializer.toJson<double?>(rpe),
+      'rir': serializer.toJson<double?>(rir),
       'notes': serializer.toJson<String?>(notes),
     };
   }
@@ -2187,6 +2215,7 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
     double? weightKg,
     Value<int?> durationSeconds = const Value.absent(),
     Value<double?> rpe = const Value.absent(),
+    Value<double?> rir = const Value.absent(),
     Value<String?> notes = const Value.absent(),
   }) => WorkoutSet(
     id: id ?? this.id,
@@ -2199,6 +2228,7 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
         ? durationSeconds.value
         : this.durationSeconds,
     rpe: rpe.present ? rpe.value : this.rpe,
+    rir: rir.present ? rir.value : this.rir,
     notes: notes.present ? notes.value : this.notes,
   );
   WorkoutSet copyWithCompanion(WorkoutSetsCompanion data) {
@@ -2215,6 +2245,7 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
           ? data.durationSeconds.value
           : this.durationSeconds,
       rpe: data.rpe.present ? data.rpe.value : this.rpe,
+      rir: data.rir.present ? data.rir.value : this.rir,
       notes: data.notes.present ? data.notes.value : this.notes,
     );
   }
@@ -2230,6 +2261,7 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
           ..write('weightKg: $weightKg, ')
           ..write('durationSeconds: $durationSeconds, ')
           ..write('rpe: $rpe, ')
+          ..write('rir: $rir, ')
           ..write('notes: $notes')
           ..write(')'))
         .toString();
@@ -2245,6 +2277,7 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
     weightKg,
     durationSeconds,
     rpe,
+    rir,
     notes,
   );
   @override
@@ -2259,6 +2292,7 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
           other.weightKg == this.weightKg &&
           other.durationSeconds == this.durationSeconds &&
           other.rpe == this.rpe &&
+          other.rir == this.rir &&
           other.notes == this.notes);
 }
 
@@ -2271,6 +2305,7 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
   final Value<double> weightKg;
   final Value<int?> durationSeconds;
   final Value<double?> rpe;
+  final Value<double?> rir;
   final Value<String?> notes;
   const WorkoutSetsCompanion({
     this.id = const Value.absent(),
@@ -2281,6 +2316,7 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
     this.weightKg = const Value.absent(),
     this.durationSeconds = const Value.absent(),
     this.rpe = const Value.absent(),
+    this.rir = const Value.absent(),
     this.notes = const Value.absent(),
   });
   WorkoutSetsCompanion.insert({
@@ -2292,6 +2328,7 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
     required double weightKg,
     this.durationSeconds = const Value.absent(),
     this.rpe = const Value.absent(),
+    this.rir = const Value.absent(),
     this.notes = const Value.absent(),
   }) : sessionId = Value(sessionId),
        exerciseId = Value(exerciseId),
@@ -2307,6 +2344,7 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
     Expression<double>? weightKg,
     Expression<int>? durationSeconds,
     Expression<double>? rpe,
+    Expression<double>? rir,
     Expression<String>? notes,
   }) {
     return RawValuesInsertable({
@@ -2318,6 +2356,7 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
       if (weightKg != null) 'weight_kg': weightKg,
       if (durationSeconds != null) 'duration_seconds': durationSeconds,
       if (rpe != null) 'rpe': rpe,
+      if (rir != null) 'rir': rir,
       if (notes != null) 'notes': notes,
     });
   }
@@ -2331,6 +2370,7 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
     Value<double>? weightKg,
     Value<int?>? durationSeconds,
     Value<double?>? rpe,
+    Value<double?>? rir,
     Value<String?>? notes,
   }) {
     return WorkoutSetsCompanion(
@@ -2342,6 +2382,7 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
       weightKg: weightKg ?? this.weightKg,
       durationSeconds: durationSeconds ?? this.durationSeconds,
       rpe: rpe ?? this.rpe,
+      rir: rir ?? this.rir,
       notes: notes ?? this.notes,
     );
   }
@@ -2373,6 +2414,9 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
     if (rpe.present) {
       map['rpe'] = Variable<double>(rpe.value);
     }
+    if (rir.present) {
+      map['rir'] = Variable<double>(rir.value);
+    }
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
@@ -2390,6 +2434,7 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
           ..write('weightKg: $weightKg, ')
           ..write('durationSeconds: $durationSeconds, ')
           ..write('rpe: $rpe, ')
+          ..write('rir: $rir, ')
           ..write('notes: $notes')
           ..write(')'))
         .toString();
@@ -3327,6 +3372,17 @@ class $WodTemplateExercisesTable extends WodTemplateExercises
     type: DriftSqlType.double,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _targetRirMeta = const VerificationMeta(
+    'targetRir',
+  );
+  @override
+  late final GeneratedColumn<double> targetRir = GeneratedColumn<double>(
+    'target_rir',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _videoUrlMeta = const VerificationMeta(
     'videoUrl',
   );
@@ -3352,6 +3408,7 @@ class $WodTemplateExercisesTable extends WodTemplateExercises
     restSeconds,
     restBetweenSetsSeconds,
     targetRpe,
+    targetRir,
     videoUrl,
   ];
   @override
@@ -3456,6 +3513,12 @@ class $WodTemplateExercisesTable extends WodTemplateExercises
         targetRpe.isAcceptableOrUnknown(data['target_rpe']!, _targetRpeMeta),
       );
     }
+    if (data.containsKey('target_rir')) {
+      context.handle(
+        _targetRirMeta,
+        targetRir.isAcceptableOrUnknown(data['target_rir']!, _targetRirMeta),
+      );
+    }
     if (data.containsKey('video_url')) {
       context.handle(
         _videoUrlMeta,
@@ -3519,6 +3582,10 @@ class $WodTemplateExercisesTable extends WodTemplateExercises
         DriftSqlType.double,
         data['${effectivePrefix}target_rpe'],
       ),
+      targetRir: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}target_rir'],
+      ),
       videoUrl: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}video_url'],
@@ -3546,6 +3613,7 @@ class WodTemplateExercise extends DataClass
   final int? restSeconds;
   final int? restBetweenSetsSeconds;
   final double? targetRpe;
+  final double? targetRir;
   final String? videoUrl;
   const WodTemplateExercise({
     required this.id,
@@ -3560,6 +3628,7 @@ class WodTemplateExercise extends DataClass
     this.restSeconds,
     this.restBetweenSetsSeconds,
     this.targetRpe,
+    this.targetRir,
     this.videoUrl,
   });
   @override
@@ -3586,6 +3655,9 @@ class WodTemplateExercise extends DataClass
     }
     if (!nullToAbsent || targetRpe != null) {
       map['target_rpe'] = Variable<double>(targetRpe);
+    }
+    if (!nullToAbsent || targetRir != null) {
+      map['target_rir'] = Variable<double>(targetRir);
     }
     if (!nullToAbsent || videoUrl != null) {
       map['video_url'] = Variable<String>(videoUrl);
@@ -3617,6 +3689,9 @@ class WodTemplateExercise extends DataClass
       targetRpe: targetRpe == null && nullToAbsent
           ? const Value.absent()
           : Value(targetRpe),
+      targetRir: targetRir == null && nullToAbsent
+          ? const Value.absent()
+          : Value(targetRir),
       videoUrl: videoUrl == null && nullToAbsent
           ? const Value.absent()
           : Value(videoUrl),
@@ -3643,6 +3718,7 @@ class WodTemplateExercise extends DataClass
         json['restBetweenSetsSeconds'],
       ),
       targetRpe: serializer.fromJson<double?>(json['targetRpe']),
+      targetRir: serializer.fromJson<double?>(json['targetRir']),
       videoUrl: serializer.fromJson<String?>(json['videoUrl']),
     );
   }
@@ -3662,6 +3738,7 @@ class WodTemplateExercise extends DataClass
       'restSeconds': serializer.toJson<int?>(restSeconds),
       'restBetweenSetsSeconds': serializer.toJson<int?>(restBetweenSetsSeconds),
       'targetRpe': serializer.toJson<double?>(targetRpe),
+      'targetRir': serializer.toJson<double?>(targetRir),
       'videoUrl': serializer.toJson<String?>(videoUrl),
     };
   }
@@ -3679,6 +3756,7 @@ class WodTemplateExercise extends DataClass
     Value<int?> restSeconds = const Value.absent(),
     Value<int?> restBetweenSetsSeconds = const Value.absent(),
     Value<double?> targetRpe = const Value.absent(),
+    Value<double?> targetRir = const Value.absent(),
     Value<String?> videoUrl = const Value.absent(),
   }) => WodTemplateExercise(
     id: id ?? this.id,
@@ -3695,6 +3773,7 @@ class WodTemplateExercise extends DataClass
         ? restBetweenSetsSeconds.value
         : this.restBetweenSetsSeconds,
     targetRpe: targetRpe.present ? targetRpe.value : this.targetRpe,
+    targetRir: targetRir.present ? targetRir.value : this.targetRir,
     videoUrl: videoUrl.present ? videoUrl.value : this.videoUrl,
   );
   WodTemplateExercise copyWithCompanion(WodTemplateExercisesCompanion data) {
@@ -3725,6 +3804,7 @@ class WodTemplateExercise extends DataClass
           ? data.restBetweenSetsSeconds.value
           : this.restBetweenSetsSeconds,
       targetRpe: data.targetRpe.present ? data.targetRpe.value : this.targetRpe,
+      targetRir: data.targetRir.present ? data.targetRir.value : this.targetRir,
       videoUrl: data.videoUrl.present ? data.videoUrl.value : this.videoUrl,
     );
   }
@@ -3744,6 +3824,7 @@ class WodTemplateExercise extends DataClass
           ..write('restSeconds: $restSeconds, ')
           ..write('restBetweenSetsSeconds: $restBetweenSetsSeconds, ')
           ..write('targetRpe: $targetRpe, ')
+          ..write('targetRir: $targetRir, ')
           ..write('videoUrl: $videoUrl')
           ..write(')'))
         .toString();
@@ -3763,6 +3844,7 @@ class WodTemplateExercise extends DataClass
     restSeconds,
     restBetweenSetsSeconds,
     targetRpe,
+    targetRir,
     videoUrl,
   );
   @override
@@ -3781,6 +3863,7 @@ class WodTemplateExercise extends DataClass
           other.restSeconds == this.restSeconds &&
           other.restBetweenSetsSeconds == this.restBetweenSetsSeconds &&
           other.targetRpe == this.targetRpe &&
+          other.targetRir == this.targetRir &&
           other.videoUrl == this.videoUrl);
 }
 
@@ -3798,6 +3881,7 @@ class WodTemplateExercisesCompanion
   final Value<int?> restSeconds;
   final Value<int?> restBetweenSetsSeconds;
   final Value<double?> targetRpe;
+  final Value<double?> targetRir;
   final Value<String?> videoUrl;
   const WodTemplateExercisesCompanion({
     this.id = const Value.absent(),
@@ -3812,6 +3896,7 @@ class WodTemplateExercisesCompanion
     this.restSeconds = const Value.absent(),
     this.restBetweenSetsSeconds = const Value.absent(),
     this.targetRpe = const Value.absent(),
+    this.targetRir = const Value.absent(),
     this.videoUrl = const Value.absent(),
   });
   WodTemplateExercisesCompanion.insert({
@@ -3827,6 +3912,7 @@ class WodTemplateExercisesCompanion
     this.restSeconds = const Value.absent(),
     this.restBetweenSetsSeconds = const Value.absent(),
     this.targetRpe = const Value.absent(),
+    this.targetRir = const Value.absent(),
     this.videoUrl = const Value.absent(),
   }) : wodTemplateId = Value(wodTemplateId),
        exerciseId = Value(exerciseId),
@@ -3844,6 +3930,7 @@ class WodTemplateExercisesCompanion
     Expression<int>? restSeconds,
     Expression<int>? restBetweenSetsSeconds,
     Expression<double>? targetRpe,
+    Expression<double>? targetRir,
     Expression<String>? videoUrl,
   }) {
     return RawValuesInsertable({
@@ -3860,6 +3947,7 @@ class WodTemplateExercisesCompanion
       if (restBetweenSetsSeconds != null)
         'rest_between_sets_seconds': restBetweenSetsSeconds,
       if (targetRpe != null) 'target_rpe': targetRpe,
+      if (targetRir != null) 'target_rir': targetRir,
       if (videoUrl != null) 'video_url': videoUrl,
     });
   }
@@ -3877,6 +3965,7 @@ class WodTemplateExercisesCompanion
     Value<int?>? restSeconds,
     Value<int?>? restBetweenSetsSeconds,
     Value<double?>? targetRpe,
+    Value<double?>? targetRir,
     Value<String?>? videoUrl,
   }) {
     return WodTemplateExercisesCompanion(
@@ -3893,6 +3982,7 @@ class WodTemplateExercisesCompanion
       restBetweenSetsSeconds:
           restBetweenSetsSeconds ?? this.restBetweenSetsSeconds,
       targetRpe: targetRpe ?? this.targetRpe,
+      targetRir: targetRir ?? this.targetRir,
       videoUrl: videoUrl ?? this.videoUrl,
     );
   }
@@ -3938,6 +4028,9 @@ class WodTemplateExercisesCompanion
     if (targetRpe.present) {
       map['target_rpe'] = Variable<double>(targetRpe.value);
     }
+    if (targetRir.present) {
+      map['target_rir'] = Variable<double>(targetRir.value);
+    }
     if (videoUrl.present) {
       map['video_url'] = Variable<String>(videoUrl.value);
     }
@@ -3959,6 +4052,7 @@ class WodTemplateExercisesCompanion
           ..write('restSeconds: $restSeconds, ')
           ..write('restBetweenSetsSeconds: $restBetweenSetsSeconds, ')
           ..write('targetRpe: $targetRpe, ')
+          ..write('targetRir: $targetRir, ')
           ..write('videoUrl: $videoUrl')
           ..write(')'))
         .toString();
@@ -8874,6 +8968,7 @@ typedef $$WorkoutSetsTableCreateCompanionBuilder =
       required double weightKg,
       Value<int?> durationSeconds,
       Value<double?> rpe,
+      Value<double?> rir,
       Value<String?> notes,
     });
 typedef $$WorkoutSetsTableUpdateCompanionBuilder =
@@ -8886,6 +8981,7 @@ typedef $$WorkoutSetsTableUpdateCompanionBuilder =
       Value<double> weightKg,
       Value<int?> durationSeconds,
       Value<double?> rpe,
+      Value<double?> rir,
       Value<String?> notes,
     });
 
@@ -8968,6 +9064,11 @@ class $$WorkoutSetsTableFilterComposer
 
   ColumnFilters<double> get rpe => $composableBuilder(
     column: $table.rpe,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get rir => $composableBuilder(
+    column: $table.rir,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9062,6 +9163,11 @@ class $$WorkoutSetsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get rir => $composableBuilder(
+    column: $table.rir,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get notes => $composableBuilder(
     column: $table.notes,
     builder: (column) => ColumnOrderings(column),
@@ -9142,6 +9248,9 @@ class $$WorkoutSetsTableAnnotationComposer
 
   GeneratedColumn<double> get rpe =>
       $composableBuilder(column: $table.rpe, builder: (column) => column);
+
+  GeneratedColumn<double> get rir =>
+      $composableBuilder(column: $table.rir, builder: (column) => column);
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
@@ -9229,6 +9338,7 @@ class $$WorkoutSetsTableTableManager
                 Value<double> weightKg = const Value.absent(),
                 Value<int?> durationSeconds = const Value.absent(),
                 Value<double?> rpe = const Value.absent(),
+                Value<double?> rir = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
               }) => WorkoutSetsCompanion(
                 id: id,
@@ -9239,6 +9349,7 @@ class $$WorkoutSetsTableTableManager
                 weightKg: weightKg,
                 durationSeconds: durationSeconds,
                 rpe: rpe,
+                rir: rir,
                 notes: notes,
               ),
           createCompanionCallback:
@@ -9251,6 +9362,7 @@ class $$WorkoutSetsTableTableManager
                 required double weightKg,
                 Value<int?> durationSeconds = const Value.absent(),
                 Value<double?> rpe = const Value.absent(),
+                Value<double?> rir = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
               }) => WorkoutSetsCompanion.insert(
                 id: id,
@@ -9261,6 +9373,7 @@ class $$WorkoutSetsTableTableManager
                 weightKg: weightKg,
                 durationSeconds: durationSeconds,
                 rpe: rpe,
+                rir: rir,
                 notes: notes,
               ),
           withReferenceMapper: (p0) => p0
@@ -10025,6 +10138,7 @@ typedef $$WodTemplateExercisesTableCreateCompanionBuilder =
       Value<int?> restSeconds,
       Value<int?> restBetweenSetsSeconds,
       Value<double?> targetRpe,
+      Value<double?> targetRir,
       Value<String?> videoUrl,
     });
 typedef $$WodTemplateExercisesTableUpdateCompanionBuilder =
@@ -10041,6 +10155,7 @@ typedef $$WodTemplateExercisesTableUpdateCompanionBuilder =
       Value<int?> restSeconds,
       Value<int?> restBetweenSetsSeconds,
       Value<double?> targetRpe,
+      Value<double?> targetRir,
       Value<String?> videoUrl,
     });
 
@@ -10178,6 +10293,11 @@ class $$WodTemplateExercisesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<double> get targetRir => $composableBuilder(
+    column: $table.targetRir,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get videoUrl => $composableBuilder(
     column: $table.videoUrl,
     builder: (column) => ColumnFilters(column),
@@ -10307,6 +10427,11 @@ class $$WodTemplateExercisesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get targetRir => $composableBuilder(
+    column: $table.targetRir,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get videoUrl => $composableBuilder(
     column: $table.videoUrl,
     builder: (column) => ColumnOrderings(column),
@@ -10427,6 +10552,9 @@ class $$WodTemplateExercisesTableAnnotationComposer
 
   GeneratedColumn<double> get targetRpe =>
       $composableBuilder(column: $table.targetRpe, builder: (column) => column);
+
+  GeneratedColumn<double> get targetRir =>
+      $composableBuilder(column: $table.targetRir, builder: (column) => column);
 
   GeneratedColumn<String> get videoUrl =>
       $composableBuilder(column: $table.videoUrl, builder: (column) => column);
@@ -10554,6 +10682,7 @@ class $$WodTemplateExercisesTableTableManager
                 Value<int?> restSeconds = const Value.absent(),
                 Value<int?> restBetweenSetsSeconds = const Value.absent(),
                 Value<double?> targetRpe = const Value.absent(),
+                Value<double?> targetRir = const Value.absent(),
                 Value<String?> videoUrl = const Value.absent(),
               }) => WodTemplateExercisesCompanion(
                 id: id,
@@ -10568,6 +10697,7 @@ class $$WodTemplateExercisesTableTableManager
                 restSeconds: restSeconds,
                 restBetweenSetsSeconds: restBetweenSetsSeconds,
                 targetRpe: targetRpe,
+                targetRir: targetRir,
                 videoUrl: videoUrl,
               ),
           createCompanionCallback:
@@ -10584,6 +10714,7 @@ class $$WodTemplateExercisesTableTableManager
                 Value<int?> restSeconds = const Value.absent(),
                 Value<int?> restBetweenSetsSeconds = const Value.absent(),
                 Value<double?> targetRpe = const Value.absent(),
+                Value<double?> targetRir = const Value.absent(),
                 Value<String?> videoUrl = const Value.absent(),
               }) => WodTemplateExercisesCompanion.insert(
                 id: id,
@@ -10598,6 +10729,7 @@ class $$WodTemplateExercisesTableTableManager
                 restSeconds: restSeconds,
                 restBetweenSetsSeconds: restBetweenSetsSeconds,
                 targetRpe: targetRpe,
+                targetRir: targetRir,
                 videoUrl: videoUrl,
               ),
           withReferenceMapper: (p0) => p0

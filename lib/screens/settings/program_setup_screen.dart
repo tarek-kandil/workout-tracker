@@ -6,6 +6,7 @@ import '../../providers/database_provider.dart';
 import '../../providers/exercise_providers.dart';
 import '../../providers/next_workout_provider.dart';
 import '../../providers/program_providers.dart';
+import '../../utils/rir_conversion.dart';
 import '../../widgets/glass_background.dart';
 import '../../widgets/glass_route.dart';
 import '../../widgets/liquid_glass_container.dart';
@@ -593,9 +594,6 @@ class _WodListState extends ConsumerState<_WodList> {
 
 // ── WOD tile with exercise summary ───────────────────────────────────────────
 
-String _fmtRpe(double rpe) =>
-    rpe == rpe.roundToDouble() ? rpe.toInt().toString() : rpe.toString();
-
 class _WodTile extends ConsumerStatefulWidget {
   final WodTemplate wod;
   final int phaseId;
@@ -993,30 +991,10 @@ class _WodTileState extends ConsumerState<_WodTile> {
             ),
           ),
         ),
-        // RPE pill
-        if (te.targetRpe != null) ...[
+        // RIR pill
+        if (effectiveRir(te.targetRir, te.targetRpe) != null) ...[
           const SizedBox(width: 5),
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-            decoration: BoxDecoration(
-              color:
-                  const Color(0xFFFBBF24).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(7),
-              border: Border.all(
-                color: const Color(0xFFFBBF24)
-                    .withValues(alpha: 0.25),
-              ),
-            ),
-            child: Text(
-              '@${_fmtRpe(te.targetRpe!)}',
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: Color.fromRGBO(251, 191, 36, 0.75),
-              ),
-            ),
-          ),
+          RirPill(rir: effectiveRir(te.targetRir, te.targetRpe)!, isTarget: true),
         ],
       ],
     );
@@ -1151,30 +1129,10 @@ class _WodTileState extends ConsumerState<_WodTile> {
             ),
           ),
         ),
-        // RPE pill
-        if (te.targetRpe != null) ...[
+        // RIR pill
+        if (effectiveRir(te.targetRir, te.targetRpe) != null) ...[
           const SizedBox(width: 5),
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-            decoration: BoxDecoration(
-              color:
-                  const Color(0xFFFBBF24).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(7),
-              border: Border.all(
-                color: const Color(0xFFFBBF24)
-                    .withValues(alpha: 0.25),
-              ),
-            ),
-            child: Text(
-              '@${_fmtRpe(te.targetRpe!)}',
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: Color.fromRGBO(251, 191, 36, 0.75),
-              ),
-            ),
-          ),
+          RirPill(rir: effectiveRir(te.targetRir, te.targetRpe)!, isTarget: true),
         ],
       ],
     );
