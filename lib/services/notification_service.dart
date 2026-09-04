@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest_all.dart' as tz;
@@ -143,8 +144,19 @@ class NotificationService {
     }
   }
 
-  static Future<void> cancelWeighInReminder() =>
-      _plugin.cancel(weighInReminderId);
+  /// Never throws — cancelling a reminder is a best-effort no-op cleanup
+  /// step (e.g. when a plan is deleted or reminders are disabled), and it
+  /// is on the app-startup critical path via
+  /// `WeightGoalActions.rescheduleReminder()`. Platform plugin channels can
+  /// throw in edge cases (e.g. before the engine finishes attaching
+  /// plugins), so swallow and log rather than letting startup hang.
+  static Future<void> cancelWeighInReminder() async {
+    try {
+      await _plugin.cancel(weighInReminderId);
+    } catch (e) {
+      debugPrint('NotificationService.cancelWeighInReminder failed: $e');
+    }
+  }
 
   /// Shows (or updates) a persistent workout-status notification.
   /// [chronoMs] — epoch-ms from which the chronometer counts.
