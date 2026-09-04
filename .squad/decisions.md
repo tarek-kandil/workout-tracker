@@ -47,6 +47,26 @@
 **What:** Weight Goal Coaching Loop (spec 002): goal setup (desired weight + duration → calories/macros), weekly-default weigh-in reminders, on-track coaching (±150/±100 kcal, 2-check-in confirm), Weight Hub + home tile. Schema v19 additive on UserProfiles.
 **Why:** Captures the cross-agent implementation direction for the new body-weight goal coaching loop so future Coach, Lead, Designer, and Flutter work share the same product, UX, and persistence contract.
 
+#### 2026-09-04: Muscle taxonomy and weekly volume-report landmarks
+**By:** Coach
+**What:** Replace legacy broad tags with practical trainable muscles: Chest, Lats, Upper Back, Traps, Spinal Erectors, Front/Side/Rear Delts, Biceps, Triceps, Forearms, Quads, Hamstrings, Glutes, Adductors, Abductors, Hip Flexors, Calves, Abs, Obliques, and optional Neck. Treat Cardio/Full Body as non-muscle categories excluded from hypertrophy set landmarks. Weekly report should use effective hard sets per muscle: primary muscles receive 1.0 set credit, secondary muscles 0.5, adjusted down for explicitly easy 5+ RIR work; status comes from MV/MEV/MAV/MRV landmarks per muscle.
+**Why:** Athletes need actionable muscle-level feedback without anatomical minutiae. Effective weekly sets align with hypertrophy programming practice better than tonnage alone, while preserving cardio separately prevents conditioning work from falsely inflating muscle-volume readiness.
+
+#### 2026-09-04: Muscle taxonomy stores roles, not credit weights
+**By:** Lead
+**What:** The muscle-volume feature should add an explicit `role` column to `exercise_muscles` (`primary`/`secondary`) and compute weights in code, with `is_active` plus exercise review metadata to preserve legacy rows while excluding ambiguous/non-muscle mappings from reports.
+**Why:** The spec is written around primary/secondary semantics, and code-owned role weights keep the DB stable if product wording or multipliers change. `is_active` and review metadata are necessary to meet the non-destructive migration requirement without allowing old broad tags such as Back, Shoulders, Core, Cardio, or Full Body to silently inflate weekly volume.
+
+#### 2026-09-04: Intermediate muscle-volume landmark defaults
+**By:** Lead
+**What:** `specs/003-muscle-volume-report/spec.md` includes concrete Intermediate MV/MEV/MAV/MRV defaults for all 21 muscles, with Neck marked conservative/provisional.
+**Why:** Planning and implementation need testable landmark numbers now; Coach can later revise the reference table without changing the approved simple 3-status report model.
+
+#### 2026-09-04: Muscle volume report keeps three plain states
+**By:** Designer
+**What:** The weekly muscle-volume report should use a simple Home tile plus report UI with exactly three athlete-facing status labels: `Undertrained`, `Optimal`, and `Overtrained`. The main report should show only muscle name, this week's effective-set count, and one status pill; any range visual belongs only in optional progressive disclosure and must use plain `Low / Good / High` language.
+**Why:** The user confirmed simplicity is the top UX constraint. The original three-status language supports fast training decisions while avoiding threshold jargon, and keeps the report consistent with the app's glanceable Liquid Glass Home-card patterns.
+
 ## Governance
 - All meaningful changes require team consensus
 - Document architectural decisions here
