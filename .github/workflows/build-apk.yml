@@ -11,6 +11,7 @@ jobs:
   build:
     name: Build Android APK
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: write
 
@@ -27,6 +28,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: 3.41.5
           channel: stable
           cache: true
 
@@ -34,6 +36,7 @@ jobs:
         run: flutter pub get
 
       - name: Generate code (build_runner)
+        timeout-minutes: 15
         run: dart run build_runner build --delete-conflicting-outputs
 
       - name: Decode signing keystore
@@ -56,6 +59,7 @@ jobs:
           EOF
 
       - name: Build release APK
+        timeout-minutes: 20
         run: flutter build apk --release
 
       - name: Read app version
