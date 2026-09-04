@@ -1,0 +1,175 @@
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0d0d0f; color: #f0f0f5; font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 20px 16px 80px; }
+h2 { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+.subtitle { font-size: 12.5px; color: rgba(255,255,255,0.4); margin-bottom: 24px; line-height: 1.5; }
+
+.options { display: flex; flex-direction: column; gap: 16px; }
+.option {
+  border-radius: 20px; border: 2px solid transparent;
+  background: rgba(255,255,255,0.04); overflow: hidden;
+  cursor: pointer; transition: border-color 0.18s, transform 0.12s;
+}
+.option:hover { transform: translateY(-1px); }
+.option.selected { border-color: #6366f1; }
+.option-header {
+  padding: 13px 16px 11px; display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.letter-badge { width: 27px; height: 27px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; flex-shrink: 0; }
+.option-title { font-size: 13.5px; font-weight: 700; }
+.option-sub { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; line-height: 1.4; }
+.rec-badge { margin-left: auto; background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.4); border-radius: 20px; padding: 3px 10px; font-size: 10px; font-weight: 700; color: #818cf8; flex-shrink: 0; }
+.mockup-body { padding: 16px; }
+
+/* shared profile card shell */
+.profile-shell { background: rgba(255,255,255,0.04); border-radius: 16px; border: 1px solid rgba(255,255,255,0.07); overflow: hidden; }
+.info-row { display: flex; align-items: center; gap: 12px; padding: 13px 14px; }
+.info-row + .info-row { border-top: 1px solid rgba(255,255,255,0.06); }
+.icon-badge { width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+.row-label { font-size: 14px; font-weight: 500; flex: 1; }
+.row-value { font-size: 14px; color: rgba(255,255,255,0.4); }
+.chevron { font-size: 12px; color: rgba(255,255,255,0.18); margin-left: 4px; }
+
+/* hero */
+.hero { text-align: center; padding: 12px 0 16px; }
+.avatar { width: 64px; height: 64px; border-radius: 50%; background: rgba(99,102,241,0.15); border: 2px solid rgba(99,102,241,0.4); display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 8px; }
+.hero-name { font-size: 20px; font-weight: 800; }
+.hero-name-input {
+  font-size: 20px; font-weight: 800; background: transparent; border: none; outline: none;
+  color: #f0f0f5; text-align: center; border-bottom: 2px solid #6366f1;
+  width: 160px; padding-bottom: 2px;
+}
+.done-btn { display: inline-block; margin-top: 8px; background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.4); border-radius: 20px; padding: 4px 14px; font-size: 12px; font-weight: 700; color: #818cf8; }
+
+/* Option B — sheet */
+.sheet { background: rgba(22,22,26,0.99); border-radius: 20px 20px 0 0; border: 1px solid rgba(255,255,255,0.1); border-bottom: none; }
+.sheet-handle { width: 36px; height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; margin: 10px auto 0; }
+.sheet-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px 16px; }
+.sheet-cancel { font-size: 15px; color: rgba(255,255,255,0.35); }
+.sheet-title { font-size: 15px; font-weight: 700; }
+.sheet-done { font-size: 15px; font-weight: 700; color: #818cf8; }
+.sheet-body { padding: 0 20px 24px; }
+.name-display { font-size: 32px; font-weight: 800; text-align: center; margin-bottom: 16px; min-height: 40px; }
+.keyboard-input-area { background: rgba(255,255,255,0.06); border-radius: 16px; padding: 14px 16px; border: 1.5px solid rgba(99,102,241,0.4); display: flex; align-items: center; gap: 8px; }
+.cursor { display: inline-block; width: 2px; height: 20px; background: #818cf8; animation: blink 1s infinite; vertical-align: middle; margin-left: 1px; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.keyboard-icon { font-size: 16px; color: rgba(255,255,255,0.3); }
+.input-hint { font-size: 13px; color: rgba(255,255,255,0.35); flex: 1; }
+.keyboard-mock { margin-top: 10px; background: rgba(255,255,255,0.04); border-radius: 12px; padding: 10px; display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
+.key { background: rgba(255,255,255,0.08); border-radius: 6px; padding: 6px 2px; text-align: center; font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.6); }
+.key.wide { grid-column: span 2; background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.35); font-size: 9px; }
+
+/* Option C — inline expand */
+.expand-shell { background: rgba(255,255,255,0.04); border-radius: 16px; border: 1px solid rgba(255,255,255,0.07); overflow: hidden; }
+.name-expanded { background: rgba(99,102,241,0.07); border: 1.5px solid rgba(99,102,241,0.35); border-radius: 14px; margin: 8px; }
+.expanded-inner { padding: 10px 14px; }
+.expanded-label { font-size: 9px; font-weight: 700; color: #818cf8; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 6px; }
+.expanded-field { display: flex; align-items: center; gap: 6px; }
+.expanded-text { font-size: 18px; font-weight: 700; flex: 1; }
+.check-btn { width: 30px; height: 30px; border-radius: 9px; background: #6366f1; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+.x-btn { width: 30px; height: 30px; border-radius: 9px; background: rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; color: rgba(255,255,255,0.4); }
+</style>
+
+<h2>Name editing — three alternatives</h2>
+<p class="subtitle">The current AlertDialog doesn't match the glass + drum-picker aesthetic. Here are three options that do.</p>
+
+<div class="options">
+
+  <!-- Option A: Inline hero edit -->
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="option-header">
+      <div class="letter-badge" style="background:rgba(99,102,241,0.2);color:#818cf8;">A</div>
+      <div>
+        <div class="option-title">Tap name in hero to edit inline</div>
+        <div class="option-sub">Name becomes an editable field right where it sits — no modal, no sheet</div>
+      </div>
+      <div class="rec-badge">⭐ Recommended</div>
+    </div>
+    <div class="mockup-body">
+      <div class="hero">
+        <div class="avatar">👤</div>
+        <div style="margin-bottom:4px;">
+          <input class="hero-name-input" value="Tarek" />
+        </div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-bottom:6px;">Tap to edit · keyboard pops up</div>
+        <div class="done-btn">✓ Done</div>
+      </div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.35);text-align:center;margin-top:8px;">
+        Name in the hero turns into an editable field with a subtle underline.<br>
+        "Done" button (or keyboard return) confirms. Feels native — Apple Contacts does this.
+      </div>
+    </div>
+  </div>
+
+  <!-- Option B: Bottom sheet with large text -->
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="option-header">
+      <div class="letter-badge" style="background:rgba(52,199,89,0.15);color:#34c759;">B</div>
+      <div>
+        <div class="option-title">Bottom sheet — matches drum pickers</div>
+        <div class="option-sub">Same sheet style as age/height/weight, with a large styled text field</div>
+      </div>
+    </div>
+    <div class="mockup-body">
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <span class="sheet-cancel">Cancel</span>
+          <span class="sheet-title">Your Name</span>
+          <span class="sheet-done">Done</span>
+        </div>
+        <div class="sheet-body">
+          <div class="name-display">Tarek<span class="cursor"></span></div>
+          <div class="keyboard-input-area">
+            <span class="keyboard-icon">⌨️</span>
+            <span class="input-hint">Type your name…</span>
+          </div>
+          <div class="keyboard-mock">
+            <div class="key">Q</div><div class="key">W</div><div class="key">E</div><div class="key">R</div><div class="key">T</div><div class="key">Y</div><div class="key">U</div><div class="key">I</div><div class="key">O</div><div class="key">P</div>
+            <div class="key wide">shift</div><div class="key">A</div><div class="key">S</div><div class="key">D</div><div class="key">F</div><div class="key">G</div><div class="key">H</div><div class="key wide">⌫</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option C: Inline row expand -->
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="option-header">
+      <div class="letter-badge" style="background:rgba(255,159,10,0.15);color:#ff9f0a;">C</div>
+      <div>
+        <div class="option-title">Tap row → row expands in-place</div>
+        <div class="option-sub">Name row grows to show an editable field with confirm/cancel buttons</div>
+      </div>
+    </div>
+    <div class="mockup-body">
+      <div class="expand-shell">
+        <div class="name-expanded">
+          <div class="expanded-inner">
+            <div class="expanded-label">Name</div>
+            <div class="expanded-field">
+              <div class="expanded-text">Tarek<span class="cursor"></span></div>
+              <div class="x-btn">✕</div>
+              <div class="check-btn">✓</div>
+            </div>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="icon-badge" style="background:rgba(94,92,230,0.15);">⚥</div>
+          <div class="row-label">Gender</div>
+          <div class="row-value">Male</div><div class="chevron">›</div>
+        </div>
+        <div class="info-row">
+          <div class="icon-badge" style="background:rgba(255,159,10,0.15);">🎂</div>
+          <div class="row-label">Age</div>
+          <div class="row-value">28 yrs</div><div class="chevron">›</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:10px;">
+        No navigation away from the page — card morphs in-place. ✓ saves, ✕ cancels.
+      </div>
+    </div>
+  </div>
+
+</div>

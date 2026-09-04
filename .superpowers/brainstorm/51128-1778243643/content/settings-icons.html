@@ -1,0 +1,177 @@
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Space Grotesk', sans-serif; background: #0a0a0f; color: #f0f0f5; padding: 20px 16px 80px; }
+h2 { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+.subtitle { font-size: 12px; color: rgba(255,255,255,0.4); margin-bottom: 20px; }
+
+.material-symbols-rounded { font-family: 'Material Symbols Rounded'; font-style: normal; font-weight: normal; font-size: 22px; line-height: 1; letter-spacing: normal; text-transform: none; display: inline-block; white-space: nowrap; direction: ltr; -webkit-font-smoothing: antialiased; font-variation-settings: 'FILL' 1, 'wght' 600, 'GRAD' 0, 'opsz' 24; }
+.material-symbols-rounded.outline { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+
+/* phone shell */
+.split { display: flex; gap: 16px; justify-content: center; }
+.phone { background: #0d0d12; border-radius: 20px; border: 1px solid rgba(255,255,255,0.08); overflow: hidden; width: 185px; flex-shrink: 0; }
+.phone-label { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.35); letter-spacing: 1px; text-transform: uppercase; text-align: center; margin-bottom: 8px; }
+.app-bar { padding: 12px 14px 8px; font-size: 18px; font-weight: 800; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.app-body { padding: 10px 10px 16px; display: flex; flex-direction: column; gap: 8px; }
+
+/* profile hero */
+.profile-card { background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(99,102,241,0.06)); border: 1px solid rgba(99,102,241,0.25); border-radius: 14px; padding: 11px 12px; display: flex; align-items: center; gap: 10px; }
+.avatar { width: 40px; height: 40px; border-radius: 50%; background: rgba(99,102,241,0.18); border: 2px solid rgba(99,102,241,0.45); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.profile-name { font-size: 13px; font-weight: 800; }
+.profile-sub { font-size: 9px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+
+/* section label */
+.sec-label { font-size: 8px; font-weight: 700; letter-spacing: 1.2px; color: rgba(255,255,255,0.35); text-transform: uppercase; padding: 0 2px; }
+
+/* nav grid */
+.nav-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.tile { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 10px 10px 9px; cursor: pointer; transition: border-color .15s; }
+.tile:hover { border-color: rgba(255,255,255,0.18); }
+.tile-icon { width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; font-size: 16px; }
+.tile-title { font-size: 11px; font-weight: 600; line-height: 1.2; }
+.tile-sub { font-size: 9px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+
+/* appearance tile */
+.appear-tile { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 10px 12px; display: flex; align-items: center; gap: 8px; }
+.appear-icon { width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; background: rgba(99,102,241,0.15); }
+.appear-label { font-size: 11px; font-weight: 500; flex: 1; }
+.toggle { width: 32px; height: 18px; background: #6366f1; border-radius: 10px; position: relative; }
+.toggle::after { content: ''; position: absolute; right: 3px; top: 3px; width: 12px; height: 12px; background: white; border-radius: 50%; }
+
+/* danger card */
+.danger-card { background: rgba(255,69,58,0.08); border: 1px solid rgba(255,69,58,0.25); border-radius: 12px; padding: 10px 12px; display: flex; align-items: center; gap: 8px; }
+.danger-icon { width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; background: rgba(255,69,58,0.15); }
+.danger-label { font-size: 11px; font-weight: 600; color: #FF453A; flex: 1; }
+.danger-sub { font-size: 9px; color: rgba(255,69,58,0.6); }
+
+/* colors */
+.c-indigo { background: rgba(99,102,241,0.15); color: #818cf8; }
+.c-green  { background: rgba(52,199,89,0.15);  color: #34C759; }
+.c-blue   { background: rgba(50,173,230,0.15); color: #32ADE6; }
+.c-amber  { background: rgba(255,159,10,0.15); color: #FF9F0A; }
+</style>
+
+<h2>Icon Style for Settings Screen</h2>
+<p class="subtitle">Choose the icon style that fits the glass aesthetic best. Click your preferred option.</p>
+
+<div class="split">
+
+  <!-- Option A: Filled Rounded -->
+  <div>
+    <p class="phone-label">A — Filled Rounded</p>
+    <div class="phone" style="border: 2px solid transparent" id="phone-a" onclick="selectOption('a', this)">
+      <div class="app-bar">Settings</div>
+      <div class="app-body">
+
+        <div class="profile-card">
+          <div class="avatar"><span class="material-symbols-rounded" style="color:#818cf8;font-size:20px">person</span></div>
+          <div><div class="profile-name">Tarek</div><div class="profile-sub">Tap to edit profile →</div></div>
+        </div>
+
+        <div class="sec-label">Training</div>
+        <div class="nav-grid">
+          <div class="tile">
+            <div class="tile-icon c-indigo"><span class="material-symbols-rounded" style="color:#818cf8">fitness_center</span></div>
+            <div class="tile-title">Programs</div>
+            <div class="tile-sub">Manage plans</div>
+          </div>
+          <div class="tile">
+            <div class="tile-icon c-green"><span class="material-symbols-rounded" style="color:#34C759">task_alt</span></div>
+            <div class="tile-title">Daily Tasks</div>
+            <div class="tile-sub">Your goals</div>
+          </div>
+          <div class="tile">
+            <div class="tile-icon c-blue"><span class="material-symbols-rounded" style="color:#32ADE6">history</span></div>
+            <div class="tile-title">History</div>
+            <div class="tile-sub">Past sessions</div>
+          </div>
+          <div class="tile">
+            <div class="tile-icon c-amber"><span class="material-symbols-rounded" style="color:#FF9F0A">menu_book</span></div>
+            <div class="tile-title">Exercises</div>
+            <div class="tile-sub">Library</div>
+          </div>
+        </div>
+
+        <div class="sec-label">Appearance</div>
+        <div class="appear-tile">
+          <div class="appear-icon"><span class="material-symbols-rounded" style="color:#818cf8;font-size:18px">dark_mode</span></div>
+          <div class="appear-label">Dark Mode</div>
+          <div class="toggle"></div>
+        </div>
+
+        <div class="sec-label">Data</div>
+        <div class="danger-card">
+          <div class="danger-icon"><span class="material-symbols-rounded" style="color:#FF453A;font-size:18px">delete</span></div>
+          <div><div class="danger-label">Clear All Sessions</div><div class="danger-sub">Permanently removes history</div></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Option B: Outlined -->
+  <div>
+    <p class="phone-label">B — Outlined</p>
+    <div class="phone" style="border: 2px solid transparent" id="phone-b" onclick="selectOption('b', this)">
+      <div class="app-bar">Settings</div>
+      <div class="app-body">
+
+        <div class="profile-card">
+          <div class="avatar"><span class="material-symbols-rounded outline" style="color:#818cf8;font-size:20px">person</span></div>
+          <div><div class="profile-name">Tarek</div><div class="profile-sub">Tap to edit profile →</div></div>
+        </div>
+
+        <div class="sec-label">Training</div>
+        <div class="nav-grid">
+          <div class="tile">
+            <div class="tile-icon c-indigo"><span class="material-symbols-rounded outline" style="color:#818cf8">fitness_center</span></div>
+            <div class="tile-title">Programs</div>
+            <div class="tile-sub">Manage plans</div>
+          </div>
+          <div class="tile">
+            <div class="tile-icon c-green"><span class="material-symbols-rounded outline" style="color:#34C759">task_alt</span></div>
+            <div class="tile-title">Daily Tasks</div>
+            <div class="tile-sub">Your goals</div>
+          </div>
+          <div class="tile">
+            <div class="tile-icon c-blue"><span class="material-symbols-rounded outline" style="color:#32ADE6">history</span></div>
+            <div class="tile-title">History</div>
+            <div class="tile-sub">Past sessions</div>
+          </div>
+          <div class="tile">
+            <div class="tile-icon c-amber"><span class="material-symbols-rounded outline" style="color:#FF9F0A">menu_book</span></div>
+            <div class="tile-title">Exercises</div>
+            <div class="tile-sub">Library</div>
+          </div>
+        </div>
+
+        <div class="sec-label">Appearance</div>
+        <div class="appear-tile">
+          <div class="appear-icon"><span class="material-symbols-rounded outline" style="color:#818cf8;font-size:18px">dark_mode</span></div>
+          <div class="appear-label">Dark Mode</div>
+          <div class="toggle"></div>
+        </div>
+
+        <div class="sec-label">Data</div>
+        <div class="danger-card">
+          <div class="danger-icon"><span class="material-symbols-rounded outline" style="color:#FF453A;font-size:18px">delete_outline</span></div>
+          <div><div class="danger-label">Clear All Sessions</div><div class="danger-sub">Permanently removes history</div></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let selected = null;
+function selectOption(choice, el) {
+  document.querySelectorAll('.phone').forEach(p => p.style.border = '2px solid transparent');
+  el.style.border = '2px solid rgba(99,102,241,0.7)';
+  selected = choice;
+  if (window.recordChoice) window.recordChoice(choice, choice === 'a' ? 'A — Filled Rounded' : 'B — Outlined');
+}
+</script>

@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Coaching Notes + RPE — Mockup</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { font-family: 'Segoe UI', system-ui, sans-serif; background: #111114; color: #f0f0f3; }
+    body { padding: 24px; overflow-y: auto; }
+
+    h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: 6px; }
+    .subtitle { color: #86868b; font-size: 0.85rem; margin-bottom: 28px; }
+
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #86868b;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 14px;
+      margin-top: 32px;
+    }
+
+    /* ── Phone layout ── */
+    .phone-row {
+      display: flex;
+      gap: 28px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .phone-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .phone-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #86868b;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .phone {
+      width: 275px;
+      height: 460px;
+      background: #1c1c1e;
+      border-radius: 36px;
+      border: 2px solid #3a3a3c;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+      flex-shrink: 0;
+    }
+
+    .screen-bg {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(160deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 16px 4px;
+      font-size: 9px;
+      color: rgba(255,255,255,0.5);
+    }
+
+    /* ── Exercise card ── */
+    .ex-card {
+      margin: 0 10px;
+      background: rgba(99,102,241,0.09);
+      border: 1.5px solid rgba(99,102,241,0.4);
+      border-radius: 14px;
+      padding: 10px 12px;
+      box-shadow: 0 0 14px rgba(99,102,241,0.14);
+    }
+
+    .ex-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(99,102,241,0.2);
+      color: #818cf8;
+      font-size: 7.5px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 20px;
+      margin-bottom: 4px;
+    }
+
+    .ex-name {
+      font-size: 13px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .ex-sub {
+      font-size: 9px;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 6px;
+    }
+
+    .suggest {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      background: rgba(99,102,241,0.15);
+      border: 1px solid rgba(99,102,241,0.3);
+      color: #818cf8;
+      font-size: 8px;
+      padding: 2px 7px;
+      border-radius: 20px;
+    }
+
+    /* ── Set row ── */
+    .set-label {
+      font-size: 8px;
+      color: rgba(255,255,255,0.3);
+      margin-bottom: 4px;
+    }
+
+    .set-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .stepper {
+      flex: 1;
+      min-width: 0;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 7px 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 3px;
+    }
+
+    .stepper .val { font-size: 9.5px; font-weight: 700; color: #fff; white-space: nowrap; letter-spacing: -0.01em; }
+    .stepper .btn {
+      width: 14px; height: 14px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      color: rgba(255,255,255,0.6); font-size: 9px;
+      flex-shrink: 0;
+    }
+
+    .done-btn {
+      width: 36px; height: 36px;
+      background: rgba(99,102,241,0.9);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; color: white;
+      align-self: center; flex-shrink: 0;
+    }
+
+    /* ── Target RPE badge ── */
+    .rpe-target-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(251,191,36,0.1);
+      border: 1px solid rgba(251,191,36,0.3);
+      color: #fbbf24;
+      font-size: 8px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+
+    /* ── Info icon button ── */
+    .info-btn {
+      width: 22px; height: 22px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px;
+      color: rgba(255,255,255,0.5);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    /* ── Coaching notes modal ── */
+    .notes-modal-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      display: flex;
+      align-items: flex-end;
+      backdrop-filter: blur(3px);
+    }
+
+    .notes-sheet {
+      background: #1e2030;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px 20px 0 0;
+      width: 100%;
+      padding: 10px 14px 16px;
+    }
+
+    .sheet-handle {
+      width: 32px; height: 3px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 2px;
+      margin: 0 auto 10px;
+    }
+
+    .sheet-title {
+      font-size: 11px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 2px;
+    }
+
+    .sheet-sub {
+      font-size: 8px;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 10px;
+    }
+
+    .notes-content {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 8.5px;
+      line-height: 1.5;
+      color: rgba(255,255,255,0.75);
+      margin-bottom: 8px;
+    }
+
+    .notes-rpe-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .notes-rpe-label { font-size: 8px; color: rgba(255,255,255,0.4); }
+    .notes-rpe-val { font-size: 14px; font-weight: 800; color: #fbbf24; }
+
+    /* ── Post-set RPE logging ── */
+    .rpe-sheet {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      background: #1e2030;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      border-radius: 18px 18px 0 0;
+      padding: 10px 14px 16px;
+    }
+
+    .rpe-title {
+      font-size: 10px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 2px;
+    }
+
+    .rpe-sub {
+      font-size: 7.5px;
+      color: rgba(255,255,255,0.35);
+      margin-bottom: 8px;
+    }
+
+    .rpe-dots {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+
+    .rpe-dot {
+      flex: 1;
+      height: 24px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 7px;
+      color: rgba(255,255,255,0.4);
+      font-weight: 600;
+    }
+
+    .rpe-dot.selected {
+      background: rgba(251,191,36,0.25);
+      border-color: rgba(251,191,36,0.6);
+      color: #fbbf24;
+      font-weight: 800;
+    }
+
+    .rpe-dot.near {
+      background: rgba(251,191,36,0.1);
+      border-color: rgba(251,191,36,0.3);
+      color: rgba(251,191,36,0.6);
+    }
+
+    .rpe-skip {
+      font-size: 7.5px;
+      color: rgba(255,255,255,0.3);
+      text-align: center;
+    }
+
+    /* ── Bottom nav ── */
+    .bottom-nav {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 52px;
+      background: rgba(18,18,22,0.9);
+      border-top: 1px solid rgba(255,255,255,0.07);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      font-size: 7px;
+      color: rgba(255,255,255,0.35);
+    }
+    .nav-item.active { color: #6366F1; }
+    .nav-dot { width: 18px; height: 18px; border-radius: 6px; background: rgba(255,255,255,0.08); }
+    .nav-item.active .nav-dot { background: rgba(99,102,241,0.25); }
+
+    /* ── Annotation arrows ── */
+    .annot {
+      font-size: 0.75rem;
+      color: #86868b;
+      line-height: 1.5;
+      max-width: 200px;
+      text-align: center;
+    }
+
+    .annot strong { color: #f0f0f3; }
+
+    /* ── Legend ── */
+    .legend-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+      margin-top: 28px;
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .legend-box {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+
+    .legend-box h4 { font-size: 0.82rem; font-weight: 700; margin-bottom: 4px; }
+    .legend-box p { font-size: 0.76rem; color: #86868b; line-height: 1.45; }
+  </style>
+</head>
+<body>
+  <h2>Coaching Notes + RPE — Active Session</h2>
+  <p class="subtitle">Three states: normal set card → coaching notes popup → post-set RPE logging</p>
+
+  <div class="section-label">The 3 screens in sequence →</div>
+
+  <div class="phone-row">
+
+    <!-- STATE 1: Normal exercise card with info icon + target RPE -->
+    <div class="phone-col">
+      <div class="phone-label">1 · During Set</div>
+      <div class="phone">
+        <div class="screen-bg">
+          <div class="status-bar"><span>9:41</span><span>●●● ■</span></div>
+
+          <div class="ex-card">
+            <!-- Header row -->
+            <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:3px;">
+              <div style="flex:1;">
+                <div class="ex-badge">▶ NOW</div>
+                <div class="ex-name">Bench Press</div>
+                <div class="ex-sub">3 sets · 8–12 reps</div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+                <!-- Info icon (coaching notes) -->
+                <div class="info-btn" title="Coaching notes">ℹ</div>
+                <!-- Weight suggestion -->
+                <div class="suggest">↑ 82.5 kg</div>
+              </div>
+            </div>
+
+            <!-- History chip -->
+            <div style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:3px 8px;margin-bottom:8px;">
+              <span style="font-size:8px;color:rgba(255,255,255,0.45);">Last: 80 kg × 8  ·  PR 80 kg</span>
+            </div>
+
+            <!-- Set 1 active -->
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+              <div class="set-label" style="margin-bottom:0;">Set 1 / 3</div>
+              <!-- Target RPE shown here — always visible -->
+              <div class="rpe-target-badge">Target RPE 8</div>
+            </div>
+
+            <div class="set-row">
+              <div class="stepper">
+                <div class="btn">−</div>
+                <span class="val">82.5 kg</span>
+                <div class="btn">+</div>
+              </div>
+              <div class="stepper">
+                <div class="btn">−</div>
+                <span class="val">10</span>
+                <div class="btn">+</div>
+              </div>
+              <div class="done-btn">✓</div>
+            </div>
+          </div>
+
+          <div class="bottom-nav">
+            <div class="nav-item"><div class="nav-dot"></div><span>Home</span></div>
+            <div class="nav-item active"><div class="nav-dot"></div><span>Log</span></div>
+            <div class="nav-item"><div class="nav-dot"></div><span>History</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="annot">
+        <strong>ℹ icon</strong> in top-right corner opens notes.<br>
+        <strong>Target RPE 8</strong> badge next to set label — always visible before logging.
+      </div>
+    </div>
+
+    <!-- STATE 2: Coaching notes sheet (tap info icon) -->
+    <div class="phone-col">
+      <div class="phone-label">2 · Coaching Notes</div>
+      <div class="phone">
+        <div class="screen-bg">
+          <div class="status-bar"><span>9:41</span><span>●●● ■</span></div>
+
+          <div class="ex-card" style="opacity:0.35;">
+            <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:3px;">
+              <div style="flex:1;">
+                <div class="ex-badge">▶ NOW</div>
+                <div class="ex-name">Bench Press</div>
+                <div class="ex-sub">3 sets · 8–12 reps</div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+                <div class="info-btn">ℹ</div>
+                <div class="suggest">↑ 82.5 kg</div>
+              </div>
+            </div>
+            <div class="set-label">Set 1 / 3</div>
+            <div class="set-row">
+              <div class="stepper"><div class="btn">−</div><span class="val">82.5 kg</span><div class="btn">+</div></div>
+              <div class="stepper"><div class="btn">−</div><span class="val">10</span><div class="btn">+</div></div>
+              <div class="done-btn">✓</div>
+            </div>
+          </div>
+
+          <!-- Coaching notes bottom sheet -->
+          <div class="notes-modal-overlay">
+            <div class="notes-sheet">
+              <div class="sheet-handle"></div>
+              <div class="sheet-title">Bench Press</div>
+              <div class="sheet-sub">Coaching Notes</div>
+              <div class="notes-content">
+                Keep shoulder blades retracted and depressed. Drive feet into floor. Bar path should touch lower chest — not neck. Control the descent for 2 seconds.
+              </div>
+              <div class="notes-rpe-row">
+                <div>
+                  <div class="notes-rpe-label">Target RPE</div>
+                </div>
+                <div class="notes-rpe-val">8</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="annot">
+        Tap anywhere outside or swipe down to dismiss.<br>
+        <strong>Target RPE</strong> also shown at the bottom of the notes.
+      </div>
+    </div>
+
+    <!-- STATE 3: Post-set RPE logging -->
+    <div class="phone-col">
+      <div class="phone-label">3 · After Done Set</div>
+      <div class="phone">
+        <div class="screen-bg">
+          <div class="status-bar"><span>9:41</span><span>●●● ■</span></div>
+
+          <div class="ex-card" style="opacity:0.4;">
+            <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:3px;">
+              <div style="flex:1;">
+                <div class="ex-badge">▶ NOW</div>
+                <div class="ex-name">Bench Press</div>
+                <div class="ex-sub">3 sets · 8–12 reps</div>
+              </div>
+            </div>
+            <!-- Set 1 done row -->
+            <div class="set-label">Set 1 ✓</div>
+            <div class="set-row">
+              <div class="stepper" style="background:rgba(52,199,89,0.08);border-color:rgba(52,199,89,0.25);">
+                <div class="btn">−</div><span class="val" style="color:#34C759;">82.5 kg</span><div class="btn">+</div>
+              </div>
+              <div class="stepper" style="background:rgba(52,199,89,0.08);border-color:rgba(52,199,89,0.25);">
+                <div class="btn">−</div><span class="val" style="color:#34C759;">10</span><div class="btn">+</div>
+              </div>
+              <div class="done-btn" style="background:rgba(52,199,89,0.7);">✓</div>
+            </div>
+          </div>
+
+          <!-- Post-set RPE sheet -->
+          <div class="rpe-sheet">
+            <div class="sheet-handle"></div>
+            <div class="rpe-title">How hard was that?</div>
+            <div class="rpe-sub">Set 1 · Bench Press · optional</div>
+
+            <!-- RPE selector dots: 6 to 10 in 0.5 steps -->
+            <div class="rpe-dots">
+              <div class="rpe-dot">6</div>
+              <div class="rpe-dot">6.5</div>
+              <div class="rpe-dot">7</div>
+              <div class="rpe-dot">7.5</div>
+              <div class="rpe-dot near">8</div>
+              <div class="rpe-dot selected">8.5</div>
+              <div class="rpe-dot near">9</div>
+              <div class="rpe-dot">9.5</div>
+              <div class="rpe-dot">10</div>
+            </div>
+
+            <!-- Description of selected RPE -->
+            <div style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:8px;padding:5px 8px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
+              <span style="font-size:8px;color:rgba(255,255,255,0.5);">2 reps left in tank</span>
+              <span style="font-size:12px;font-weight:800;color:#fbbf24;">RPE 8.5</span>
+            </div>
+
+            <div class="rpe-skip">Tap outside or swipe down to skip →</div>
+          </div>
+        </div>
+      </div>
+      <div class="annot">
+        Appears automatically after tapping "Done Set". Swipe down or tap outside to skip — <strong>RPE is always optional</strong>.
+      </div>
+    </div>
+
+  </div>
+
+  <div class="legend-grid">
+    <div class="legend-box">
+      <h4>ℹ Coaching Notes Icon</h4>
+      <p>Small icon in the exercise card header. Taps open a bottom sheet with the coach's notes for that exercise. Dismissed with swipe or tap outside.</p>
+    </div>
+    <div class="legend-box">
+      <h4>Target RPE Badge</h4>
+      <p>Always visible next to the "Set N / N" label during an active set. Shows the coach-set target RPE so you know what effort to aim for.</p>
+    </div>
+    <div class="legend-box">
+      <h4>Post-Set RPE Logging</h4>
+      <p>A small sheet pops up after every "Done Set" tap. Dot-grid selector from 6 to 10 in 0.5 steps. Completely optional — swipe or tap outside to dismiss without logging.</p>
+    </div>
+    <div class="legend-box">
+      <h4>Shown only when relevant</h4>
+      <p>The ℹ icon only appears if the exercise has coaching notes. The "Target RPE" badge only appears if a target RPE was set for that exercise.</p>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:24px;color:#86868b;font-size:0.8rem;">
+    Let me know what you think in the terminal — any tweaks before we design the spec?
+  </div>
+</body>
+</html>

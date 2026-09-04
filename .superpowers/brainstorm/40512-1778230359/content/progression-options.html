@@ -1,0 +1,316 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0a0a0f; color: #f0f0f5; font-family: 'Space Grotesk', sans-serif; padding: 20px 16px 80px; }
+
+h2 { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+.subtitle { font-size: 12px; color: rgba(255,255,255,0.4); margin-bottom: 22px; line-height: 1.6; }
+
+.options { display: flex; flex-direction: column; gap: 18px; }
+.option {
+  border-radius: 20px; border: 2px solid transparent;
+  background: rgba(255,255,255,0.03); overflow: hidden;
+  cursor: pointer; transition: border-color 0.18s, transform 0.12s;
+}
+.option:hover { transform: translateY(-1px); }
+.option.selected { border-color: #6366f1; }
+.option-header {
+  padding: 12px 16px 10px; display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.letter-badge { width: 26px; height: 26px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; flex-shrink: 0; }
+.option-title { font-size: 13px; font-weight: 700; }
+.option-sub { font-size: 10.5px; color: rgba(255,255,255,0.4); margin-top: 2px; line-height: 1.5; }
+.rec-badge { margin-left: auto; background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.4); border-radius: 20px; padding: 3px 10px; font-size: 10px; font-weight: 700; color: #818cf8; flex-shrink: 0; }
+
+/* App shell */
+.phone { margin: 14px; background: #0d0d12; border-radius: 16px; border: 1px solid rgba(255,255,255,0.07); overflow: hidden; }
+.app-bar { padding: 14px 16px 10px; font-size: 22px; font-weight: 800; }
+.home-body { padding: 0 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+
+/* Glass card base */
+.gc {
+  background: rgba(255,255,255,0.05); border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.08); padding: 14px;
+  position: relative; overflow: hidden;
+}
+.gc-label { font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.3); letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 10px; }
+
+/* ── OPTION A: Weekly Pulse ── */
+.pulse-top { display: flex; align-items: flex-end; gap: 8px; }
+.pulse-num { font-size: 38px; font-weight: 800; line-height: 1; color: #f0f0f5; }
+.pulse-unit { font-size: 13px; color: rgba(255,255,255,0.4); margin-bottom: 5px; }
+.trend-up { display: flex; align-items: center; gap: 4px; background: rgba(52,199,89,0.15); border: 1px solid rgba(52,199,89,0.3); border-radius: 20px; padding: 3px 9px; font-size: 11px; font-weight: 700; color: #34c759; margin-left: auto; align-self: flex-start; margin-top: 4px; }
+.trend-dn { display: flex; align-items: center; gap: 4px; background: rgba(255,69,58,0.12); border: 1px solid rgba(255,69,58,0.25); border-radius: 20px; padding: 3px 9px; font-size: 11px; font-weight: 700; color: #ff453a; margin-left: auto; align-self: flex-start; margin-top: 4px; }
+.sparkline { margin: 10px 0 6px; display: flex; align-items: flex-end; gap: 5px; height: 36px; }
+.spark-bar { flex: 1; border-radius: 4px 4px 0 0; transition: height 0.3s; }
+.muscle-row { display: flex; gap: 6px; margin-top: 2px; }
+.muscle-pill { flex: 1; background: rgba(255,255,255,0.04); border-radius: 10px; border: 1px solid rgba(255,255,255,0.07); padding: 7px 8px; }
+.muscle-name { font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.35); letter-spacing: 0.8px; text-transform: uppercase; }
+.muscle-val { font-size: 14px; font-weight: 700; margin-top: 2px; }
+.muscle-sub { font-size: 9px; color: rgba(255,255,255,0.3); margin-top: 1px; }
+
+/* ── OPTION B: Lift Ladder ── */
+.lift-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.lift-row:last-child { border: none; padding-bottom: 0; }
+.lift-icon { width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+.lift-name { font-size: 13px; font-weight: 600; flex: 1; }
+.lift-e1rm { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 1px; }
+.lift-val { text-align: right; }
+.lift-best { font-size: 15px; font-weight: 700; }
+.lift-delta-up { font-size: 10px; color: #34c759; font-weight: 600; margin-top: 1px; }
+.lift-delta-eq { font-size: 10px; color: rgba(255,255,255,0.3); font-weight: 600; margin-top: 1px; }
+
+/* ── OPTION C: Combined smart card ── */
+.summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.sum-tile { background: rgba(255,255,255,0.04); border-radius: 13px; border: 1px solid rgba(255,255,255,0.07); padding: 10px; }
+.sum-icon { font-size: 18px; margin-bottom: 6px; }
+.sum-val { font-size: 20px; font-weight: 800; line-height: 1; }
+.sum-lbl { font-size: 9px; color: rgba(255,255,255,0.35); font-weight: 600; letter-spacing: 0.5px; margin-top: 3px; }
+.sum-delta { font-size: 10px; font-weight: 700; margin-top: 4px; }
+.pr-badge { display: inline-flex; align-items: center; gap: 4px; background: rgba(255,159,10,0.15); border: 1px solid rgba(255,159,10,0.3); border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 700; color: #ff9f0a; margin-bottom: 10px; }
+.pr-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.pr-row:last-child { border: none; }
+.pr-name { font-size: 12px; font-weight: 600; flex: 1; }
+.pr-val { font-size: 12px; color: rgba(255,255,255,0.5); }
+.pr-new { font-size: 10px; font-weight: 700; color: #ff9f0a; background: rgba(255,159,10,0.1); border-radius: 6px; padding: 2px 6px; }
+
+/* existing home widgets (simplified) */
+.next-wod { background: linear-gradient(135deg, rgba(99,102,241,0.18), rgba(99,102,241,0.06)); border-radius: 18px; border: 1px solid rgba(99,102,241,0.25); padding: 13px 14px; }
+.wod-label { font-size: 9px; font-weight: 700; color: rgba(99,102,241,0.7); letter-spacing: 1.2px; text-transform: uppercase; }
+.wod-title { font-size: 17px; font-weight: 800; margin-top: 3px; }
+.wod-sub { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+.wod-btn { margin-top: 10px; background: #6366f1; border-radius: 30px; padding: 10px; text-align: center; font-size: 13px; font-weight: 700; }
+.stats-row { display: flex; gap: 8px; }
+.stat-chip { flex: 1; background: rgba(255,255,255,0.04); border-radius: 12px; border: 1px solid rgba(255,255,255,0.07); padding: 8px 10px; text-align: center; }
+.stat-v { font-size: 16px; font-weight: 800; }
+.stat-l { font-size: 9px; color: rgba(255,255,255,0.35); margin-top: 2px; letter-spacing: 0.5px; }
+</style>
+
+<h2>Progression on Home — 3 directions</h2>
+<p class="subtitle">Each option shows how the new cards sit inside the real home screen. All use Space Grotesk + the glass aesthetic. Fitness formulas explained below each.</p>
+
+<div class="options">
+
+  <!-- Option A: Weekly Volume Pulse -->
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="option-header">
+      <div class="letter-badge" style="background:rgba(99,102,241,0.2);color:#818cf8;">A</div>
+      <div>
+        <div class="option-title">Weekly Volume Pulse + Muscle Balance</div>
+        <div class="option-sub">Tonnage (kg moved this week) vs last week, 8-week sparkline, Push/Pull/Legs breakdown. The #1 progressive overload signal.</div>
+      </div>
+      <div class="rec-badge">⭐ Recommended</div>
+    </div>
+    <div class="phone">
+      <div class="app-bar">Today</div>
+      <div class="home-body">
+        <div class="stats-row">
+          <div class="stat-chip"><div class="stat-v">12</div><div class="stat-l">STREAK</div></div>
+          <div class="stat-chip"><div class="stat-v">47</div><div class="stat-l">SESSIONS</div></div>
+          <div class="stat-chip"><div class="stat-v">W6</div><div class="stat-l">WEEK</div></div>
+        </div>
+        <div class="next-wod">
+          <div class="wod-label">Next Up</div>
+          <div class="wod-title">Upper A</div>
+          <div class="wod-sub">6 exercises · Week 6</div>
+          <div class="wod-btn">Start Workout</div>
+        </div>
+
+        <!-- NEW: Weekly Volume card -->
+        <div class="gc">
+          <div class="gc-label">Weekly Volume</div>
+          <div class="pulse-top">
+            <div class="pulse-num">14,280</div>
+            <div class="pulse-unit">kg</div>
+            <div class="trend-up">↑ 11% vs last week</div>
+          </div>
+          <!-- sparkline: last 8 weeks -->
+          <div class="sparkline">
+            <div class="spark-bar" style="height:40%;background:rgba(99,102,241,0.25);"></div>
+            <div class="spark-bar" style="height:55%;background:rgba(99,102,241,0.3);"></div>
+            <div class="spark-bar" style="height:48%;background:rgba(99,102,241,0.3);"></div>
+            <div class="spark-bar" style="height:65%;background:rgba(99,102,241,0.35);"></div>
+            <div class="spark-bar" style="height:58%;background:rgba(99,102,241,0.35);"></div>
+            <div class="spark-bar" style="height:72%;background:rgba(99,102,241,0.4);"></div>
+            <div class="spark-bar" style="height:80%;background:rgba(99,102,241,0.45);"></div>
+            <div class="spark-bar" style="height:100%;background:#6366f1;border-radius:4px;"></div>
+          </div>
+          <!-- Muscle balance -->
+          <div class="muscle-row">
+            <div class="muscle-pill">
+              <div class="muscle-name">Push</div>
+              <div class="muscle-val" style="color:#818cf8;">5,840 kg</div>
+              <div class="muscle-sub">18 sets</div>
+            </div>
+            <div class="muscle-pill">
+              <div class="muscle-name">Pull</div>
+              <div class="muscle-val" style="color:#32ADE6;">5,120 kg</div>
+              <div class="muscle-sub">16 sets</div>
+            </div>
+            <div class="muscle-pill">
+              <div class="muscle-name">Legs</div>
+              <div class="muscle-val" style="color:#34C759;">3,320 kg</div>
+              <div class="muscle-sub">12 sets</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:10px 14px 14px;font-size:10.5px;color:rgba(255,255,255,0.35);line-height:1.7;">
+      <strong style="color:rgba(255,255,255,0.6);">Volume formula:</strong> Tonnage = Σ(sets × reps × weight_kg) for all sessions in the calendar week. Sparkline shows 8-week trend. Muscle group split uses the exercise category (Push/Pull/Legs/Other).
+    </div>
+  </div>
+
+  <!-- Option B: Lift Ladder (E1RM progression) -->
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="option-header">
+      <div class="letter-badge" style="background:rgba(52,199,89,0.15);color:#34c759;">B</div>
+      <div>
+        <div class="option-title">Lift Ladder — Estimated 1RM Progression</div>
+        <div class="option-sub">Top compound lifts ranked by E1RM. Shows if your theoretical max is moving. Best for powerlifting/strength focus.</div>
+      </div>
+    </div>
+    <div class="phone">
+      <div class="app-bar">Today</div>
+      <div class="home-body">
+        <div class="stats-row">
+          <div class="stat-chip"><div class="stat-v">12</div><div class="stat-l">STREAK</div></div>
+          <div class="stat-chip"><div class="stat-v">47</div><div class="stat-l">SESSIONS</div></div>
+          <div class="stat-chip"><div class="stat-v">W6</div><div class="stat-l">WEEK</div></div>
+        </div>
+        <div class="next-wod">
+          <div class="wod-label">Next Up</div>
+          <div class="wod-title">Upper A</div>
+          <div class="wod-sub">6 exercises · Week 6</div>
+          <div class="wod-btn">Start Workout</div>
+        </div>
+
+        <!-- NEW: Lift Ladder card -->
+        <div class="gc">
+          <div class="gc-label">Strength Progression · E1RM</div>
+          <div class="lift-row">
+            <div class="lift-icon" style="background:rgba(99,102,241,0.15);">🏋️</div>
+            <div>
+              <div class="lift-name">Bench Press</div>
+              <div class="lift-e1rm">last: 100kg × 4</div>
+            </div>
+            <div class="lift-val">
+              <div class="lift-best" style="color:#818cf8;">113 kg</div>
+              <div class="lift-delta-up">↑ +3 kg this week</div>
+            </div>
+          </div>
+          <div class="lift-row">
+            <div class="lift-icon" style="background:rgba(50,173,230,0.15);">💪</div>
+            <div>
+              <div class="lift-name">Deadlift</div>
+              <div class="lift-e1rm">last: 160kg × 3</div>
+            </div>
+            <div class="lift-val">
+              <div class="lift-best" style="color:#32ADE6;">176 kg</div>
+              <div class="lift-delta-eq">— no change</div>
+            </div>
+          </div>
+          <div class="lift-row">
+            <div class="lift-icon" style="background:rgba(52,199,89,0.15);">🦵</div>
+            <div>
+              <div class="lift-name">Squat</div>
+              <div class="lift-e1rm">last: 120kg × 5</div>
+            </div>
+            <div class="lift-val">
+              <div class="lift-best" style="color:#34C759;">140 kg</div>
+              <div class="lift-delta-up">↑ +5 kg this week</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:10px 14px 14px;font-size:10.5px;color:rgba(255,255,255,0.35);line-height:1.7;">
+      <strong style="color:rgba(255,255,255,0.6);">E1RM formula (Epley):</strong> weight × (1 + reps/30). Already computed in the DB. Shows top 3 exercises by highest E1RM, with delta vs the session before. Exercises pulled from your active program's compound movements.
+    </div>
+  </div>
+
+  <!-- Option C: Combined weekly summary -->
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="option-header">
+      <div class="letter-badge" style="background:rgba(255,159,10,0.15);color:#ff9f0a;">C</div>
+      <div>
+        <div class="option-title">Weekly Summary — stats + PRs in one card</div>
+        <div class="option-sub">Compact 2×2 grid (volume, sessions, avg RPE, sets) plus a PR highlight strip. Shows the full picture at a glance.</div>
+      </div>
+    </div>
+    <div class="phone">
+      <div class="app-bar">Today</div>
+      <div class="home-body">
+        <div class="stats-row">
+          <div class="stat-chip"><div class="stat-v">12</div><div class="stat-l">STREAK</div></div>
+          <div class="stat-chip"><div class="stat-v">47</div><div class="stat-l">SESSIONS</div></div>
+          <div class="stat-chip"><div class="stat-v">W6</div><div class="stat-l">WEEK</div></div>
+        </div>
+        <div class="next-wod">
+          <div class="wod-label">Next Up</div>
+          <div class="wod-title">Upper A</div>
+          <div class="wod-sub">6 exercises · Week 6</div>
+          <div class="wod-btn">Start Workout</div>
+        </div>
+
+        <!-- NEW: Weekly summary -->
+        <div class="gc">
+          <div class="gc-label">This Week</div>
+          <div class="summary-grid">
+            <div class="sum-tile">
+              <div class="sum-icon">🏋️</div>
+              <div class="sum-val">14,280</div>
+              <div class="sum-lbl">Volume kg</div>
+              <div class="sum-delta" style="color:#34c759;">↑ 11%</div>
+            </div>
+            <div class="sum-tile">
+              <div class="sum-icon">📅</div>
+              <div class="sum-val">3</div>
+              <div class="sum-lbl">Sessions</div>
+              <div class="sum-delta" style="color:rgba(255,255,255,0.3);">of 4 planned</div>
+            </div>
+            <div class="sum-tile">
+              <div class="sum-icon">💢</div>
+              <div class="sum-val">7.4</div>
+              <div class="sum-lbl">Avg RPE</div>
+              <div class="sum-delta" style="color:#ff9f0a;">↑ from 7.1</div>
+            </div>
+            <div class="sum-tile">
+              <div class="sum-icon">🔁</div>
+              <div class="sum-val">46</div>
+              <div class="sum-lbl">Total Sets</div>
+              <div class="sum-delta" style="color:#34c759;">↑ 4 sets</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PR strip -->
+        <div class="gc">
+          <div class="pr-badge">🏆 2 PRs this week</div>
+          <div class="pr-row">
+            <div class="pr-name">Bench Press</div>
+            <div class="pr-val">100 kg × 4</div>
+            <div class="pr-new">NEW</div>
+          </div>
+          <div class="pr-row">
+            <div class="pr-name">Overhead Press</div>
+            <div class="pr-val">65 kg × 6</div>
+            <div class="pr-new">NEW</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:10px 14px 14px;font-size:10.5px;color:rgba(255,255,255,0.35);line-height:1.7;">
+      <strong style="color:rgba(255,255,255,0.6);">Data sources:</strong> Volume = tonnage formula. Sessions = count for Mon–Sun. RPE = average of all logged sets with RPE. Sets = total set count. PRs = exercises where max weight this week > all-time previous max.
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:18px;padding:13px 15px;background:rgba(255,255,255,0.03);border-radius:14px;border:1px solid rgba(255,255,255,0.07);">
+  <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.25);letter-spacing:1px;margin-bottom:7px;">NOTE — THESE CAN BE COMBINED</div>
+  <div style="font-size:11px;color:rgba(255,255,255,0.4);line-height:1.7;">A + B together (volume pulse then lift ladder) is a natural pairing: volume tells you how hard you trained, E1RM tells you if it's translating to strength. A + C is also valid if you prefer the compact summary over the sparkline.</div>
+</div>

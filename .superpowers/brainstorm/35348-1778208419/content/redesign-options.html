@@ -1,0 +1,331 @@
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0d0d0f; color: #f0f0f5; font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 20px 16px 80px; }
+
+h2 { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+.subtitle { font-size: 12.5px; color: rgba(255,255,255,0.4); margin-bottom: 22px; line-height: 1.4; }
+.section-title { font-size: 10px; font-weight: 700; letter-spacing: 1px; color: rgba(255,255,255,0.35); text-transform: uppercase; margin: 24px 0 10px; }
+
+.options { display: flex; flex-direction: column; gap: 14px; }
+.option {
+  border-radius: 18px; border: 2px solid transparent;
+  background: rgba(255,255,255,0.04); overflow: hidden;
+  cursor: pointer; transition: border-color 0.18s, transform 0.12s;
+}
+.option:hover { transform: translateY(-1px); }
+.option.selected { border-color: #6366f1; }
+.option-header {
+  padding: 12px 14px 10px; display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.letter-badge { width: 26px; height: 26px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; flex-shrink: 0; }
+.option-title { font-size: 13.5px; font-weight: 700; }
+.option-sub { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 1px; }
+.rec-badge { margin-left: auto; background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.4); border-radius: 20px; padding: 3px 10px; font-size: 10px; font-weight: 700; color: #818cf8; flex-shrink: 0; }
+.mockup-body { padding: 14px; }
+
+/* ─── PACE CARD VARIANTS ─── */
+.pace-label { font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.3); letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 8px; }
+
+/* Current (compact) */
+.pace-row-compact { display: flex; gap: 5px; }
+.pp { flex: 1; padding: 8px 4px; border-radius: 11px; text-align: center; border: 1.5px solid rgba(255,255,255,0.07); background: rgba(255,255,255,0.04); }
+.pp.act { background: rgba(52,199,89,0.18); border-color: rgba(52,199,89,0.5); }
+.pp .kg { font-size: 12px; font-weight: 800; color: rgba(255,255,255,0.5); }
+.pp.act .kg { color: #34c759; }
+.pp .lbl { font-size: 8px; color: rgba(255,255,255,0.25); margin-top: 1px; }
+.pp .kcal { font-size: 7.5px; color: rgba(255,255,255,0.2); margin-top: 2px; }
+
+/* Option A: Tall segmented cards */
+.pace-row-tall { display: flex; gap: 7px; }
+.ppt { flex: 1; padding: 14px 6px 12px; border-radius: 14px; text-align: center; border: 1.5px solid rgba(255,255,255,0.07); background: rgba(255,255,255,0.04); cursor: pointer; }
+.ppt.act { background: rgba(52,199,89,0.18); border-color: rgba(52,199,89,0.5); }
+.ppt.warn { border-color: rgba(255,159,10,0.4); background: rgba(255,159,10,0.1); }
+.ppt .emoji { font-size: 20px; }
+.ppt .kg2 { font-size: 14px; font-weight: 900; margin-top: 5px; color: rgba(255,255,255,0.5); }
+.ppt.act .kg2 { color: #34c759; }
+.ppt.warn .kg2 { color: #ff9f0a; }
+.ppt .lbl2 { font-size: 8.5px; font-weight: 600; color: rgba(255,255,255,0.25); margin-top: 2px; }
+.ppt.act .lbl2 { color: rgba(52,199,89,0.7); }
+.ppt .kcal2 { font-size: 8px; margin-top: 4px; padding: 2px 6px; border-radius: 6px; display: inline-block; background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.3); }
+
+/* Option B: Horizontal list with description */
+.pace-list { display: flex; flex-direction: column; gap: 7px; }
+.pl-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,0.07); background: rgba(255,255,255,0.03); cursor: pointer; }
+.pl-item.act { background: rgba(52,199,89,0.12); border-color: rgba(52,199,89,0.45); }
+.pl-item.warn { background: rgba(255,159,10,0.08); border-color: rgba(255,159,10,0.3); }
+.pl-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.15); flex-shrink: 0; }
+.pl-item.act .pl-dot { background: #34c759; box-shadow: 0 0 6px rgba(52,199,89,0.6); }
+.pl-item.warn .pl-dot { background: #ff9f0a; }
+.pl-main { flex: 1; }
+.pl-title { font-size: 12.5px; font-weight: 700; }
+.pl-item.act .pl-title { color: #34c759; }
+.pl-item.warn .pl-title { color: #ff9f0a; }
+.pl-desc { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 1px; }
+.pl-kcal { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.3); }
+.pl-item.act .pl-kcal { color: rgba(52,199,89,0.7); }
+
+/* ─── ACTIVITY LEVEL VARIANTS ─── */
+.act-dots { display: flex; }
+.act-dot-item { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.dot { width: 11px; height: 11px; border-radius: 50%; background: rgba(255,255,255,0.1); }
+.dot.sel { background: #6366f1; box-shadow: 0 0 7px rgba(99,102,241,0.6); }
+.dot-lbl { font-size: 8.5px; font-weight: 700; color: rgba(255,255,255,0.25); margin-top: 5px; text-align: center; }
+.dot.sel ~ .dot-lbl { color: #818cf8; } /* won't work in CSS alone but shows intent */
+
+/* Option A: Large icon tiles */
+.act-tiles { display: flex; gap: 6px; }
+.at { flex: 1; padding: 12px 4px 10px; border-radius: 13px; text-align: center; border: 1.5px solid rgba(255,255,255,0.07); background: rgba(255,255,255,0.04); cursor: pointer; }
+.at.sel { background: rgba(99,102,241,0.18); border-color: rgba(99,102,241,0.5); }
+.at .at-icon { font-size: 22px; }
+.at .at-name { font-size: 8.5px; font-weight: 700; color: rgba(255,255,255,0.35); margin-top: 5px; }
+.at.sel .at-name { color: #818cf8; }
+.at .at-days { font-size: 7.5px; color: rgba(255,255,255,0.2); margin-top: 2px; }
+
+/* Option B: Slider-style track */
+.act-slider { position: relative; padding: 16px 0 8px; }
+.act-track { height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; position: relative; margin: 0 10px; }
+.act-fill { height: 4px; width: 50%; background: linear-gradient(to right, #6366f1, #818cf8); border-radius: 2px; }
+.act-thumb { position: absolute; top: 50%; right: 0; transform: translate(50%, -50%); width: 20px; height: 20px; border-radius: 50%; background: white; border: 3px solid #6366f1; box-shadow: 0 2px 8px rgba(99,102,241,0.4); }
+.act-markers { display: flex; justify-content: space-between; margin: 8px 6px 0; }
+.act-m { font-size: 8px; color: rgba(255,255,255,0.25); text-align: center; }
+.act-m.sel { color: #818cf8; font-weight: 700; }
+.act-desc-box { margin-top: 10px; padding: 8px 10px; background: rgba(99,102,241,0.1); border-radius: 10px; border: 1px solid rgba(99,102,241,0.2); font-size: 11px; color: rgba(255,255,255,0.55); text-align: center; }
+
+/* ─── HEIGHT/WEIGHT INPUT VARIANTS ─── */
+.hw-current { display: flex; gap: 8px; }
+.hw-row { flex: 1; display: flex; align-items: center; padding: 12px 14px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); }
+.hw-icon { font-size: 16px; margin-right: 8px; }
+.hw-label { font-size: 10px; color: rgba(255,255,255,0.35); }
+.hw-value { font-size: 14px; font-weight: 700; margin-top: 1px; }
+.hw-chevron { margin-left: auto; font-size: 12px; color: rgba(255,255,255,0.2); }
+
+/* Option A: Drum/wheel picker sheet */
+.sheet { background: rgba(28,28,32,0.98); border-radius: 20px 20px 0 0; padding: 0; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); border-bottom: none; }
+.sheet-handle { width: 36px; height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; margin: 10px auto 0; }
+.sheet-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px 8px; }
+.sheet-title { font-size: 13px; font-weight: 700; }
+.sheet-done { font-size: 13px; font-weight: 700; color: #6366f1; }
+.picker-wrap { display: flex; justify-content: center; gap: 0; padding: 0 20px 16px; position: relative; }
+.picker-col { flex: 1; text-align: center; max-width: 100px; }
+.picker-col-label { font-size: 9px; color: rgba(255,255,255,0.3); margin-bottom: 4px; letter-spacing: 0.5px; text-transform: uppercase; }
+.picker-items { position: relative; height: 120px; overflow: hidden; }
+.picker-items::before, .picker-items::after {
+  content: ''; position: absolute; left: 0; right: 0; height: 40px; z-index: 2;
+  pointer-events: none;
+}
+.picker-items::before { top: 0; background: linear-gradient(to bottom, rgba(28,28,32,0.95), transparent); }
+.picker-items::after { bottom: 0; background: linear-gradient(to top, rgba(28,28,32,0.95), transparent); }
+.picker-item { height: 40px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; color: rgba(255,255,255,0.25); }
+.picker-item.sel { font-size: 24px; font-weight: 800; color: #f0f0f5; }
+.picker-separator { display: flex; align-items: center; justify-content: center; width: 20px; padding-top: 44px; font-size: 14px; color: rgba(255,255,255,0.4); font-weight: 700; }
+.picker-selector { position: absolute; left: 0; right: 0; top: 40px; height: 40px; border-top: 1px solid rgba(255,255,255,0.12); border-bottom: 1px solid rgba(255,255,255,0.12); border-radius: 0; pointer-events: none; }
+
+/* Option B: Big tappable number display */
+.big-input-row { display: flex; gap: 8px; }
+.big-input { flex: 1; background: rgba(255,255,255,0.05); border-radius: 16px; border: 1.5px solid rgba(255,255,255,0.1); padding: 14px 12px; text-align: center; cursor: pointer; }
+.big-input.active { border-color: rgba(99,102,241,0.6); background: rgba(99,102,241,0.08); }
+.big-input .bi-label { font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.3); letter-spacing: 0.7px; text-transform: uppercase; }
+.big-input .bi-num { font-size: 34px; font-weight: 900; line-height: 1.1; margin: 4px 0; }
+.big-input .bi-unit { font-size: 11px; color: rgba(255,255,255,0.35); }
+.stepper-row { display: flex; gap: 8px; margin-top: 10px; }
+.stepper-btn { flex: 1; padding: 10px; border-radius: 12px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); text-align: center; font-size: 20px; font-weight: 300; cursor: pointer; }
+
+.divider { height: 1px; background: rgba(255,255,255,0.07); margin: 16px 0; }
+.tag { display: inline-block; background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3); border-radius: 20px; padding: 3px 10px; font-size: 10px; font-weight: 700; color: #818cf8; margin-bottom: 8px; }
+.note { font-size: 11px; color: rgba(255,255,255,0.35); line-height: 1.5; margin-top: 6px; }
+</style>
+
+<h2>Two UI problems, two designs each</h2>
+<p class="subtitle">Tap to select your preferred approach for each problem. Scroll down — two topics below.</p>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="section-title">① Pace & Activity Cards — too small</div>
+
+<div class="options">
+
+  <!-- Current state reference -->
+  <div style="border-radius:16px;border:1px dashed rgba(255,255,255,0.12);padding:14px;background:rgba(255,255,255,0.02);margin-bottom:4px;">
+    <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:10px;font-weight:600;">CURRENT (too small)</div>
+    <div class="pace-label">How fast to lose</div>
+    <div class="pace-row-compact">
+      <div class="pp"><div class="kg">0.25</div><div class="lbl">Gentle</div><div class="kcal">−250 kcal</div></div>
+      <div class="pp act"><div class="kg">0.50</div><div class="lbl">Recommended</div><div class="kcal">−500 kcal</div></div>
+      <div class="pp"><div class="kg">0.75</div><div class="lbl">Aggressive</div><div class="kcal">−750 kcal</div></div>
+      <div class="pp"><div class="kg">1.00</div><div class="lbl">Very fast</div><div class="kcal">−1100 kcal</div></div>
+    </div>
+    <div style="margin-top:10px;" class="pace-label">Activity level</div>
+    <div class="act-dots">
+      <div class="act-dot-item"><div class="dot"></div><div class="dot-lbl">Sedentary</div></div>
+      <div class="act-dot-item"><div class="dot"></div><div class="dot-lbl">Light</div></div>
+      <div class="act-dot-item"><div class="dot sel"></div><div class="dot-lbl" style="color:#818cf8;font-weight:700;">Moderate</div></div>
+      <div class="act-dot-item"><div class="dot"></div><div class="dot-lbl">Active</div></div>
+      <div class="act-dot-item"><div class="dot"></div><div class="dot-lbl">Athletic</div></div>
+    </div>
+  </div>
+
+  <!-- Option A -->
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="option-header">
+      <div class="letter-badge" style="background:rgba(99,102,241,0.2);color:#818cf8;">A</div>
+      <div>
+        <div class="option-title">Tall emoji tiles + icon activity grid</div>
+        <div class="option-sub">More height, emoji anchors the choice visually</div>
+      </div>
+      <div class="rec-badge">⭐ Recommended</div>
+    </div>
+    <div class="mockup-body">
+      <div class="pace-label">Weekly pace</div>
+      <div class="pace-row-tall">
+        <div class="ppt"><div class="emoji">🧘</div><div class="kg2">0.25</div><div class="lbl2">Gentle</div><div class="kcal2">−250 kcal</div></div>
+        <div class="ppt act"><div class="emoji">✅</div><div class="kg2">0.50</div><div class="lbl2">Recommended</div><div class="kcal2">−500 kcal</div></div>
+        <div class="ppt warn"><div class="emoji">⚡</div><div class="kg2">0.75</div><div class="lbl2">Aggressive</div><div class="kcal2">−750 kcal</div></div>
+        <div class="ppt warn" style="border-color:rgba(255,69,58,0.4);background:rgba(255,69,58,0.08);"><div class="emoji">🔥</div><div class="kg2" style="color:#ff453a;">1.00</div><div class="lbl2" style="color:rgba(255,69,58,0.6);">Very fast</div><div class="kcal2">−1100 kcal</div></div>
+      </div>
+      <div style="margin-top:12px;" class="pace-label">Activity level</div>
+      <div class="act-tiles">
+        <div class="at"><div class="at-icon">🪑</div><div class="at-name">Sedentary</div><div class="at-days">Desk job</div></div>
+        <div class="at"><div class="at-icon">🚶</div><div class="at-name">Light</div><div class="at-days">1–3×/wk</div></div>
+        <div class="at sel"><div class="at-icon">🏃</div><div class="at-name">Moderate</div><div class="at-days">3–5×/wk</div></div>
+        <div class="at"><div class="at-icon">💪</div><div class="at-name">Active</div><div class="at-days">6–7×/wk</div></div>
+        <div class="at"><div class="at-icon">🏋️</div><div class="at-name">Athletic</div><div class="at-days">2×/day</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option B -->
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="option-header">
+      <div class="letter-badge" style="background:rgba(52,199,89,0.15);color:#34c759;">B</div>
+      <div>
+        <div class="option-title">Vertical list + slider track</div>
+        <div class="option-sub">Row-per-option with description text; slider for activity</div>
+      </div>
+    </div>
+    <div class="mockup-body">
+      <div class="pace-label">Weekly pace</div>
+      <div class="pace-list">
+        <div class="pl-item"><div class="pl-dot"></div><div class="pl-main"><div class="pl-title">Gentle · 0.25 kg/week</div><div class="pl-desc">Sustainable, minimal hunger, good for first-timers</div></div><div class="pl-kcal">−250 kcal</div></div>
+        <div class="pl-item act"><div class="pl-dot"></div><div class="pl-main"><div class="pl-title">Recommended · 0.5 kg/week</div><div class="pl-desc">Evidence-based sweet spot for fat loss + muscle retention</div></div><div class="pl-kcal">−500 kcal</div></div>
+        <div class="pl-item warn"><div class="pl-dot"></div><div class="pl-main"><div class="pl-title">Aggressive · 0.75 kg/week</div><div class="pl-desc">Higher risk of muscle loss, manageable short-term</div></div><div class="pl-kcal">−750 kcal</div></div>
+        <div class="pl-item" style="border-color:rgba(255,69,58,0.3);"><div class="pl-dot" style="background:#ff453a;"></div><div class="pl-main"><div class="pl-title" style="color:#ff453a;">Very fast · 1.0 kg/week</div><div class="pl-desc">Not recommended — muscle loss and fatigue likely</div></div><div class="pl-kcal" style="color:rgba(255,69,58,0.6);">−1100 kcal</div></div>
+      </div>
+      <div style="margin-top:12px;" class="pace-label">Activity level</div>
+      <div class="act-slider">
+        <div class="act-track">
+          <div class="act-fill"></div>
+          <div class="act-thumb"></div>
+        </div>
+        <div class="act-markers">
+          <div class="act-m">Sedentary</div>
+          <div class="act-m">Light</div>
+          <div class="act-m sel">Moderate</div>
+          <div class="act-m">Active</div>
+          <div class="act-m">Athletic</div>
+        </div>
+      </div>
+      <div class="act-desc-box">🏃 3–5 workout days/week · Multiplier ×1.55</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="section-title" style="margin-top:32px;">② Height, Weight & Target — how Apple does it</div>
+<p class="note" style="margin-bottom:14px;">Apple Health uses a <strong style="color:rgba(255,255,255,0.7);">drum/wheel picker</strong> in a bottom sheet — feels native, familiar, and precise. The alternative is a large tappable number with a mini +/− stepper.</p>
+
+<div class="options">
+
+  <!-- Option A: Drum picker -->
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="option-header">
+      <div class="letter-badge" style="background:rgba(99,102,241,0.2);color:#818cf8;">A</div>
+      <div>
+        <div class="option-title">Apple-style drum/wheel picker sheet</div>
+        <div class="option-sub">Bottom sheet slides up, spin to pick — exactly what Apple Health does</div>
+      </div>
+      <div class="rec-badge">⭐ Apple standard</div>
+    </div>
+    <div class="mockup-body">
+      <div class="pace-label" style="margin-bottom:6px;">Tap a field → sheet slides up</div>
+      <div class="hw-current">
+        <div class="hw-row"><div class="hw-icon">📏</div><div><div class="hw-label">HEIGHT</div><div class="hw-value">178 cm</div></div><div class="hw-chevron">›</div></div>
+        <div class="hw-row"><div class="hw-icon">⚖️</div><div><div class="hw-label">WEIGHT</div><div class="hw-value">88.0 kg</div></div><div class="hw-chevron">›</div></div>
+      </div>
+      <div style="margin-top:14px;">
+        <div class="sheet">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <span style="color:rgba(255,255,255,0.4);font-size:13px;">Cancel</span>
+            <span class="sheet-title">Weight</span>
+            <span class="sheet-done">Done</span>
+          </div>
+          <div class="picker-wrap">
+            <div class="picker-col">
+              <div class="picker-col-label">kg</div>
+              <div class="picker-items">
+                <div class="picker-selector"></div>
+                <div class="picker-item">86</div>
+                <div class="picker-item">87</div>
+                <div class="picker-item sel">88</div>
+                <div class="picker-item">89</div>
+                <div class="picker-item">90</div>
+              </div>
+            </div>
+            <div class="picker-separator">.</div>
+            <div class="picker-col">
+              <div class="picker-col-label">decimal</div>
+              <div class="picker-items">
+                <div class="picker-selector"></div>
+                <div class="picker-item">8</div>
+                <div class="picker-item">9</div>
+                <div class="picker-item sel">0</div>
+                <div class="picker-item">1</div>
+                <div class="picker-item">2</div>
+              </div>
+            </div>
+            <div class="picker-separator" style="font-size:11px;color:rgba(255,255,255,0.3);padding-top:40px;">kg</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option B: Big number + stepper -->
+  <div class="option" data-choice="d" onclick="toggleSelect(this)">
+    <div class="option-header">
+      <div class="letter-badge" style="background:rgba(52,199,89,0.15);color:#34c759;">B</div>
+      <div>
+        <div class="option-title">Large number display + inline ± stepper</div>
+        <div class="option-sub">Tap field to expand it in-place; +/− buttons for fine tuning</div>
+      </div>
+    </div>
+    <div class="mockup-body">
+      <div class="big-input-row">
+        <div class="big-input">
+          <div class="bi-label">Height</div>
+          <div class="bi-num">178</div>
+          <div class="bi-unit">cm</div>
+        </div>
+        <div class="big-input active">
+          <div class="bi-label">Weight</div>
+          <div class="bi-num" style="color:#818cf8;">88.0</div>
+          <div class="bi-unit" style="color:#818cf8;">kg</div>
+        </div>
+        <div class="big-input">
+          <div class="bi-label">Target</div>
+          <div class="bi-num">80.0</div>
+          <div class="bi-unit">kg</div>
+        </div>
+      </div>
+      <div class="stepper-row">
+        <div class="stepper-btn">−1</div>
+        <div class="stepper-btn">−0.5</div>
+        <div class="stepper-btn" style="background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.3);color:#818cf8;">+0.5</div>
+        <div class="stepper-btn">+1</div>
+      </div>
+      <div class="note" style="margin-top:8px;">Tap a field to activate it, then use the steppers below. Or long-press to type a value.</div>
+    </div>
+  </div>
+
+</div>

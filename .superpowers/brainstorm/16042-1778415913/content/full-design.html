@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session History — Full Design</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #0f0f1a;
+  color: #e2e2f0;
+  font-family: -apple-system, 'SF Pro Display', sans-serif;
+  min-height: 100vh;
+  padding: 32px 24px 80px;
+}
+h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
+.subtitle { font-size: 13px; color: rgba(255,255,255,0.4); margin-bottom: 36px; }
+
+.flow { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 28px; max-width: 1100px; margin: 0 auto; }
+
+.screen-wrap { display: flex; flex-direction: column; gap: 10px; }
+.screen-label { font-size: 11px; font-weight: 700; letter-spacing: 0.8px; color: rgba(255,255,255,0.3); padding: 0 2px; }
+.screen-sublabel { font-size: 10px; color: rgba(255,255,255,0.2); padding: 0 2px; margin-top: -6px; }
+
+/* Phone shell */
+.phone {
+  background: #12121f;
+  border-radius: 24px;
+  border: 1px solid rgba(255,255,255,0.1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 620px;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+
+/* ─── SHARED ─── */
+.ph-bar {
+  padding: 14px 14px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+.ph-bar-row { display: flex; align-items: center; justify-content: space-between; }
+.ph-bar-title { font-size: 16px; font-weight: 800; letter-spacing: -0.4px; }
+.ph-bar-sub { font-size: 10px; color: rgba(255,255,255,0.3); margin-top: 2px; }
+.ph-back { font-size: 11px; color: #818cf8; margin-bottom: 4px; }
+
+.ph-scroll { flex: 1; overflow: hidden; padding: 10px 12px; display: flex; flex-direction: column; gap: 5px; }
+
+/* ─── SCREEN 1: SESSION LIST ─── */
+.week-label {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.9px;
+  color: rgba(255,255,255,0.25);
+  padding: 8px 2px 4px;
+}
+
+.session-tile {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+}
+.session-tile.pr-session {
+  border-color: rgba(99,102,241,0.28);
+}
+
+.tile-top {
+  padding: 9px 10px 7px;
+  display: flex; align-items: center; gap: 9px;
+}
+.tile-bottom {
+  padding: 5px 10px 7px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  display: flex; gap: 0; align-items: center;
+  background: rgba(0,0,0,0.18);
+}
+.tile-stat { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.tile-stat:not(:last-child) { border-right: 1px solid rgba(255,255,255,0.06); }
+.tile-stat .ts-val { font-size: 12px; font-weight: 800; }
+.tile-stat .ts-val.accent { color: #a5b4fc; }
+.tile-stat .ts-lbl { font-size: 8px; font-weight: 600; color: rgba(255,255,255,0.28); letter-spacing: 0.4px; margin-top: 1px; }
+.delta-up { color: #34d399; font-size: 8px; font-weight: 700; }
+.delta-dn { color: #f87171; font-size: 8px; font-weight: 700; }
+
+.day-badge {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.day-badge.active { background: rgba(99,102,241,0.18); border: 1px solid rgba(99,102,241,0.28); }
+.day-badge.inactive { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); }
+.day-num { font-size: 14px; font-weight: 800; line-height: 1; }
+.day-num.accent { color: #a5b4fc; }
+.day-num.dim { color: rgba(255,255,255,0.5); }
+.day-name { font-size: 7px; font-weight: 700; letter-spacing: 0.3px; }
+.day-name.accent { color: rgba(165,180,252,0.6); }
+.day-name.dim { color: rgba(255,255,255,0.28); }
+
+.session-info { flex: 1; min-width: 0; }
+.sname { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.smeta { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 1px; }
+.pr-chip {
+  background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.3);
+  border-radius: 6px; padding: 2px 6px;
+  font-size: 9px; font-weight: 800; color: #a5b4fc;
+  white-space: nowrap; flex-shrink: 0;
+}
+.chevron { font-size: 14px; color: rgba(255,255,255,0.18); flex-shrink: 0; }
+
+/* ─── SCREEN 2: SESSION DETAIL ─── */
+.stat-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 5px;
+}
+.stat-box {
+  border-radius: 10px; padding: 8px 10px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.stat-box.featured {
+  grid-column: span 3;
+  background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(99,102,241,0.06));
+  border-color: rgba(99,102,241,0.25);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px;
+}
+.sv { font-size: 13px; font-weight: 800; }
+.sv.lg { font-size: 22px; color: #a5b4fc; letter-spacing: -1px; }
+.sl { font-size: 8px; font-weight: 700; color: rgba(255,255,255,0.28); letter-spacing: 0.5px; margin-top: 2px; }
+.pr-badge { font-size: 10px; font-weight: 800; color: #a5b4fc; background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.3); border-radius: 6px; padding: 3px 7px; }
+
+.ex-block {
+  border-radius: 11px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  overflow: hidden;
+}
+.ex-head {
+  padding: 7px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  display: flex; align-items: center; gap: 6px;
+}
+.ex-dot { width: 5px; height: 5px; border-radius: 50%; background: #6366f1; flex-shrink: 0; }
+.ex-nm { font-size: 12px; font-weight: 700; }
+.ex-vol { font-size: 9px; color: rgba(255,255,255,0.28); margin-left: auto; }
+
+.set-row {
+  padding: 5px 10px;
+  display: flex; align-items: center; gap: 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.set-row:last-child { border-bottom: none; }
+.set-n { font-size: 9px; color: rgba(255,255,255,0.22); width: 20px; flex-shrink: 0; }
+.set-v { font-size: 12px; font-weight: 600; flex: 1; }
+.set-rpe { font-size: 9px; color: rgba(255,255,255,0.28); }
+.set-pr-tag { font-size: 9px; background: rgba(99,102,241,0.18); color: #a5b4fc; padding: 1px 5px; border-radius: 4px; font-weight: 700; }
+
+/* long-pressed set */
+.set-row.pressed {
+  background: rgba(99,102,241,0.09);
+  border-radius: 7px;
+  margin: 0 4px;
+}
+.action-btns { display: flex; gap: 4px; margin-left: auto; }
+.act-edit {
+  font-size: 9px; font-weight: 700;
+  background: rgba(99,102,241,0.25); color: #a5b4fc;
+  border: 1px solid rgba(99,102,241,0.35);
+  border-radius: 5px; padding: 2px 8px;
+}
+.act-del {
+  font-size: 9px; font-weight: 700;
+  background: rgba(239,68,68,0.15); color: #f87171;
+  border: 1px solid rgba(239,68,68,0.25);
+  border-radius: 5px; padding: 2px 8px;
+}
+
+.hint {
+  font-size: 9px; color: rgba(255,255,255,0.18);
+  text-align: center; padding: 3px 0;
+}
+
+/* ─── SCREEN 3: EDIT SHEET ─── */
+.sheet-overlay {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex; flex-direction: column; justify-content: flex-end;
+}
+.sheet {
+  background: #1a1a2e;
+  border-radius: 24px 24px 0 0;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  padding-bottom: 20px;
+}
+.sheet-handle {
+  width: 32px; height: 3px; border-radius: 2px;
+  background: rgba(255,255,255,0.18);
+  margin: 10px auto 0;
+}
+.sheet-title { font-size: 16px; font-weight: 800; padding: 12px 18px 0; letter-spacing: -0.3px; }
+.sheet-sub { font-size: 10px; color: rgba(255,255,255,0.35); padding: 2px 18px 14px; }
+.sheet-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 0 18px; }
+
+.field-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.field-row:last-of-type { border-bottom: none; }
+.field-label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.45); }
+.field-val {
+  display: flex; align-items: center; gap: 6px;
+}
+.num-input {
+  background: rgba(99,102,241,0.12);
+  border: 1px solid rgba(99,102,241,0.3);
+  border-radius: 8px; padding: 5px 10px;
+  font-size: 16px; font-weight: 800; color: #a5b4fc;
+  min-width: 50px; text-align: center;
+}
+.unit { font-size: 11px; color: rgba(255,255,255,0.35); }
+
+.rpe-track {
+  flex: 1; height: 4px; border-radius: 2px;
+  background: rgba(255,255,255,0.1);
+  position: relative; margin: 0 6px;
+}
+.rpe-fill {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 72%; border-radius: 2px;
+  background: linear-gradient(90deg, #34d399, #f59e0b, #ef4444);
+}
+.rpe-thumb {
+  position: absolute; top: 50%; transform: translate(-50%, -50%);
+  left: 72%; width: 12px; height: 12px; border-radius: 50%;
+  background: white; border: 2px solid #f59e0b;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+.rpe-val { font-size: 14px; font-weight: 800; color: #f59e0b; min-width: 28px; text-align: right; }
+
+.notes-input {
+  margin: 0 18px 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 11px; color: rgba(255,255,255,0.5);
+  min-height: 36px;
+}
+
+.sheet-btn {
+  margin: 8px 18px 0;
+  background: #6366f1;
+  border-radius: 12px; padding: 11px;
+  text-align: center; font-size: 13px; font-weight: 800;
+  box-shadow: 0 4px 16px rgba(99,102,241,0.35);
+}
+
+/* Arrow between screens */
+.arrow {
+  display: flex; align-items: center; justify-content: center;
+  height: 100%; font-size: 22px; color: rgba(255,255,255,0.1);
+  padding-top: 200px;
+}
+</style>
+</head>
+<body>
+
+<h1>Session History — Final Design</h1>
+<p class="subtitle">Complete flow: History list → Session detail (stats + long-press edit) → Edit sheet</p>
+
+<div class="flow">
+
+  <!-- ── SCREEN 1: HISTORY LIST ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">① SESSION HISTORY LIST</div>
+    <div class="screen-sublabel">Stats preview + PR highlights + date badges</div>
+    <div class="phone">
+      <div class="ph-bar">
+        <div class="ph-bar-row">
+          <div class="ph-bar-title">History</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.25);">42 sessions</div>
+        </div>
+      </div>
+      <div class="ph-scroll">
+
+        <div class="week-label">THIS WEEK · 5–11 MAY</div>
+
+        <!-- PR session -->
+        <div class="session-tile pr-session">
+          <div class="tile-top">
+            <div class="day-badge active">
+              <div class="day-num accent">10</div>
+              <div class="day-name accent">MON</div>
+            </div>
+            <div class="session-info">
+              <div class="sname">Push Day</div>
+              <div class="smeta">Week 3 · Hypertrophy Block</div>
+            </div>
+            <div class="pr-chip">🏆 2 PRs</div>
+          </div>
+          <div class="tile-bottom">
+            <div class="tile-stat">
+              <div class="ts-val accent">12,480</div>
+              <div style="display:flex;align-items:center;gap:3px;">
+                <div class="ts-lbl">VOL kg</div>
+                <div class="delta-up">↑7%</div>
+              </div>
+            </div>
+            <div class="tile-stat">
+              <div class="ts-val">24</div>
+              <div class="ts-lbl">SETS</div>
+            </div>
+            <div class="tile-stat">
+              <div class="ts-val">58m</div>
+              <div class="ts-lbl">DURATION</div>
+            </div>
+            <div class="tile-stat">
+              <div class="ts-val">8.1</div>
+              <div class="ts-lbl">AVG RPE</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Regular session -->
+        <div class="session-tile">
+          <div class="tile-top">
+            <div class="day-badge inactive">
+              <div class="day-num dim">8</div>
+              <div class="day-name dim">SAT</div>
+            </div>
+            <div class="session-info">
+              <div class="sname">Leg Day</div>
+              <div class="smeta">Week 3 · Hypertrophy Block</div>
+            </div>
+            <div class="chevron">›</div>
+          </div>
+          <div class="tile-bottom">
+            <div class="tile-stat">
+              <div class="ts-val">18,200</div>
+              <div style="display:flex;align-items:center;gap:3px;">
+                <div class="ts-lbl">VOL kg</div>
+                <div class="delta-up">↑3%</div>
+              </div>
+            </div>
+            <div class="tile-stat">
+              <div class="ts-val">20</div>
+              <div class="ts-lbl">SETS</div>
+            </div>
+            <div class="tile-stat">
+              <div class="ts-val">71m</div>
+              <div class="ts-lbl">DURATION</div>
+            </div>
+            <div class="tile-stat">
+              <div class="ts-val">7.8</div>
+              <div class="ts-lbl">AVG RPE</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="week-label">LAST WEEK · 28 APR – 4 MAY</div>
+
+        <div class="session-tile pr-session">
+          <div class="tile-top">
+            <div class="day-badge inactive">
+              <div class="day-num dim">3</div>
+              <div class="day-name dim">FRI</div>
+            </div>
+            <div class="session-info">
+              <div class="sname">Pull Day</div>
+              <div class="smeta">Week 2 · Hypertrophy Block</div>
+            </div>
+            <div class="pr-chip">🏆 1 PR</div>
+          </div>
+          <div class="tile-bottom">
+            <div class="tile-stat">
+              <div class="ts-val">9,860</div>
+              <div style="display:flex;align-items:center;gap:3px;">
+                <div class="ts-lbl">VOL kg</div>
+                <div class="delta-dn">↓2%</div>
+              </div>
+            </div>
+            <div class="tile-stat">
+              <div class="ts-val">18</div>
+              <div class="ts-lbl">SETS</div>
+            </div>
+            <div class="tile-stat">
+              <div class="ts-val">63m</div>
+              <div class="ts-lbl">DURATION</div>
+            </div>
+            <div class="tile-stat">
+              <div class="ts-val">8.3</div>
+              <div class="ts-lbl">AVG RPE</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="session-tile">
+          <div class="tile-top">
+            <div class="day-badge inactive">
+              <div class="day-num dim">1</div>
+              <div class="day-name dim">WED</div>
+            </div>
+            <div class="session-info">
+              <div class="sname">Push Day</div>
+              <div class="smeta">Week 2 · Hypertrophy Block</div>
+            </div>
+            <div class="chevron">›</div>
+          </div>
+          <div class="tile-bottom">
+            <div class="tile-stat">
+              <div class="ts-val">11,640</div>
+              <div class="ts-lbl">VOL kg</div>
+            </div>
+            <div class="tile-stat">
+              <div class="ts-val">22</div>
+              <div class="ts-lbl">SETS</div>
+            </div>
+            <div class="tile-stat">
+              <div class="ts-val">55m</div>
+              <div class="ts-lbl">DURATION</div>
+            </div>
+            <div class="tile-stat">
+              <div class="ts-val">7.5</div>
+              <div class="ts-lbl">AVG RPE</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 2: SESSION DETAIL ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">② SESSION DETAIL</div>
+    <div class="screen-sublabel">Stats header · long-press set → Edit / Delete</div>
+    <div class="phone">
+      <div class="ph-bar">
+        <div class="ph-back">‹ History</div>
+        <div class="ph-bar-row">
+          <div>
+            <div class="ph-bar-title">Push Day</div>
+            <div class="ph-bar-sub">Mon, 10 May · Week 3</div>
+          </div>
+        </div>
+      </div>
+      <div class="ph-scroll">
+
+        <!-- Stats -->
+        <div class="stat-grid">
+          <div class="stat-box featured">
+            <div>
+              <div class="sv lg">12,480 <span style="font-size:13px;color:rgba(165,180,252,0.6);font-weight:500;">kg</span></div>
+              <div class="sl">TOTAL VOLUME <span class="delta-up">↑ +840 vs last Push Day</span></div>
+            </div>
+            <div class="pr-badge">🏆 2 PRs</div>
+          </div>
+          <div class="stat-box">
+            <div class="sv">24</div>
+            <div class="sl">SETS</div>
+          </div>
+          <div class="stat-box">
+            <div class="sv">58m</div>
+            <div class="sl">DURATION</div>
+          </div>
+          <div class="stat-box">
+            <div class="sv">8.1</div>
+            <div class="sl">AVG RPE</div>
+          </div>
+          <div class="stat-box">
+            <div class="sv">100<span style="font-size:9px;color:rgba(255,255,255,0.35);margin-left:2px;">kg</span></div>
+            <div class="sl">TOP WEIGHT</div>
+          </div>
+          <div class="stat-box">
+            <div class="sv">6</div>
+            <div class="sl">EXERCISES</div>
+          </div>
+        </div>
+
+        <div class="hint">Long-press any set to edit or delete</div>
+
+        <!-- Bench Press — with one set long-pressed -->
+        <div class="ex-block">
+          <div class="ex-head">
+            <div class="ex-dot"></div>
+            <div class="ex-nm">Bench Press</div>
+            <div class="ex-vol">3,100 kg vol</div>
+          </div>
+          <div class="set-row">
+            <div class="set-n">S1</div>
+            <div class="set-v">80 kg × 8</div>
+            <div class="set-rpe">RPE 7</div>
+          </div>
+          <div class="set-row">
+            <div class="set-n">S2</div>
+            <div class="set-v">90 kg × 6</div>
+            <div class="set-rpe">RPE 8</div>
+          </div>
+          <!-- Long-pressed -->
+          <div class="set-row pressed">
+            <div class="set-n">S3</div>
+            <div class="set-v">100 kg × 5</div>
+            <div class="set-pr-tag">PR</div>
+            <div class="action-btns">
+              <div class="act-edit">Edit</div>
+              <div class="act-del">Delete</div>
+            </div>
+          </div>
+          <div class="set-row">
+            <div class="set-n">S4</div>
+            <div class="set-v">95 kg × 5</div>
+            <div class="set-rpe">RPE 9</div>
+          </div>
+        </div>
+
+        <!-- OHP -->
+        <div class="ex-block">
+          <div class="ex-head">
+            <div class="ex-dot"></div>
+            <div class="ex-nm">Overhead Press</div>
+            <div class="ex-vol">1,560 kg vol</div>
+          </div>
+          <div class="set-row">
+            <div class="set-n">S1</div>
+            <div class="set-v">60 kg × 8</div>
+            <div class="set-rpe">RPE 7</div>
+          </div>
+          <div class="set-row">
+            <div class="set-n">S2</div>
+            <div class="set-v">65 kg × 6</div>
+            <div class="set-pr-tag">PR</div>
+          </div>
+          <div class="set-row">
+            <div class="set-n">S3</div>
+            <div class="set-v">65 kg × 5</div>
+            <div class="set-rpe">RPE 9</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 3: EDIT SHEET ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">③ EDIT SET SHEET</div>
+    <div class="screen-sublabel">Bottom sheet with weight, reps, RPE slider, notes · saves & recalculates PRs</div>
+    <div class="phone">
+      <div class="ph-bar">
+        <div class="ph-back">‹ History</div>
+        <div class="ph-bar-row">
+          <div>
+            <div class="ph-bar-title">Push Day</div>
+            <div class="ph-bar-sub">Mon, 10 May · Week 3</div>
+          </div>
+        </div>
+      </div>
+      <!-- Blurred background: session detail -->
+      <div class="ph-scroll" style="filter:blur(1.5px);opacity:0.35;">
+        <div class="stat-grid">
+          <div class="stat-box featured">
+            <div><div class="sv lg">12,480 <span style="font-size:13px;">kg</span></div><div class="sl">TOTAL VOLUME</div></div>
+            <div class="pr-badge">🏆 2 PRs</div>
+          </div>
+          <div class="stat-box"><div class="sv">24</div><div class="sl">SETS</div></div>
+          <div class="stat-box"><div class="sv">58m</div><div class="sl">DURATION</div></div>
+          <div class="stat-box"><div class="sv">8.1</div><div class="sl">AVG RPE</div></div>
+          <div class="stat-box"><div class="sv">100kg</div><div class="sl">TOP WEIGHT</div></div>
+          <div class="stat-box"><div class="sv">6</div><div class="sl">EXERCISES</div></div>
+        </div>
+        <div class="ex-block">
+          <div class="ex-head"><div class="ex-dot"></div><div class="ex-nm">Bench Press</div></div>
+          <div class="set-row"><div class="set-n">S1</div><div class="set-v">80 kg × 8</div></div>
+          <div class="set-row"><div class="set-n">S2</div><div class="set-v">90 kg × 6</div></div>
+          <div class="set-row pressed"><div class="set-n">S3</div><div class="set-v">100 kg × 5</div><div class="set-pr-tag">PR</div></div>
+        </div>
+      </div>
+
+      <!-- Edit sheet overlay -->
+      <div class="sheet-overlay">
+        <div class="sheet">
+          <div class="sheet-handle"></div>
+          <div class="sheet-title">Edit Set · Bench Press</div>
+          <div class="sheet-sub">Set 3 of 4 · Mon 10 May</div>
+          <div class="sheet-divider"></div>
+
+          <div class="field-row">
+            <div class="field-label">WEIGHT</div>
+            <div class="field-val">
+              <div style="font-size:18px;color:rgba(255,255,255,0.2);cursor:pointer;">−</div>
+              <div class="num-input">100</div>
+              <div style="font-size:18px;color:rgba(255,255,255,0.2);cursor:pointer;">+</div>
+              <div class="unit">kg</div>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field-label">REPS</div>
+            <div class="field-val">
+              <div style="font-size:18px;color:rgba(255,255,255,0.2);cursor:pointer;">−</div>
+              <div class="num-input">5</div>
+              <div style="font-size:18px;color:rgba(255,255,255,0.2);cursor:pointer;">+</div>
+              <div class="unit">reps</div>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field-label">RPE</div>
+            <div class="field-val" style="flex:1;margin-left:12px;">
+              <div class="rpe-track">
+                <div class="rpe-fill"></div>
+                <div class="rpe-thumb"></div>
+              </div>
+              <div class="rpe-val">8.5</div>
+            </div>
+          </div>
+
+          <div class="notes-input">Paused reps, felt strong — could have done 6</div>
+
+          <div class="sheet-btn">Save · Recalculate PRs</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="max-width:1100px;margin:28px auto 0;padding:16px 20px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:14px;">
+  <div style="font-size:12px;color:rgba(255,255,255,0.5);line-height:1.8;">
+    <strong style="color:rgba(255,255,255,0.8);">Key behaviours:</strong>
+    Volume delta (↑/↓%) compares against previous session with the same workout name (e.g. last Push Day).
+    PR badge in the list is computed live from sets.
+    Editing a set and saving immediately recalculates PRs across the exercise history screen.
+    Delete set also triggers PR recalculation.
+    RPE is optional — sessions without it show no avg RPE stat.
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Colour Palettes</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif; background: #080810; color: #fff; padding: 28px 20px 60px; }
+  h1 { font-size: 20px; font-weight: 700; text-align: center; margin-bottom: 4px; }
+  .subtitle { text-align: center; color: rgba(255,255,255,0.4); font-size: 13px; margin-bottom: 36px; }
+
+  .palettes { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
+
+  .swatch-row { display: flex; gap: 6px; margin-bottom: 12px; }
+  .swatch { width: 18px; height: 18px; border-radius: 5px; }
+
+  /* Phone */
+  .pw { display: flex; flex-direction: column; align-items: center; gap: 10px; cursor: pointer; position: relative; }
+  .pw.selected .phone { outline: 3px solid var(--accent); outline-offset: 3px; }
+  .pw.selected .ptitle { color: var(--accent); }
+  .si { display: none; position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; background: var(--accent, #6366f1); border-radius: 50%; border: 2px solid #080810; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; }
+  .pw.selected .si { display: flex; }
+
+  .phone { width: 190px; border-radius: 40px; padding: 12px; transition: transform 0.2s; }
+  .pw:hover .phone { transform: translateY(-3px); }
+  .phone-dark { background: #0a0a18; border: 1.5px solid rgba(255,255,255,0.12); box-shadow: 0 16px 48px rgba(0,0,0,0.6); }
+  .phone-light { background: #f0f4ff; border: 1.5px solid rgba(200,210,240,0.6); box-shadow: 0 16px 48px rgba(80,100,180,0.18); }
+
+  .screen { border-radius: 28px; overflow: hidden; height: 390px; position: relative; }
+
+  .pname { font-size: 11px; color: rgba(255,255,255,0.35); font-weight: 600; letter-spacing: 0.4px; text-transform: uppercase; }
+  .ptitle { font-size: 15px; font-weight: 700; color: #fff; margin-top: 2px; }
+
+  /* ── Shared screen layout pieces ── */
+  .sb { display: flex; justify-content: space-between; padding: 11px 14px 4px; font-size: 12px; font-weight: 600; }
+  .pg { padding: 6px 16px 10px; font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+
+  /* hero card */
+  .hc { margin: 0 11px 8px; border-radius: 22px; padding: 16px; position: relative; overflow: hidden; }
+  .hc-badge { font-size: 8px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+  .hc-name { font-size: 15px; font-weight: 800; margin-bottom: 2px; }
+  .hc-detail { font-size: 10px; margin-bottom: 10px; }
+  .hc-prog { height: 2.5px; border-radius: 4px; margin-bottom: 10px; overflow: hidden; }
+  .hc-fill { height: 100%; width: 55%; border-radius: 4px; }
+  .hc-btn { font-size: 12px; font-weight: 700; padding: 10px; border-radius: 14px; text-align: center; color: #fff; }
+
+  /* stat row */
+  .sr { display: flex; gap: 7px; margin: 0 11px 8px; }
+  .sc { flex: 1; border-radius: 16px; padding: 10px 8px; text-align: center; }
+  .sc-val { font-size: 14px; font-weight: 800; }
+  .sc-lbl { font-size: 8px; margin-top: 1px; }
+
+  /* task rows */
+  .tr { margin: 0 11px 5px; padding: 9px 12px; border-radius: 13px; display: flex; align-items: center; justify-content: space-between; }
+  .tr-l { display: flex; align-items: center; gap: 8px; }
+  .tr-icon { width: 22px; height: 22px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+  .tr-name { font-size: 11px; font-weight: 600; }
+  .tr-check { width: 16px; height: 16px; border-radius: 50%; }
+
+  /* ── PALETTE 1 — Indigo/Violet (current, refined) ── */
+  .p1 { --a1: #6366f1; --a2: #8b5cf6; --bg-blob1: rgba(99,102,241,0.22); --bg-blob2: rgba(139,92,246,0.18); }
+  .p1.dark .screen { background: linear-gradient(155deg,#0c0c22,#100e25,#090e1c); }
+  .p1.dark .sb, .p1.dark .pg { color: #fff; }
+  .p1.dark .hc { background: linear-gradient(135deg, rgba(99,102,241,0.28), rgba(139,92,246,0.2)); border: 1px solid rgba(99,102,241,0.35); box-shadow: 0 6px 28px rgba(99,102,241,0.2), inset 0 1px 0 rgba(255,255,255,0.1); }
+  .p1.dark .hc-badge { color: #a5b4fc; }
+  .p1.dark .hc-name, .p1.dark .hc-detail { color: #fff; } .p1.dark .hc-detail { color: rgba(255,255,255,0.45); }
+  .p1.dark .hc-prog { background: rgba(255,255,255,0.1); } .p1.dark .hc-fill { background: linear-gradient(90deg,#6366f1,#8b5cf6); }
+  .p1.dark .hc-btn { background: linear-gradient(135deg,#6366f1,#8b5cf6); box-shadow: 0 4px 18px rgba(99,102,241,0.45); }
+  .p1.dark .sc { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.09); } .p1.dark .sc-val { color: #fff; } .p1.dark .sc-lbl { color: rgba(255,255,255,0.3); }
+  .p1.dark .tr { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); } .p1.dark .tr-icon { background: rgba(99,102,241,0.2); } .p1.dark .tr-name { color: rgba(255,255,255,0.65); } .p1.dark .tr-check { border: 1.5px solid rgba(255,255,255,0.2); }
+
+  .p1.light .screen { background: linear-gradient(155deg,#e8eaff,#ede8ff,#e4eeff); }
+  .p1.light .sb { color: #1a1a3e; } .p1.light .pg { color: #1a1a3e; }
+  .p1.light .hc { background: linear-gradient(135deg,rgba(255,255,255,0.65),rgba(255,255,255,0.45)); border: 1px solid rgba(255,255,255,0.9); box-shadow: 0 6px 28px rgba(99,102,241,0.1), inset 0 1px 0 #fff; }
+  .p1.light .hc-badge { color: #6366f1; } .p1.light .hc-name { color: #1a1a3e; } .p1.light .hc-detail { color: rgba(30,30,80,0.45); }
+  .p1.light .hc-prog { background: rgba(80,80,180,0.12); } .p1.light .hc-fill { background: linear-gradient(90deg,#6366f1,#8b5cf6); }
+  .p1.light .hc-btn { background: linear-gradient(135deg,#6366f1,#8b5cf6); box-shadow: 0 4px 16px rgba(99,102,241,0.35); }
+  .p1.light .sc { background: rgba(255,255,255,0.65); border: 1px solid rgba(255,255,255,0.9); box-shadow: 0 2px 10px rgba(80,80,180,0.07); } .p1.light .sc-val { color: #1a1a3e; } .p1.light .sc-lbl { color: rgba(30,30,80,0.38); }
+  .p1.light .tr { background: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.88); } .p1.light .tr-icon { background: rgba(99,102,241,0.1); } .p1.light .tr-name { color: rgba(30,30,80,0.65); } .p1.light .tr-check { border: 1.5px solid rgba(80,80,180,0.22); }
+
+  /* ── PALETTE 2 — Cobalt Blue / Cyan ── */
+  .p2.dark .screen { background: linear-gradient(155deg,#080e1e,#0a1228,#06101c); }
+  .p2.dark .sb, .p2.dark .pg { color: #fff; }
+  .p2.dark .hc { background: linear-gradient(135deg,rgba(37,99,235,0.3),rgba(6,182,212,0.18)); border: 1px solid rgba(56,189,248,0.3); box-shadow: 0 6px 28px rgba(37,99,235,0.2), inset 0 1px 0 rgba(255,255,255,0.1); }
+  .p2.dark .hc-badge { color: #93c5fd; } .p2.dark .hc-name { color: #fff; } .p2.dark .hc-detail { color: rgba(255,255,255,0.45); }
+  .p2.dark .hc-prog { background: rgba(255,255,255,0.1); } .p2.dark .hc-fill { background: linear-gradient(90deg,#2563eb,#06b6d4); }
+  .p2.dark .hc-btn { background: linear-gradient(135deg,#2563eb,#06b6d4); box-shadow: 0 4px 18px rgba(37,99,235,0.45); }
+  .p2.dark .sc { background: rgba(255,255,255,0.06); border: 1px solid rgba(56,189,248,0.1); } .p2.dark .sc-val { color: #fff; } .p2.dark .sc-lbl { color: rgba(255,255,255,0.3); }
+  .p2.dark .tr { background: rgba(255,255,255,0.04); border: 1px solid rgba(56,189,248,0.1); } .p2.dark .tr-icon { background: rgba(37,99,235,0.2); } .p2.dark .tr-name { color: rgba(255,255,255,0.65); } .p2.dark .tr-check { border: 1.5px solid rgba(255,255,255,0.18); }
+
+  .p2.light .screen { background: linear-gradient(155deg,#dcedff,#e0f4ff,#d8eeff); }
+  .p2.light .sb { color: #0a1a3e; } .p2.light .pg { color: #0a1a3e; }
+  .p2.light .hc { background: linear-gradient(135deg,rgba(255,255,255,0.65),rgba(255,255,255,0.45)); border: 1px solid rgba(255,255,255,0.9); box-shadow: 0 6px 28px rgba(37,99,235,0.1), inset 0 1px 0 #fff; }
+  .p2.light .hc-badge { color: #2563eb; } .p2.light .hc-name { color: #0a1a3e; } .p2.light .hc-detail { color: rgba(10,30,80,0.45); }
+  .p2.light .hc-prog { background: rgba(37,99,235,0.12); } .p2.light .hc-fill { background: linear-gradient(90deg,#2563eb,#06b6d4); }
+  .p2.light .hc-btn { background: linear-gradient(135deg,#2563eb,#06b6d4); box-shadow: 0 4px 16px rgba(37,99,235,0.3); }
+  .p2.light .sc { background: rgba(255,255,255,0.65); border: 1px solid rgba(255,255,255,0.9); } .p2.light .sc-val { color: #0a1a3e; } .p2.light .sc-lbl { color: rgba(10,30,80,0.38); }
+  .p2.light .tr { background: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.88); } .p2.light .tr-icon { background: rgba(37,99,235,0.1); } .p2.light .tr-name { color: rgba(10,30,80,0.65); } .p2.light .tr-check { border: 1.5px solid rgba(37,99,235,0.2); }
+
+  /* ── PALETTE 3 — Emerald / Teal ── */
+  .p3.dark .screen { background: linear-gradient(155deg,#060e0c,#081510,#060e0e); }
+  .p3.dark .sb, .p3.dark .pg { color: #fff; }
+  .p3.dark .hc { background: linear-gradient(135deg,rgba(16,185,129,0.25),rgba(20,184,166,0.18)); border: 1px solid rgba(16,185,129,0.3); box-shadow: 0 6px 28px rgba(16,185,129,0.18), inset 0 1px 0 rgba(255,255,255,0.09); }
+  .p3.dark .hc-badge { color: #6ee7b7; } .p3.dark .hc-name { color: #fff; } .p3.dark .hc-detail { color: rgba(255,255,255,0.45); }
+  .p3.dark .hc-prog { background: rgba(255,255,255,0.1); } .p3.dark .hc-fill { background: linear-gradient(90deg,#10b981,#14b8a6); }
+  .p3.dark .hc-btn { background: linear-gradient(135deg,#10b981,#14b8a6); box-shadow: 0 4px 18px rgba(16,185,129,0.4); }
+  .p3.dark .sc { background: rgba(255,255,255,0.05); border: 1px solid rgba(16,185,129,0.12); } .p3.dark .sc-val { color: #fff; } .p3.dark .sc-lbl { color: rgba(255,255,255,0.3); }
+  .p3.dark .tr { background: rgba(255,255,255,0.04); border: 1px solid rgba(16,185,129,0.1); } .p3.dark .tr-icon { background: rgba(16,185,129,0.18); } .p3.dark .tr-name { color: rgba(255,255,255,0.65); } .p3.dark .tr-check { border: 1.5px solid rgba(255,255,255,0.18); }
+
+  .p3.light .screen { background: linear-gradient(155deg,#d8f5ed,#d4f4f0,#d6f5ec); }
+  .p3.light .sb { color: #052e1c; } .p3.light .pg { color: #052e1c; }
+  .p3.light .hc { background: linear-gradient(135deg,rgba(255,255,255,0.65),rgba(255,255,255,0.45)); border: 1px solid rgba(255,255,255,0.9); box-shadow: 0 6px 28px rgba(16,185,129,0.1), inset 0 1px 0 #fff; }
+  .p3.light .hc-badge { color: #059669; } .p3.light .hc-name { color: #052e1c; } .p3.light .hc-detail { color: rgba(5,46,28,0.45); }
+  .p3.light .hc-prog { background: rgba(16,185,129,0.15); } .p3.light .hc-fill { background: linear-gradient(90deg,#10b981,#14b8a6); }
+  .p3.light .hc-btn { background: linear-gradient(135deg,#10b981,#14b8a6); box-shadow: 0 4px 16px rgba(16,185,129,0.3); }
+  .p3.light .sc { background: rgba(255,255,255,0.65); border: 1px solid rgba(255,255,255,0.9); } .p3.light .sc-val { color: #052e1c; } .p3.light .sc-lbl { color: rgba(5,46,28,0.38); }
+  .p3.light .tr { background: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.88); } .p3.light .tr-icon { background: rgba(16,185,129,0.12); } .p3.light .tr-name { color: rgba(5,46,28,0.65); } .p3.light .tr-check { border: 1.5px solid rgba(16,185,129,0.25); }
+
+  /* ── PALETTE 4 — Amber / Orange (Energy) ── */
+  .p4.dark .screen { background: linear-gradient(155deg,#10090a,#180d08,#0e0a08); }
+  .p4.dark .sb, .p4.dark .pg { color: #fff; }
+  .p4.dark .hc { background: linear-gradient(135deg,rgba(234,88,12,0.28),rgba(217,119,6,0.18)); border: 1px solid rgba(251,146,60,0.3); box-shadow: 0 6px 28px rgba(234,88,12,0.2), inset 0 1px 0 rgba(255,255,255,0.09); }
+  .p4.dark .hc-badge { color: #fdba74; } .p4.dark .hc-name { color: #fff; } .p4.dark .hc-detail { color: rgba(255,255,255,0.45); }
+  .p4.dark .hc-prog { background: rgba(255,255,255,0.1); } .p4.dark .hc-fill { background: linear-gradient(90deg,#ea580c,#d97706); }
+  .p4.dark .hc-btn { background: linear-gradient(135deg,#ea580c,#d97706); box-shadow: 0 4px 18px rgba(234,88,12,0.45); }
+  .p4.dark .sc { background: rgba(255,255,255,0.05); border: 1px solid rgba(251,146,60,0.12); } .p4.dark .sc-val { color: #fff; } .p4.dark .sc-lbl { color: rgba(255,255,255,0.3); }
+  .p4.dark .tr { background: rgba(255,255,255,0.04); border: 1px solid rgba(251,146,60,0.1); } .p4.dark .tr-icon { background: rgba(234,88,12,0.2); } .p4.dark .tr-name { color: rgba(255,255,255,0.65); } .p4.dark .tr-check { border: 1.5px solid rgba(255,255,255,0.18); }
+
+  .p4.light .screen { background: linear-gradient(155deg,#fff3e6,#fff8ed,#fff1e0); }
+  .p4.light .sb { color: #2d1200; } .p4.light .pg { color: #2d1200; }
+  .p4.light .hc { background: linear-gradient(135deg,rgba(255,255,255,0.65),rgba(255,255,255,0.45)); border: 1px solid rgba(255,255,255,0.9); box-shadow: 0 6px 28px rgba(234,88,12,0.1), inset 0 1px 0 #fff; }
+  .p4.light .hc-badge { color: #ea580c; } .p4.light .hc-name { color: #2d1200; } .p4.light .hc-detail { color: rgba(45,18,0,0.45); }
+  .p4.light .hc-prog { background: rgba(234,88,12,0.12); } .p4.light .hc-fill { background: linear-gradient(90deg,#ea580c,#d97706); }
+  .p4.light .hc-btn { background: linear-gradient(135deg,#ea580c,#d97706); box-shadow: 0 4px 16px rgba(234,88,12,0.3); }
+  .p4.light .sc { background: rgba(255,255,255,0.65); border: 1px solid rgba(255,255,255,0.9); } .p4.light .sc-val { color: #2d1200; } .p4.light .sc-lbl { color: rgba(45,18,0,0.38); }
+  .p4.light .tr { background: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.88); } .p4.light .tr-icon { background: rgba(234,88,12,0.1); } .p4.light .tr-name { color: rgba(45,18,0,0.65); } .p4.light .tr-check { border: 1.5px solid rgba(234,88,12,0.22); }
+
+  /* ── PALETTE 5 — Rose / Crimson ── */
+  .p5.dark .screen { background: linear-gradient(155deg,#100808,#180a10,#0e080c); }
+  .p5.dark .sb, .p5.dark .pg { color: #fff; }
+  .p5.dark .hc { background: linear-gradient(135deg,rgba(225,29,72,0.25),rgba(190,18,60,0.18)); border: 1px solid rgba(251,113,133,0.3); box-shadow: 0 6px 28px rgba(225,29,72,0.2), inset 0 1px 0 rgba(255,255,255,0.09); }
+  .p5.dark .hc-badge { color: #fda4af; } .p5.dark .hc-name { color: #fff; } .p5.dark .hc-detail { color: rgba(255,255,255,0.45); }
+  .p5.dark .hc-prog { background: rgba(255,255,255,0.1); } .p5.dark .hc-fill { background: linear-gradient(90deg,#e11d48,#be123c); }
+  .p5.dark .hc-btn { background: linear-gradient(135deg,#e11d48,#be123c); box-shadow: 0 4px 18px rgba(225,29,72,0.45); }
+  .p5.dark .sc { background: rgba(255,255,255,0.05); border: 1px solid rgba(251,113,133,0.12); } .p5.dark .sc-val { color: #fff; } .p5.dark .sc-lbl { color: rgba(255,255,255,0.3); }
+  .p5.dark .tr { background: rgba(255,255,255,0.04); border: 1px solid rgba(251,113,133,0.1); } .p5.dark .tr-icon { background: rgba(225,29,72,0.18); } .p5.dark .tr-name { color: rgba(255,255,255,0.65); } .p5.dark .tr-check { border: 1.5px solid rgba(255,255,255,0.18); }
+
+  .p5.light .screen { background: linear-gradient(155deg,#ffe4e8,#fff0f2,#ffe8ee); }
+  .p5.light .sb { color: #2d0010; } .p5.light .pg { color: #2d0010; }
+  .p5.light .hc { background: linear-gradient(135deg,rgba(255,255,255,0.65),rgba(255,255,255,0.45)); border: 1px solid rgba(255,255,255,0.9); box-shadow: 0 6px 28px rgba(225,29,72,0.1), inset 0 1px 0 #fff; }
+  .p5.light .hc-badge { color: #e11d48; } .p5.light .hc-name { color: #2d0010; } .p5.light .hc-detail { color: rgba(45,0,16,0.45); }
+  .p5.light .hc-prog { background: rgba(225,29,72,0.12); } .p5.light .hc-fill { background: linear-gradient(90deg,#e11d48,#be123c); }
+  .p5.light .hc-btn { background: linear-gradient(135deg,#e11d48,#be123c); box-shadow: 0 4px 16px rgba(225,29,72,0.3); }
+  .p5.light .sc { background: rgba(255,255,255,0.65); border: 1px solid rgba(255,255,255,0.9); } .p5.light .sc-val { color: #2d0010; } .p5.light .sc-lbl { color: rgba(45,0,16,0.38); }
+  .p5.light .tr { background: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.88); } .p5.light .tr-icon { background: rgba(225,29,72,0.1); } .p5.light .tr-name { color: rgba(45,0,16,0.65); } .p5.light .tr-check { border: 1.5px solid rgba(225,29,72,0.22); }
+
+  .pl-header { width: 100%; text-align: center; padding: 10px 0 18px; font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.25); letter-spacing: 1px; text-transform: uppercase; }
+  .pair { display: flex; gap: 14px; justify-content: center; }
+  .palette-block { display: flex; flex-direction: column; align-items: center; gap: 18px; margin-bottom: 36px; }
+  .dot-row { display: flex; gap: 5px; margin-bottom: 4px; }
+  .dot { width: 14px; height: 14px; border-radius: 50%; }
+</style>
+</head>
+<body>
+
+<h1>Colour Palettes</h1>
+<p class="subtitle">B+C hybrid layout · no emojis · tap to select your favourites</p>
+
+<!-- Helper to render a phone -->
+
+<!-- PALETTE 1 — Indigo/Violet -->
+<div class="palette-block">
+  <div class="pl-header">
+    <div class="dot-row" style="justify-content:center"><div class="dot" style="background:#6366f1"></div><div class="dot" style="background:#8b5cf6"></div></div>
+    Indigo / Violet &nbsp;·&nbsp; current palette, refined
+  </div>
+  <div class="pair">
+    <div class="pw p1 dark" data-choice="indigo-dark" onclick="sel(this)" style="--accent:#6366f1">
+      <div class="si">✓</div>
+      <div class="phone phone-dark"><div class="screen p1 dark">
+        <div class="sb"><span>9:41</span><span style="color:rgba(255,255,255,0.5);font-size:11px">●●●</span></div>
+        <div class="pg" style="color:#fff">Today</div>
+        <div class="hc p1 dark"><div class="hc-badge p1 dark">UP NEXT · WEEK 2</div><div class="hc-name p1 dark">Upper Strength A</div><div class="hc-detail p1 dark">4 exercises · ~45 min</div><div class="hc-prog p1 dark"><div class="hc-fill p1 dark"></div></div><div class="hc-btn p1 dark">Start Workout</div></div>
+        <div class="sr"><div class="sc p1 dark"><div class="sc-val p1 dark">7</div><div class="sc-lbl p1 dark">Streak</div></div><div class="sc p1 dark"><div class="sc-val p1 dark">24</div><div class="sc-lbl p1 dark">Sessions</div></div><div class="sc p1 dark"><div class="sc-val p1 dark">Wk 2</div><div class="sc-lbl p1 dark">Progress</div></div></div>
+        <div class="tr p1 dark"><div class="tr-l"><div class="tr-icon p1 dark">🚶</div><div class="tr-name p1 dark">10,000 steps</div></div><div class="tr-check p1 dark"></div></div>
+        <div class="tr p1 dark"><div class="tr-l"><div class="tr-icon p1 dark">💧</div><div class="tr-name p1 dark">2L water</div></div><div class="tr-check p1 dark"></div></div>
+      </div></div>
+      <div class="pname">Dark</div><div class="ptitle" style="color:#fff">Indigo/Violet</div>
+    </div>
+    <div class="pw p1 light" data-choice="indigo-light" onclick="sel(this)" style="--accent:#6366f1">
+      <div class="si">✓</div>
+      <div class="phone phone-light"><div class="screen p1 light">
+        <div class="sb p1 light"><span>9:41</span><span style="color:rgba(30,30,60,0.4);font-size:11px">●●●</span></div>
+        <div class="pg p1 light">Today</div>
+        <div class="hc p1 light"><div class="hc-badge p1 light">UP NEXT · WEEK 2</div><div class="hc-name p1 light">Upper Strength A</div><div class="hc-detail p1 light">4 exercises · ~45 min</div><div class="hc-prog p1 light"><div class="hc-fill p1 light"></div></div><div class="hc-btn p1 light">Start Workout</div></div>
+        <div class="sr"><div class="sc p1 light"><div class="sc-val p1 light">7</div><div class="sc-lbl p1 light">Streak</div></div><div class="sc p1 light"><div class="sc-val p1 light">24</div><div class="sc-lbl p1 light">Sessions</div></div><div class="sc p1 light"><div class="sc-val p1 light">Wk 2</div><div class="sc-lbl p1 light">Progress</div></div></div>
+        <div class="tr p1 light"><div class="tr-l"><div class="tr-icon p1 light">🚶</div><div class="tr-name p1 light">10,000 steps</div></div><div class="tr-check p1 light"></div></div>
+        <div class="tr p1 light"><div class="tr-l"><div class="tr-icon p1 light">💧</div><div class="tr-name p1 light">2L water</div></div><div class="tr-check p1 light"></div></div>
+      </div></div>
+      <div class="pname" style="color:rgba(255,255,255,0.35)">Light</div><div class="ptitle" style="color:#fff">Indigo/Violet</div>
+    </div>
+  </div>
+</div>
+
+<!-- PALETTE 2 — Cobalt Blue / Cyan -->
+<div class="palette-block">
+  <div class="pl-header">
+    <div class="dot-row" style="justify-content:center"><div class="dot" style="background:#2563eb"></div><div class="dot" style="background:#06b6d4"></div></div>
+    Cobalt Blue / Cyan &nbsp;·&nbsp; cool, focused, athletic
+  </div>
+  <div class="pair">
+    <div class="pw p2 dark" data-choice="cobalt-dark" onclick="sel(this)" style="--accent:#2563eb">
+      <div class="si">✓</div>
+      <div class="phone phone-dark"><div class="screen p2 dark">
+        <div class="sb"><span>9:41</span><span style="color:rgba(255,255,255,0.5);font-size:11px">●●●</span></div>
+        <div class="pg" style="color:#fff">Today</div>
+        <div class="hc p2 dark"><div class="hc-badge p2 dark">UP NEXT · WEEK 2</div><div class="hc-name p2 dark">Upper Strength A</div><div class="hc-detail p2 dark">4 exercises · ~45 min</div><div class="hc-prog p2 dark"><div class="hc-fill p2 dark"></div></div><div class="hc-btn p2 dark">Start Workout</div></div>
+        <div class="sr"><div class="sc p2 dark"><div class="sc-val p2 dark">7</div><div class="sc-lbl p2 dark">Streak</div></div><div class="sc p2 dark"><div class="sc-val p2 dark">24</div><div class="sc-lbl p2 dark">Sessions</div></div><div class="sc p2 dark"><div class="sc-val p2 dark">Wk 2</div><div class="sc-lbl p2 dark">Progress</div></div></div>
+        <div class="tr p2 dark"><div class="tr-l"><div class="tr-icon p2 dark">🚶</div><div class="tr-name p2 dark">10,000 steps</div></div><div class="tr-check p2 dark"></div></div>
+        <div class="tr p2 dark"><div class="tr-l"><div class="tr-icon p2 dark">💧</div><div class="tr-name p2 dark">2L water</div></div><div class="tr-check p2 dark"></div></div>
+      </div></div>
+      <div class="pname">Dark</div><div class="ptitle" style="color:#fff">Cobalt/Cyan</div>
+    </div>
+    <div class="pw p2 light" data-choice="cobalt-light" onclick="sel(this)" style="--accent:#2563eb">
+      <div class="si">✓</div>
+      <div class="phone phone-light"><div class="screen p2 light">
+        <div class="sb p2 light"><span>9:41</span><span style="color:rgba(10,30,80,0.4);font-size:11px">●●●</span></div>
+        <div class="pg p2 light">Today</div>
+        <div class="hc p2 light"><div class="hc-badge p2 light">UP NEXT · WEEK 2</div><div class="hc-name p2 light">Upper Strength A</div><div class="hc-detail p2 light">4 exercises · ~45 min</div><div class="hc-prog p2 light"><div class="hc-fill p2 light"></div></div><div class="hc-btn p2 light">Start Workout</div></div>
+        <div class="sr"><div class="sc p2 light"><div class="sc-val p2 light">7</div><div class="sc-lbl p2 light">Streak</div></div><div class="sc p2 light"><div class="sc-val p2 light">24</div><div class="sc-lbl p2 light">Sessions</div></div><div class="sc p2 light"><div class="sc-val p2 light">Wk 2</div><div class="sc-lbl p2 light">Progress</div></div></div>
+        <div class="tr p2 light"><div class="tr-l"><div class="tr-icon p2 light">🚶</div><div class="tr-name p2 light">10,000 steps</div></div><div class="tr-check p2 light"></div></div>
+        <div class="tr p2 light"><div class="tr-l"><div class="tr-icon p2 light">💧</div><div class="tr-name p2 light">2L water</div></div><div class="tr-check p2 light"></div></div>
+      </div></div>
+      <div class="pname" style="color:rgba(255,255,255,0.35)">Light</div><div class="ptitle" style="color:#fff">Cobalt/Cyan</div>
+    </div>
+  </div>
+</div>
+
+<!-- PALETTE 3 — Emerald / Teal -->
+<div class="palette-block">
+  <div class="pl-header">
+    <div class="dot-row" style="justify-content:center"><div class="dot" style="background:#10b981"></div><div class="dot" style="background:#14b8a6"></div></div>
+    Emerald / Teal &nbsp;·&nbsp; fresh, health-forward
+  </div>
+  <div class="pair">
+    <div class="pw p3 dark" data-choice="emerald-dark" onclick="sel(this)" style="--accent:#10b981">
+      <div class="si">✓</div>
+      <div class="phone phone-dark"><div class="screen p3 dark">
+        <div class="sb"><span>9:41</span><span style="color:rgba(255,255,255,0.5);font-size:11px">●●●</span></div>
+        <div class="pg" style="color:#fff">Today</div>
+        <div class="hc p3 dark"><div class="hc-badge p3 dark">UP NEXT · WEEK 2</div><div class="hc-name p3 dark">Upper Strength A</div><div class="hc-detail p3 dark">4 exercises · ~45 min</div><div class="hc-prog p3 dark"><div class="hc-fill p3 dark"></div></div><div class="hc-btn p3 dark">Start Workout</div></div>
+        <div class="sr"><div class="sc p3 dark"><div class="sc-val p3 dark">7</div><div class="sc-lbl p3 dark">Streak</div></div><div class="sc p3 dark"><div class="sc-val p3 dark">24</div><div class="sc-lbl p3 dark">Sessions</div></div><div class="sc p3 dark"><div class="sc-val p3 dark">Wk 2</div><div class="sc-lbl p3 dark">Progress</div></div></div>
+        <div class="tr p3 dark"><div class="tr-l"><div class="tr-icon p3 dark">🚶</div><div class="tr-name p3 dark">10,000 steps</div></div><div class="tr-check p3 dark"></div></div>
+        <div class="tr p3 dark"><div class="tr-l"><div class="tr-icon p3 dark">💧</div><div class="tr-name p3 dark">2L water</div></div><div class="tr-check p3 dark"></div></div>
+      </div></div>
+      <div class="pname">Dark</div><div class="ptitle" style="color:#fff">Emerald/Teal</div>
+    </div>
+    <div class="pw p3 light" data-choice="emerald-light" onclick="sel(this)" style="--accent:#10b981">
+      <div class="si">✓</div>
+      <div class="phone phone-light"><div class="screen p3 light">
+        <div class="sb p3 light"><span>9:41</span><span style="color:rgba(5,46,28,0.4);font-size:11px">●●●</span></div>
+        <div class="pg p3 light">Today</div>
+        <div class="hc p3 light"><div class="hc-badge p3 light">UP NEXT · WEEK 2</div><div class="hc-name p3 light">Upper Strength A</div><div class="hc-detail p3 light">4 exercises · ~45 min</div><div class="hc-prog p3 light"><div class="hc-fill p3 light"></div></div><div class="hc-btn p3 light">Start Workout</div></div>
+        <div class="sr"><div class="sc p3 light"><div class="sc-val p3 light">7</div><div class="sc-lbl p3 light">Streak</div></div><div class="sc p3 light"><div class="sc-val p3 light">24</div><div class="sc-lbl p3 light">Sessions</div></div><div class="sc p3 light"><div class="sc-val p3 light">Wk 2</div><div class="sc-lbl p3 light">Progress</div></div></div>
+        <div class="tr p3 light"><div class="tr-l"><div class="tr-icon p3 light">🚶</div><div class="tr-name p3 light">10,000 steps</div></div><div class="tr-check p3 light"></div></div>
+        <div class="tr p3 light"><div class="tr-l"><div class="tr-icon p3 light">💧</div><div class="tr-name p3 light">2L water</div></div><div class="tr-check p3 light"></div></div>
+      </div></div>
+      <div class="pname" style="color:rgba(255,255,255,0.35)">Light</div><div class="ptitle" style="color:#fff">Emerald/Teal</div>
+    </div>
+  </div>
+</div>
+
+<!-- PALETTE 4 — Amber / Orange -->
+<div class="palette-block">
+  <div class="pl-header">
+    <div class="dot-row" style="justify-content:center"><div class="dot" style="background:#ea580c"></div><div class="dot" style="background:#d97706"></div></div>
+    Amber / Orange &nbsp;·&nbsp; energetic, bold, motivating
+  </div>
+  <div class="pair">
+    <div class="pw p4 dark" data-choice="amber-dark" onclick="sel(this)" style="--accent:#ea580c">
+      <div class="si">✓</div>
+      <div class="phone phone-dark"><div class="screen p4 dark">
+        <div class="sb"><span>9:41</span><span style="color:rgba(255,255,255,0.5);font-size:11px">●●●</span></div>
+        <div class="pg" style="color:#fff">Today</div>
+        <div class="hc p4 dark"><div class="hc-badge p4 dark">UP NEXT · WEEK 2</div><div class="hc-name p4 dark">Upper Strength A</div><div class="hc-detail p4 dark">4 exercises · ~45 min</div><div class="hc-prog p4 dark"><div class="hc-fill p4 dark"></div></div><div class="hc-btn p4 dark">Start Workout</div></div>
+        <div class="sr"><div class="sc p4 dark"><div class="sc-val p4 dark">7</div><div class="sc-lbl p4 dark">Streak</div></div><div class="sc p4 dark"><div class="sc-val p4 dark">24</div><div class="sc-lbl p4 dark">Sessions</div></div><div class="sc p4 dark"><div class="sc-val p4 dark">Wk 2</div><div class="sc-lbl p4 dark">Progress</div></div></div>
+        <div class="tr p4 dark"><div class="tr-l"><div class="tr-icon p4 dark">🚶</div><div class="tr-name p4 dark">10,000 steps</div></div><div class="tr-check p4 dark"></div></div>
+        <div class="tr p4 dark"><div class="tr-l"><div class="tr-icon p4 dark">💧</div><div class="tr-name p4 dark">2L water</div></div><div class="tr-check p4 dark"></div></div>
+      </div></div>
+      <div class="pname">Dark</div><div class="ptitle" style="color:#fff">Amber/Orange</div>
+    </div>
+    <div class="pw p4 light" data-choice="amber-light" onclick="sel(this)" style="--accent:#ea580c">
+      <div class="si">✓</div>
+      <div class="phone phone-light"><div class="screen p4 light">
+        <div class="sb p4 light"><span>9:41</span><span style="color:rgba(45,18,0,0.4);font-size:11px">●●●</span></div>
+        <div class="pg p4 light">Today</div>
+        <div class="hc p4 light"><div class="hc-badge p4 light">UP NEXT · WEEK 2</div><div class="hc-name p4 light">Upper Strength A</div><div class="hc-detail p4 light">4 exercises · ~45 min</div><div class="hc-prog p4 light"><div class="hc-fill p4 light"></div></div><div class="hc-btn p4 light">Start Workout</div></div>
+        <div class="sr"><div class="sc p4 light"><div class="sc-val p4 light">7</div><div class="sc-lbl p4 light">Streak</div></div><div class="sc p4 light"><div class="sc-val p4 light">24</div><div class="sc-lbl p4 light">Sessions</div></div><div class="sc p4 light"><div class="sc-val p4 light">Wk 2</div><div class="sc-lbl p4 light">Progress</div></div></div>
+        <div class="tr p4 light"><div class="tr-l"><div class="tr-icon p4 light">🚶</div><div class="tr-name p4 light">10,000 steps</div></div><div class="tr-check p4 light"></div></div>
+        <div class="tr p4 light"><div class="tr-l"><div class="tr-icon p4 light">💧</div><div class="tr-name p4 light">2L water</div></div><div class="tr-check p4 light"></div></div>
+      </div></div>
+      <div class="pname" style="color:rgba(255,255,255,0.35)">Light</div><div class="ptitle" style="color:#fff">Amber/Orange</div>
+    </div>
+  </div>
+</div>
+
+<!-- PALETTE 5 — Rose / Crimson -->
+<div class="palette-block">
+  <div class="pl-header">
+    <div class="dot-row" style="justify-content:center"><div class="dot" style="background:#e11d48"></div><div class="dot" style="background:#be123c"></div></div>
+    Rose / Crimson &nbsp;·&nbsp; intense, premium, high-contrast
+  </div>
+  <div class="pair">
+    <div class="pw p5 dark" data-choice="rose-dark" onclick="sel(this)" style="--accent:#e11d48">
+      <div class="si">✓</div>
+      <div class="phone phone-dark"><div class="screen p5 dark">
+        <div class="sb"><span>9:41</span><span style="color:rgba(255,255,255,0.5);font-size:11px">●●●</span></div>
+        <div class="pg" style="color:#fff">Today</div>
+        <div class="hc p5 dark"><div class="hc-badge p5 dark">UP NEXT · WEEK 2</div><div class="hc-name p5 dark">Upper Strength A</div><div class="hc-detail p5 dark">4 exercises · ~45 min</div><div class="hc-prog p5 dark"><div class="hc-fill p5 dark"></div></div><div class="hc-btn p5 dark">Start Workout</div></div>
+        <div class="sr"><div class="sc p5 dark"><div class="sc-val p5 dark">7</div><div class="sc-lbl p5 dark">Streak</div></div><div class="sc p5 dark"><div class="sc-val p5 dark">24</div><div class="sc-lbl p5 dark">Sessions</div></div><div class="sc p5 dark"><div class="sc-val p5 dark">Wk 2</div><div class="sc-lbl p5 dark">Progress</div></div></div>
+        <div class="tr p5 dark"><div class="tr-l"><div class="tr-icon p5 dark">🚶</div><div class="tr-name p5 dark">10,000 steps</div></div><div class="tr-check p5 dark"></div></div>
+        <div class="tr p5 dark"><div class="tr-l"><div class="tr-icon p5 dark">💧</div><div class="tr-name p5 dark">2L water</div></div><div class="tr-check p5 dark"></div></div>
+      </div></div>
+      <div class="pname">Dark</div><div class="ptitle" style="color:#fff">Rose/Crimson</div>
+    </div>
+    <div class="pw p5 light" data-choice="rose-light" onclick="sel(this)" style="--accent:#e11d48">
+      <div class="si">✓</div>
+      <div class="phone phone-light"><div class="screen p5 light">
+        <div class="sb p5 light"><span>9:41</span><span style="color:rgba(45,0,16,0.4);font-size:11px">●●●</span></div>
+        <div class="pg p5 light">Today</div>
+        <div class="hc p5 light"><div class="hc-badge p5 light">UP NEXT · WEEK 2</div><div class="hc-name p5 light">Upper Strength A</div><div class="hc-detail p5 light">4 exercises · ~45 min</div><div class="hc-prog p5 light"><div class="hc-fill p5 light"></div></div><div class="hc-btn p5 light">Start Workout</div></div>
+        <div class="sr"><div class="sc p5 light"><div class="sc-val p5 light">7</div><div class="sc-lbl p5 light">Streak</div></div><div class="sc p5 light"><div class="sc-val p5 light">24</div><div class="sc-lbl p5 light">Sessions</div></div><div class="sc p5 light"><div class="sc-val p5 light">Wk 2</div><div class="sc-lbl p5 light">Progress</div></div></div>
+        <div class="tr p5 light"><div class="tr-l"><div class="tr-icon p5 light">🚶</div><div class="tr-name p5 light">10,000 steps</div></div><div class="tr-check p5 light"></div></div>
+        <div class="tr p5 light"><div class="tr-l"><div class="tr-icon p5 light">💧</div><div class="tr-name p5 light">2L water</div></div><div class="tr-check p5 light"></div></div>
+      </div></div>
+      <div class="pname" style="color:rgba(255,255,255,0.35)">Light</div><div class="ptitle" style="color:#fff">Rose/Crimson</div>
+    </div>
+  </div>
+</div>
+
+<p style="text-align:center;color:rgba(255,255,255,0.2);font-size:12px;margin-top:8px">Click to select · multi-select supported</p>
+
+<script>
+function sel(el) {
+  el.classList.toggle('selected');
+  const choice = el.dataset.choice;
+  const text = el.querySelector('.ptitle').textContent;
+  if (window.recordEvent) window.recordEvent({ type: 'click', choice, text });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exercise Edit — v2</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0f0f1a;
+    font-family: 'Space Grotesk', -apple-system, sans-serif;
+    color: #fff;
+    padding: 28px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  h1 { font-size: 17px; font-weight: 700; margin-bottom: 2px; }
+  .subtitle { font-size: 12px; color: rgba(255,255,255,0.4); }
+
+  .row { display: flex; gap: 28px; align-items: flex-start; justify-content: center; }
+
+  .col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .col-label {
+    font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.28);
+    letter-spacing: 1px; text-transform: uppercase;
+  }
+
+  .dialog {
+    width: 380px;
+    background: #141428;
+    border: 1px solid rgba(255,255,255,0.11);
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow: 0 30px 70px rgba(0,0,0,0.7);
+    position: relative;
+  }
+  .dialog::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+    z-index: 10;
+  }
+
+  .dialog-inner { padding: 24px 24px 28px; }
+
+  .dialog-header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 4px; }
+  .dialog-title { font-size: 22px; font-weight: 800; flex: 1; letter-spacing: -0.4px; }
+  .dialog-close {
+    width: 30px; height: 30px;
+    background: rgba(255,255,255,0.07); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; color: rgba(255,255,255,0.35); flex-shrink: 0; margin-top: 3px;
+  }
+  .dialog-cat { font-size: 13px; color: rgba(255,255,255,0.28); margin-bottom: 26px; }
+
+  .field-label {
+    font-size: 10px; font-weight: 700;
+    color: rgba(255,255,255,0.28);
+    letter-spacing: 1.1px; text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .opt-pill {
+    font-size: 9px; font-weight: 600;
+    color: rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.06);
+    border-radius: 5px; padding: 2px 7px;
+    letter-spacing: 0.3px; text-transform: none;
+  }
+
+  .section-divider { height: 1px; background: rgba(255,255,255,0.07); margin: 22px 0; }
+
+  /* ── Sets big stepper ── */
+  .big-stepper {
+    display: flex; align-items: center; justify-content: center; gap: 28px;
+    margin-bottom: 4px;
+  }
+  .s-circle {
+    width: 52px; height: 52px;
+    background: rgba(99,102,241,0.13);
+    border: 1px solid rgba(99,102,241,0.28);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; color: #818cf8; line-height: 1;
+  }
+  .s-val { text-align: center; }
+  .s-num { font-size: 60px; font-weight: 900; line-height: 1; }
+  .s-unit { font-size: 13px; color: rgba(255,255,255,0.3); margin-top: 3px; }
+
+  /* ── Drum wheels ── */
+  .drums-row { display: flex; gap: 14px; }
+  .drum-wrap { flex: 1; }
+  .drum-title {
+    font-size: 10px; font-weight: 700;
+    color: rgba(255,255,255,0.28);
+    letter-spacing: 1px; text-transform: uppercase;
+    text-align: center; margin-bottom: 8px;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+
+  .drum {
+    position: relative; height: 160px; overflow: hidden;
+    border-radius: 18px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.09);
+  }
+  .drum::before {
+    content: '';
+    position: absolute; left: 0; right: 0;
+    top: 50%; transform: translateY(-50%);
+    height: 50px;
+    background: rgba(99,102,241,0.12);
+    border-top: 1px solid rgba(99,102,241,0.28);
+    border-bottom: 1px solid rgba(99,102,241,0.28);
+    z-index: 2; pointer-events: none;
+  }
+  .drum::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(to bottom,
+      #141428 0%, transparent 28%,
+      transparent 72%, #141428 100%);
+    z-index: 3; pointer-events: none;
+  }
+  .drum-track {
+    position: absolute; left: 0; right: 0;
+    display: flex; flex-direction: column; align-items: center;
+    top: calc(50% - 50px * 2.5);
+  }
+  .drum-item {
+    height: 50px; width: 100%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; font-weight: 700;
+    color: rgba(255,255,255,0.15);
+    position: relative; z-index: 1;
+  }
+  .drum-item.near { color: rgba(255,255,255,0.4); font-size: 20px; }
+  .drum-item.sel  { color: #fff; font-size: 30px; font-weight: 900; }
+
+  .drum.rpe::before {
+    background: rgba(251,191,36,0.1);
+    border-top-color: rgba(251,191,36,0.28);
+    border-bottom-color: rgba(251,191,36,0.28);
+  }
+  .drum.rpe .drum-item.sel  { color: rgba(251,191,36,0.95); }
+  .drum.rpe .drum-item.near { color: rgba(251,191,36,0.42); }
+  .drum-item.none-val { font-size: 12px; font-weight: 700; letter-spacing: 0.8px; color: rgba(255,255,255,0.18); }
+
+  /* ── URL field ── */
+  .url-field {
+    display: flex; align-items: center; gap: 12px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 16px;
+    padding: 14px 16px;
+  }
+  .yt-badge {
+    width: 34px; height: 34px; flex-shrink: 0;
+    background: rgba(255,0,0,0.13);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid rgba(255,0,0,0.15);
+  }
+  .url-text { flex: 1; min-width: 0; }
+  .url-label { font-size: 11px; color: rgba(255,255,255,0.28); margin-bottom: 3px; }
+  .url-value { font-size: 13px; color: rgba(255,255,255,0.22); font-style: italic; }
+  .url-value.filled { color: rgba(255,255,255,0.55); font-style: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* ── Notes textarea ── */
+  .notes-area {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 16px;
+    padding: 14px 16px;
+    font-size: 14px;
+    color: rgba(255,255,255,0.25);
+    font-family: inherit;
+    width: 100%;
+    min-height: 80px;
+    resize: none;
+    line-height: 1.5;
+  }
+  .notes-area.filled { color: rgba(255,255,255,0.6); }
+
+  /* ── Save ── */
+  .save-btn {
+    background: linear-gradient(135deg, #6366F1, #818cf8);
+    border-radius: 16px; padding: 16px;
+    font-size: 16px; font-weight: 700; font-family: inherit;
+    color: #fff; text-align: center; width: 100%;
+    box-shadow: 0 6px 20px rgba(99,102,241,0.4);
+    margin-top: 22px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Exercise Edit — v2</h1>
+<p class="subtitle">URL first · Coaching notes below · Bigger fields · No thumbnail</p>
+
+<div class="row">
+
+  <!-- EMPTY STATE -->
+  <div class="col">
+    <div class="col-label">Empty</div>
+    <div class="dialog">
+      <div class="dialog-inner">
+
+        <div class="dialog-header">
+          <div class="dialog-title">Bench Press</div>
+          <div class="dialog-close">✕</div>
+        </div>
+        <div class="dialog-cat">Push · Compound</div>
+
+        <!-- Sets -->
+        <div class="field-label">Sets</div>
+        <div class="big-stepper">
+          <div class="s-circle">−</div>
+          <div class="s-val"><div class="s-num">3</div><div class="s-unit">sets</div></div>
+          <div class="s-circle">+</div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <!-- Drums -->
+        <div class="drums-row">
+          <div class="drum-wrap">
+            <div class="drum-title">Target Reps</div>
+            <div class="drum">
+              <div class="drum-track">
+                <div class="drum-item">7</div>
+                <div class="drum-item">8</div>
+                <div class="drum-item near">9</div>
+                <div class="drum-item sel">10</div>
+                <div class="drum-item near">11</div>
+                <div class="drum-item">12</div>
+                <div class="drum-item">13</div>
+              </div>
+            </div>
+          </div>
+          <div class="drum-wrap">
+            <div class="drum-title">RPE <span class="opt-pill">optional</span></div>
+            <div class="drum rpe">
+              <div class="drum-track">
+                <div class="drum-item none-val">NONE</div>
+                <div class="drum-item none-val">NONE</div>
+                <div class="drum-item sel none-val">NONE</div>
+                <div class="drum-item near">6</div>
+                <div class="drum-item">6.5</div>
+                <div class="drum-item">7</div>
+                <div class="drum-item">7.5</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <!-- URL (first) -->
+        <div class="field-label">Reference Video <span class="opt-pill">optional</span></div>
+        <div class="url-field">
+          <div class="yt-badge">
+            <svg width="18" height="13" viewBox="0 0 18 13" fill="none">
+              <path d="M17.63 2.04A2.25 2.25 0 0 0 16.04.44C14.64.1 9 .1 9 .1S3.36.1 1.96.44A2.25 2.25 0 0 0 .37 2.04C0 3.45 0 6.38 0 6.38s0 2.93.37 4.34A2.25 2.25 0 0 0 1.96 12.1C3.36 12.44 9 12.44 9 12.44s5.64 0 7.04-.34a2.25 2.25 0 0 0 1.59-1.38C18 9.31 18 6.38 18 6.38s0-2.93-.37-4.34z" fill="#FF0000"/>
+              <path d="M7.2 9.1l4.68-2.72L7.2 3.66V9.1z" fill="white"/>
+            </svg>
+          </div>
+          <div class="url-text">
+            <div class="url-label">YouTube URL</div>
+            <div class="url-value">Paste a link…</div>
+          </div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <!-- Notes (after URL) -->
+        <div class="field-label">Coaching Note <span class="opt-pill">optional</span></div>
+        <textarea class="notes-area" placeholder="e.g. pause 1s at chest, controlled eccentric…" readonly></textarea>
+
+        <div class="save-btn">Save</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILLED STATE -->
+  <div class="col">
+    <div class="col-label">Filled</div>
+    <div class="dialog">
+      <div class="dialog-inner">
+
+        <div class="dialog-header">
+          <div class="dialog-title">Bench Press</div>
+          <div class="dialog-close">✕</div>
+        </div>
+        <div class="dialog-cat">Push · Compound</div>
+
+        <!-- Sets -->
+        <div class="field-label">Sets</div>
+        <div class="big-stepper">
+          <div class="s-circle">−</div>
+          <div class="s-val"><div class="s-num">3</div><div class="s-unit">sets</div></div>
+          <div class="s-circle">+</div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <!-- Drums -->
+        <div class="drums-row">
+          <div class="drum-wrap">
+            <div class="drum-title">Target Reps</div>
+            <div class="drum">
+              <div class="drum-track">
+                <div class="drum-item">7</div>
+                <div class="drum-item">8</div>
+                <div class="drum-item near">9</div>
+                <div class="drum-item sel">10</div>
+                <div class="drum-item near">11</div>
+                <div class="drum-item">12</div>
+                <div class="drum-item">13</div>
+              </div>
+            </div>
+          </div>
+          <div class="drum-wrap">
+            <div class="drum-title">RPE <span class="opt-pill">optional</span></div>
+            <div class="drum rpe">
+              <div class="drum-track">
+                <div class="drum-item">7</div>
+                <div class="drum-item">7.5</div>
+                <div class="drum-item near">7.5</div>
+                <div class="drum-item sel">8</div>
+                <div class="drum-item near">8.5</div>
+                <div class="drum-item">9</div>
+                <div class="drum-item">9.5</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <!-- URL (first) -->
+        <div class="field-label">Reference Video <span class="opt-pill">optional</span></div>
+        <div class="url-field">
+          <div class="yt-badge">
+            <svg width="18" height="13" viewBox="0 0 18 13" fill="none">
+              <path d="M17.63 2.04A2.25 2.25 0 0 0 16.04.44C14.64.1 9 .1 9 .1S3.36.1 1.96.44A2.25 2.25 0 0 0 .37 2.04C0 3.45 0 6.38 0 6.38s0 2.93.37 4.34A2.25 2.25 0 0 0 1.96 12.1C3.36 12.44 9 12.44 9 12.44s5.64 0 7.04-.34a2.25 2.25 0 0 0 1.59-1.38C18 9.31 18 6.38 18 6.38s0-2.93-.37-4.34z" fill="#FF0000"/>
+              <path d="M7.2 9.1l4.68-2.72L7.2 3.66V9.1z" fill="white"/>
+            </svg>
+          </div>
+          <div class="url-text">
+            <div class="url-label">YouTube URL</div>
+            <div class="url-value filled">youtube.com/watch?v=rT7DgCr-3pk</div>
+          </div>
+          <span style="font-size:13px;color:rgba(255,255,255,0.2);margin-left:4px;">✕</span>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <!-- Notes -->
+        <div class="field-label">Coaching Note <span class="opt-pill">optional</span></div>
+        <textarea class="notes-area filled" readonly>Pause 1s at chest. Keep shoulder blades retracted. Drive through full ROM.</textarea>
+
+        <div class="save-btn">Save</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

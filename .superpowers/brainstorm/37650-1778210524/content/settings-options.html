@@ -1,0 +1,271 @@
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0d0d0f; color: #f0f0f5; font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 20px 16px 80px; }
+h2 { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+.subtitle { font-size: 12px; color: rgba(255,255,255,0.4); margin-bottom: 22px; line-height: 1.5; }
+
+.options { display: flex; flex-direction: column; gap: 18px; }
+.option {
+  border-radius: 20px; border: 2px solid transparent;
+  background: rgba(255,255,255,0.04); overflow: hidden;
+  cursor: pointer; transition: border-color 0.18s, transform 0.12s;
+}
+.option:hover { transform: translateY(-1px); }
+.option.selected { border-color: #6366f1; }
+.option-header {
+  padding: 13px 16px 11px; display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.letter-badge { width: 27px; height: 27px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; flex-shrink: 0; }
+.option-title { font-size: 13.5px; font-weight: 700; }
+.option-sub { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; line-height: 1.4; }
+.rec-badge { margin-left: auto; background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.4); border-radius: 20px; padding: 3px 10px; font-size: 10px; font-weight: 700; color: #818cf8; flex-shrink: 0; }
+.mockup { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+
+/* shared */
+.sec-label { font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.3); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; padding-left: 2px; }
+.glass-card { background: rgba(255,255,255,0.06); border-radius: 18px; border: 1px solid rgba(255,255,255,0.08); overflow: hidden; }
+.tile { display: flex; align-items: center; gap: 12px; padding: 13px 14px; }
+.tile + .tile { border-top: 1px solid rgba(255,255,255,0.06); }
+.icon-badge { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+.tile-main { flex: 1; }
+.tile-title { font-size: 14px; font-weight: 500; }
+.tile-sub { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 1px; }
+.chev { font-size: 12px; color: rgba(255,255,255,0.2); }
+.toggle { width: 44px; height: 26px; border-radius: 13px; background: #34c759; position: relative; flex-shrink: 0; }
+.toggle-dot { position: absolute; right: 3px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: white; }
+
+/* ── Option A: Profile hero + grid ── */
+.profile-hero-card {
+  background: linear-gradient(135deg, rgba(99,102,241,0.2) 0%, rgba(99,102,241,0.06) 100%);
+  border-radius: 18px; border: 1px solid rgba(99,102,241,0.25);
+  padding: 16px; display: flex; align-items: center; gap: 14px;
+}
+.avatar { width: 52px; height: 52px; border-radius: 50%; background: rgba(99,102,241,0.2); border: 2px solid rgba(99,102,241,0.4); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+.hero-name { font-size: 16px; font-weight: 800; }
+.hero-badges { display: flex; gap: 6px; margin-top: 5px; flex-wrap: wrap; }
+.hero-badge { padding: 3px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; }
+.nav-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.grid-tile {
+  background: rgba(255,255,255,0.05); border-radius: 16px; border: 1px solid rgba(255,255,255,0.07);
+  padding: 14px 12px; display: flex; flex-direction: column; gap: 8px; cursor: pointer;
+}
+.grid-icon { width: 38px; height: 38px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+.grid-label { font-size: 13px; font-weight: 600; }
+.grid-sub { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 1px; }
+.danger-card {
+  background: rgba(255,69,58,0.08); border-radius: 16px; border: 1px solid rgba(255,69,58,0.25);
+  padding: 14px; display: flex; align-items: center; gap: 12px; cursor: pointer;
+}
+.danger-icon { width: 38px; height: 38px; border-radius: 11px; background: rgba(255,69,58,0.15); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.danger-title { font-size: 13.5px; font-weight: 600; color: #ff453a; }
+.danger-sub { font-size: 10.5px; color: rgba(255,69,58,0.6); margin-top: 2px; }
+
+/* ── Option B: Big icon tiles list ── */
+.big-tile { display: flex; align-items: center; gap: 14px; padding: 14px 16px; }
+.big-tile + .big-tile { border-top: 1px solid rgba(255,255,255,0.06); }
+.big-icon { width: 44px; height: 44px; border-radius: 13px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.big-title { font-size: 15px; font-weight: 600; }
+.big-sub { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+
+/* ── Option C: Compact icon row ── */
+.compact-header {
+  display: flex; align-items: center; gap: 12px; padding: 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.compact-avatar { width: 42px; height: 42px; border-radius: 50%; background: rgba(99,102,241,0.18); border: 1.5px solid rgba(99,102,241,0.35); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+.compact-name { font-size: 15px; font-weight: 700; }
+.compact-sub { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 1px; }
+.icon-row { display: flex; gap: 8px; padding: 12px 14px; }
+.icon-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px; background: rgba(255,255,255,0.04); border-radius: 13px; border: 1px solid rgba(255,255,255,0.07); cursor: pointer; }
+.icon-btn-icon { font-size: 20px; }
+.icon-btn-label { font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.45); text-align: center; }
+</style>
+
+<h2>Settings screen — 3 directions</h2>
+<p class="subtitle">Current screen uses generic ListTile rows with a plain AppBar. These designs match the glass + card aesthetic used throughout the rest of the app.</p>
+
+<div class="options">
+
+  <!-- Option A -->
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="option-header">
+      <div class="letter-badge" style="background:rgba(99,102,241,0.2);color:#818cf8;">A</div>
+      <div>
+        <div class="option-title">Profile hero card + navigation grid</div>
+        <div class="option-sub">Profile summary at top, nav items in a 2-column tile grid, danger zone as standalone card</div>
+      </div>
+      <div class="rec-badge">⭐ Recommended</div>
+    </div>
+    <div class="mockup">
+      <!-- Profile hero -->
+      <div class="profile-hero-card">
+        <div class="avatar">👤</div>
+        <div style="flex:1;">
+          <div class="hero-name">Tarek</div>
+          <div class="hero-badges">
+            <div class="hero-badge" style="background:rgba(52,199,89,0.15);color:#34c759;">BMI 24.1 · Normal</div>
+            <div class="hero-badge" style="background:rgba(99,102,241,0.15);color:#818cf8;">2,180 kcal</div>
+          </div>
+        </div>
+        <div class="chev" style="font-size:16px;">›</div>
+      </div>
+
+      <!-- Nav grid -->
+      <div class="sec-label" style="margin-top:4px;">TRAINING</div>
+      <div class="nav-grid">
+        <div class="grid-tile">
+          <div class="grid-icon" style="background:rgba(99,102,241,0.15);">🏋️</div>
+          <div><div class="grid-label">Programs</div><div class="grid-sub">Manage plans</div></div>
+        </div>
+        <div class="grid-tile">
+          <div class="grid-icon" style="background:rgba(52,199,89,0.15);">✅</div>
+          <div><div class="grid-label">Daily Tasks</div><div class="grid-sub">Your goals</div></div>
+        </div>
+        <div class="grid-tile">
+          <div class="grid-icon" style="background:rgba(50,173,230,0.15);">📋</div>
+          <div><div class="grid-label">History</div><div class="grid-sub">Past sessions</div></div>
+        </div>
+        <div class="grid-tile">
+          <div class="grid-icon" style="background:rgba(255,159,10,0.15);">📚</div>
+          <div><div class="grid-label">Exercises</div><div class="grid-sub">Library</div></div>
+        </div>
+      </div>
+
+      <!-- Dark mode -->
+      <div class="sec-label">APPEARANCE</div>
+      <div class="glass-card">
+        <div class="tile">
+          <div class="icon-badge" style="background:rgba(99,102,241,0.15);">🌙</div>
+          <div class="tile-main"><div class="tile-title">Dark Mode</div></div>
+          <div class="toggle"><div class="toggle-dot"></div></div>
+        </div>
+      </div>
+
+      <!-- Danger -->
+      <div class="sec-label">DATA</div>
+      <div class="danger-card">
+        <div class="danger-icon">🗑️</div>
+        <div style="flex:1;">
+          <div class="danger-title">Clear All Sessions & PRs</div>
+          <div class="danger-sub">Permanently removes all history</div>
+        </div>
+        <div class="chev" style="color:rgba(255,69,58,0.4);">›</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option B -->
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="option-header">
+      <div class="letter-badge" style="background:rgba(52,199,89,0.15);color:#34c759;">B</div>
+      <div>
+        <div class="option-title">Bigger tiles, stronger icons, no plain ListTile</div>
+        <div class="option-sub">Same list layout but with bigger icon badges (44px), more padding, and visual weight per section</div>
+      </div>
+    </div>
+    <div class="mockup">
+      <!-- Profile featured tile -->
+      <div class="glass-card" style="background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(99,102,241,0.04));border-color:rgba(99,102,241,0.2);">
+        <div class="big-tile">
+          <div class="big-icon" style="background:rgba(99,102,241,0.18);">👤</div>
+          <div style="flex:1;">
+            <div class="big-title">Set Profile</div>
+            <div class="big-sub">BMI · calories · macros</div>
+          </div>
+          <div class="chev">›</div>
+        </div>
+      </div>
+
+      <div class="sec-label">TRAINING</div>
+      <div class="glass-card">
+        <div class="big-tile">
+          <div class="big-icon" style="background:rgba(99,102,241,0.15);">🏋️</div>
+          <div class="tile-main"><div class="big-title">Manage Programs</div><div class="big-sub">Training plans & WODs</div></div>
+          <div class="chev">›</div>
+        </div>
+        <div class="big-tile">
+          <div class="big-icon" style="background:rgba(52,199,89,0.15);">✅</div>
+          <div class="tile-main"><div class="big-title">Daily Tasks</div><div class="big-sub">Manage your daily goals</div></div>
+          <div class="chev">›</div>
+        </div>
+        <div class="big-tile">
+          <div class="big-icon" style="background:rgba(50,173,230,0.15);">📋</div>
+          <div class="tile-main"><div class="big-title">Workout History</div><div class="big-sub">Browse past sessions</div></div>
+          <div class="chev">›</div>
+        </div>
+        <div class="big-tile">
+          <div class="big-icon" style="background:rgba(255,159,10,0.15);">📚</div>
+          <div class="tile-main"><div class="big-title">Exercise Library</div><div class="big-sub">View and manage exercises</div></div>
+          <div class="chev">›</div>
+        </div>
+      </div>
+
+      <div class="sec-label">APPEARANCE</div>
+      <div class="glass-card">
+        <div class="big-tile">
+          <div class="big-icon" style="background:rgba(99,102,241,0.15);">🌙</div>
+          <div class="tile-main"><div class="big-title">Dark Mode</div></div>
+          <div class="toggle"><div class="toggle-dot"></div></div>
+        </div>
+      </div>
+
+      <div class="sec-label">DATA</div>
+      <div class="glass-card" style="background:rgba(255,69,58,0.06);border-color:rgba(255,69,58,0.2);">
+        <div class="big-tile">
+          <div class="big-icon" style="background:rgba(255,69,58,0.15);">🗑️</div>
+          <div class="tile-main"><div class="big-title" style="color:#ff453a;">Clear All Sessions & PRs</div><div class="big-sub" style="color:rgba(255,69,58,0.6);">Cannot be undone</div></div>
+          <div class="chev" style="color:rgba(255,69,58,0.4);">›</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option C -->
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="option-header">
+      <div class="letter-badge" style="background:rgba(255,159,10,0.15);color:#ff9f0a;">C</div>
+      <div>
+        <div class="option-title">Compact profile header + icon button row</div>
+        <div class="option-sub">Small profile strip at the top of the card, nav items as a horizontal row of icon buttons below</div>
+      </div>
+    </div>
+    <div class="mockup">
+      <div class="glass-card">
+        <!-- Compact profile header inside card -->
+        <div class="compact-header">
+          <div class="compact-avatar">👤</div>
+          <div style="flex:1;">
+            <div class="compact-name">Tarek</div>
+            <div class="compact-sub">BMI 24.1 · 2,180 kcal/day</div>
+          </div>
+          <div style="font-size:11px;color:#818cf8;font-weight:700;">Edit ›</div>
+        </div>
+        <!-- Icon row -->
+        <div class="icon-row">
+          <div class="icon-btn"><div class="icon-btn-icon">🏋️</div><div class="icon-btn-label">Programs</div></div>
+          <div class="icon-btn"><div class="icon-btn-icon">✅</div><div class="icon-btn-label">Tasks</div></div>
+          <div class="icon-btn"><div class="icon-btn-icon">📋</div><div class="icon-btn-label">History</div></div>
+          <div class="icon-btn"><div class="icon-btn-icon">📚</div><div class="icon-btn-label">Exercises</div></div>
+        </div>
+      </div>
+
+      <div class="sec-label">APPEARANCE</div>
+      <div class="glass-card">
+        <div class="tile">
+          <div class="icon-badge" style="background:rgba(99,102,241,0.15);">🌙</div>
+          <div class="tile-main"><div class="tile-title">Dark Mode</div></div>
+          <div class="toggle"><div class="toggle-dot"></div></div>
+        </div>
+      </div>
+
+      <div class="sec-label">DATA</div>
+      <div class="danger-card">
+        <div class="danger-icon">🗑️</div>
+        <div><div class="danger-title">Clear All Sessions & PRs</div><div class="danger-sub">Cannot be undone</div></div>
+        <div class="chev" style="color:rgba(255,69,58,0.4);">›</div>
+      </div>
+    </div>
+  </div>
+
+</div>

@@ -1,0 +1,49 @@
+{
+  "agents": {
+    "lead": {
+      "name": "Lead",
+      "role": "Lead / App Architect",
+      "universe": "descriptive",
+      "charter": ".squad/agents/lead/charter.md",
+      "status": "active",
+      "legacy_named": false,
+      "cast_at": "2026-09-04"
+    },
+    "flutter": {
+      "name": "Flutter",
+      "role": "Flutter Engineer",
+      "universe": "descriptive",
+      "charter": ".squad/agents/flutter/charter.md",
+      "status": "active",
+      "legacy_named": false,
+      "cast_at": "2026-09-04"
+    },
+    "coach": {
+      "name": "Coach",
+      "role": "Fitness Domain Expert",
+      "universe": "descriptive",
+      "charter": ".squad/agents/coach/charter.md",
+      "status": "active",
+      "legacy_named": false,
+      "cast_at": "2026-09-04"
+    },
+    "tester": {
+      "name": "Tester",
+      "role": "QA / Test Engineer",
+      "universe": "descriptive",
+      "charter": ".squad/agents/tester/charter.md",
+      "status": "active",
+      "legacy_named": false,
+      "cast_at": "2026-09-04"
+    },
+    "designer": {
+      "name": "Designer",
+      "role": "UI/UX Designer",
+      "universe": "descriptive",
+      "charter": ".squad/agents/designer/charter.md",
+      "status": "active",
+      "legacy_named": false,
+      "cast_at": "2026-09-04"
+    }
+  }
+}

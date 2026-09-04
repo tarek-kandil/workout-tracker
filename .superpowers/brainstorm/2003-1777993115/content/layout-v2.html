@@ -1,0 +1,211 @@
+<style>
+  .mockup-phone {
+    background: #0f0f1a;
+    border-radius: 28px;
+    border: 2px solid #2a2a3e;
+    overflow: hidden;
+    font-family: -apple-system, sans-serif;
+    color: #fff;
+    width: 300px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    font-size: 11px;
+  }
+  .phone-bar {
+    background: #1a1a2e;
+    padding: 8px 12px 6px;
+    border-bottom: 1px solid #2a2a40;
+  }
+  .phone-bar .title { font-size: 13px; font-weight: 700; }
+  .phone-bar .subtitle { font-size: 10px; color: #888; }
+  .phone-bar .progress { height: 2px; background: #2a2a40; border-radius: 1px; margin-top: 6px; }
+  .phone-bar .progress-fill { height: 2px; background: #6c63ff; border-radius: 1px; width: 30%; }
+
+  .ex-card {
+    margin: 8px;
+    border-radius: 14px;
+    padding: 10px 12px;
+    border: 1px solid #2a2a40;
+    background: rgba(255,255,255,0.04);
+  }
+  .ex-card.current {
+    background: rgba(108,99,255,0.12);
+    border: 1.5px solid rgba(108,99,255,0.6);
+    box-shadow: 0 0 14px rgba(108,99,255,0.2);
+  }
+  .ex-card.done {
+    background: rgba(34,197,94,0.06);
+    border-color: rgba(34,197,94,0.2);
+  }
+  .ex-card.upcoming { opacity: 0.75; }
+
+  .card-header { display: flex; align-items: flex-start; justify-content: space-between; }
+  .ex-name { font-weight: 700; font-size: 13px; }
+  .ex-meta { color: #888; font-size: 9px; margin-top: 1px; }
+  .current-badge { display:inline-block; background:#6c63ff; color:#fff; font-size:8px; font-weight:800; padding:1px 6px; border-radius:4px; letter-spacing:0.5px; margin-bottom:4px; }
+  .done-badge { display:inline-block; background:rgba(34,197,94,0.2); color:#4ade80; font-size:8px; font-weight:700; padding:1px 6px; border-radius:4px; margin-bottom:4px; }
+  .menu-dots { color:#444; font-size:13px; cursor:pointer; padding: 0 2px; }
+
+  /* Set rows */
+  .set-rows { margin-top: 8px; }
+  .set-row { display: flex; align-items: center; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); gap: 6px; }
+  .set-row:last-child { border-bottom: none; }
+  .set-num { width: 30px; font-size: 9px; color: #555; font-weight: 600; }
+  .set-done-icon { width: 14px; color: #4ade80; font-size: 10px; flex-shrink: 0; }
+  .set-field { flex: 1; background: rgba(255,255,255,0.07); border-radius: 6px; padding: 4px 6px; text-align: center; }
+  .set-field .sf-lbl { font-size: 8px; color: #666; letter-spacing: 0.3px; }
+  .set-field .sf-val { font-size: 13px; font-weight: 700; line-height: 1.2; }
+  .set-field.active-field { background: rgba(108,99,255,0.2); }
+  .set-check { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid #555; display: flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; }
+  .set-check.filled { background: #4ade80; border-color: #4ade80; color: #000; font-weight: 800; }
+  .set-check.active-check { border-color: #6c63ff; color: #6c63ff; }
+  .set-row.active-row .set-num { color: #a5b4fc; font-weight: 800; }
+  .set-row.active-row .set-field { background: rgba(108,99,255,0.15); }
+  .set-row.past-row { opacity: 0.6; }
+  .set-row.future-row { opacity: 0.4; }
+  .set-row.future-row .set-field { background: rgba(255,255,255,0.04); }
+
+  .last-pr { display: flex; gap: 10px; margin-top: 8px; padding-top: 7px; border-top: 1px solid rgba(255,255,255,0.06); }
+  .last-pr span { font-size: 9px; color: #555; }
+  .last-pr span b { color: #888; }
+
+  .insert-btn {
+    text-align: center;
+    color: #6c63ff;
+    font-size: 9px;
+    padding: 3px 0;
+    opacity: 0.5;
+    letter-spacing: 0.3px;
+  }
+
+  /* upcoming last sets */
+  .prev-rows { margin-top: 7px; }
+  .prev-row { display: flex; gap: 6px; padding: 3px 0; align-items: center; }
+  .prev-num { width: 30px; font-size: 9px; color: #555; }
+  .prev-val { font-size: 10px; color: #888; font-weight: 600; }
+  .prev-label { font-size: 8px; color: #555; margin-top: 5px; letter-spacing: 0.5px; font-weight: 700; }
+
+  .wrap { display: flex; justify-content: center; padding: 20px; background: #111; min-height: 100vh; }
+</style>
+
+<h2>Option A — Set rows detail</h2>
+<p class="subtitle">Each set is its own row. Current set highlighted, completed sets shown with what was logged, future sets dimmed but visible.</p>
+
+<div style="display:flex;justify-content:center;padding:16px 0;">
+<div class="mockup-phone">
+  <div class="phone-bar">
+    <div class="title">Workout A · <span style="color:#888;font-size:10px;font-weight:400">Week 3</span></div>
+    <div class="subtitle">Bench Press · Set 2 of 4</div>
+    <div class="progress"><div class="progress-fill"></div></div>
+  </div>
+
+  <!-- ── Completed exercise ── -->
+  <div class="insert-btn">＋ add exercise here</div>
+  <div class="ex-card done">
+    <div class="card-header">
+      <div>
+        <span class="done-badge">✓ DONE</span>
+        <div class="ex-name">Squat</div>
+        <div class="ex-meta">4 sets · 8–10 reps</div>
+      </div>
+      <div class="menu-dots">···</div>
+    </div>
+    <div class="set-rows">
+      <div class="set-row past-row">
+        <div class="set-num">Set 1</div>
+        <div class="set-check filled">✓</div>
+        <div class="set-field"><div class="sf-lbl">WEIGHT</div><div class="sf-val">80 kg</div></div>
+        <div class="set-field"><div class="sf-lbl">REPS</div><div class="sf-val">9</div></div>
+      </div>
+      <div class="set-row past-row">
+        <div class="set-num">Set 2</div>
+        <div class="set-check filled">✓</div>
+        <div class="set-field"><div class="sf-lbl">WEIGHT</div><div class="sf-val">82.5 kg</div></div>
+        <div class="set-field"><div class="sf-lbl">REPS</div><div class="sf-val">8</div></div>
+      </div>
+      <div class="set-row past-row">
+        <div class="set-num">Set 3</div>
+        <div class="set-check filled">✓</div>
+        <div class="set-field"><div class="sf-lbl">WEIGHT</div><div class="sf-val">82.5 kg</div></div>
+        <div class="set-field"><div class="sf-lbl">REPS</div><div class="sf-val">7</div></div>
+      </div>
+      <div class="set-row past-row">
+        <div class="set-num">Set 4</div>
+        <div class="set-check filled">✓</div>
+        <div class="set-field"><div class="sf-lbl">WEIGHT</div><div class="sf-val">80 kg</div></div>
+        <div class="set-field"><div class="sf-lbl">REPS</div><div class="sf-val">8</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Current exercise ── -->
+  <div class="insert-btn">＋ add exercise here</div>
+  <div class="ex-card current">
+    <div class="card-header">
+      <div>
+        <span class="current-badge">▶ NOW</span>
+        <div class="ex-name" style="font-size:15px;">Bench Press</div>
+        <div class="ex-meta">4 sets · 8–10 reps · Last: 80×9 · PR 90 kg</div>
+      </div>
+      <div class="menu-dots">···</div>
+    </div>
+    <div class="set-rows">
+      <!-- Completed set -->
+      <div class="set-row past-row">
+        <div class="set-num">Set 1</div>
+        <div class="set-check filled">✓</div>
+        <div class="set-field"><div class="sf-lbl">WEIGHT</div><div class="sf-val">80 kg</div></div>
+        <div class="set-field"><div class="sf-lbl">REPS</div><div class="sf-val">9</div></div>
+      </div>
+      <!-- Active set -->
+      <div class="set-row active-row">
+        <div class="set-num">Set 2</div>
+        <div class="set-check active-check">○</div>
+        <div class="set-field active-field"><div class="sf-lbl">WEIGHT</div><div class="sf-val">80 kg</div></div>
+        <div class="set-field active-field"><div class="sf-lbl">REPS</div><div class="sf-val">9</div></div>
+      </div>
+      <!-- Future sets -->
+      <div class="set-row future-row">
+        <div class="set-num">Set 3</div>
+        <div class="set-check">○</div>
+        <div class="set-field"><div class="sf-lbl">WEIGHT</div><div class="sf-val">80 kg</div></div>
+        <div class="set-field"><div class="sf-lbl">REPS</div><div class="sf-val">—</div></div>
+      </div>
+      <div class="set-row future-row">
+        <div class="set-num">Set 4</div>
+        <div class="set-check">○</div>
+        <div class="set-field"><div class="sf-lbl">WEIGHT</div><div class="sf-val">80 kg</div></div>
+        <div class="set-field"><div class="sf-lbl">REPS</div><div class="sf-val">—</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Upcoming exercise ── -->
+  <div class="insert-btn">＋ add exercise here</div>
+  <div class="ex-card upcoming">
+    <div class="card-header">
+      <div>
+        <div class="ex-name">Romanian Deadlift</div>
+        <div class="ex-meta">3 sets · 10–12 reps</div>
+      </div>
+      <div class="menu-dots">···</div>
+    </div>
+    <div class="prev-label">LAST SESSION</div>
+    <div class="prev-rows">
+      <div class="prev-row">
+        <div class="prev-num">Set 1</div>
+        <div class="prev-val">70 kg × 11</div>
+      </div>
+      <div class="prev-row">
+        <div class="prev-num">Set 2</div>
+        <div class="prev-val">70 kg × 10</div>
+      </div>
+      <div class="prev-row">
+        <div class="prev-num">Set 3</div>
+        <div class="prev-val">72.5 kg × 9</div>
+      </div>
+    </div>
+  </div>
+  <div class="insert-btn">＋ add exercise here</div>
+
+</div>
+</div>

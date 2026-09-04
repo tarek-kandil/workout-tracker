@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exercise Edit — Input Style Options</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0f0f1a;
+    font-family: 'Space Grotesk', -apple-system, sans-serif;
+    color: #fff;
+    padding: 28px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  h1 { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { font-size: 12px; color: rgba(255,255,255,0.4); margin-bottom: 24px; }
+
+  .columns {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .col-label {
+    font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.3);
+    letter-spacing: 1px; text-transform: uppercase;
+  }
+
+  /* ── Dialog shell ── */
+  .dialog {
+    width: 360px;
+    background: #141428;
+    border: 1px solid rgba(255,255,255,0.11);
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow: 0 30px 70px rgba(0,0,0,0.7);
+    position: relative;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.2s;
+  }
+  .dialog.selected { border-color: #6366F1; }
+  .dialog:hover { border-color: rgba(99,102,241,0.4); }
+  .dialog::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+    z-index: 10;
+  }
+
+  .dialog-scroll { padding: 22px 22px 0; }
+
+  .dialog-header {
+    display: flex; align-items: flex-start; gap: 10px; margin-bottom: 4px;
+  }
+  .dialog-title { font-size: 20px; font-weight: 800; flex: 1; letter-spacing: -0.3px; }
+  .dialog-close {
+    width: 28px; height: 28px;
+    background: rgba(255,255,255,0.07); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; color: rgba(255,255,255,0.35); flex-shrink: 0;
+  }
+  .dialog-cat { font-size: 12px; color: rgba(255,255,255,0.3); margin-bottom: 20px; }
+
+  .field-label {
+    font-size: 10px; font-weight: 700;
+    color: rgba(255,255,255,0.28);
+    letter-spacing: 1.1px; text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .section-divider { height: 1px; background: rgba(255,255,255,0.07); margin: 18px 0; }
+
+  /* ── SETS big stepper (shared) ── */
+  .big-stepper {
+    display: flex; align-items: center; justify-content: center; gap: 24px;
+    margin-bottom: 4px;
+  }
+  .s-circle {
+    width: 46px; height: 46px;
+    background: rgba(99,102,241,0.13);
+    border: 1px solid rgba(99,102,241,0.28);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; color: #818cf8; line-height: 1;
+  }
+  .s-val { text-align: center; }
+  .s-num { font-size: 52px; font-weight: 900; line-height: 1; }
+  .s-unit { font-size: 12px; color: rgba(255,255,255,0.3); margin-top: 2px; }
+
+  /* ────────────────────────────────────────
+     OPTION A — NUMPAD
+  ──────────────────────────────────────── */
+
+  /* Tappable field */
+  .tap-field {
+    display: flex; align-items: center;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    padding: 12px 16px;
+    margin-bottom: 2px;
+    gap: 12px;
+  }
+  .tap-field.focused {
+    border-color: rgba(99,102,241,0.5);
+    background: rgba(99,102,241,0.07);
+  }
+  .tap-field.rpe-focused {
+    border-color: rgba(251,191,36,0.4);
+    background: rgba(251,191,36,0.06);
+  }
+  .tap-icon { font-size: 18px; flex-shrink: 0; }
+  .tap-label { font-size: 13px; color: rgba(255,255,255,0.5); flex: 1; }
+  .tap-val { font-size: 22px; font-weight: 800; }
+  .tap-val.indigo { color: #818cf8; }
+  .tap-val.amber { color: rgba(251,191,36,0.9); }
+  .tap-caret { font-size: 16px; color: rgba(99,102,241,0.6); animation: blink 1s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  /* Numpad panel */
+  .numpad {
+    background: #1a1a35;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    padding: 12px 16px 20px;
+  }
+  .numpad-display {
+    text-align: center;
+    font-size: 28px; font-weight: 800;
+    color: #818cf8;
+    padding: 8px 0 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    margin-bottom: 12px;
+    letter-spacing: 2px;
+  }
+  .numpad-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .np-key {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 14px 0;
+    font-size: 20px; font-weight: 700;
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .np-key.np-del {
+    background: rgba(255,69,58,0.1);
+    border-color: rgba(255,69,58,0.15);
+    color: rgba(255,69,58,0.7);
+    font-size: 16px;
+  }
+  .np-key.np-done {
+    background: linear-gradient(135deg, #6366F1, #818cf8);
+    border-color: transparent;
+    color: #fff;
+    font-size: 15px; font-weight: 700;
+    box-shadow: 0 4px 14px rgba(99,102,241,0.4);
+  }
+
+  /* ────────────────────────────────────────
+     OPTION B — CAROUSEL / DRUM WHEEL
+  ──────────────────────────────────────── */
+
+  .carousel-block { margin-bottom: 2px; }
+  .carousel-header {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  }
+  .carousel-icon { font-size: 16px; color: rgba(255,255,255,0.4); }
+  .carousel-name { font-size: 13px; color: rgba(255,255,255,0.55); flex: 1; }
+  .carousel-val { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.5); }
+
+  .drum {
+    position: relative;
+    height: 130px;
+    overflow: hidden;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.09);
+  }
+
+  /* Selection window */
+  .drum::before {
+    content: '';
+    position: absolute; left: 0; right: 0;
+    top: 50%; transform: translateY(-50%);
+    height: 44px;
+    background: rgba(99,102,241,0.12);
+    border-top: 1px solid rgba(99,102,241,0.3);
+    border-bottom: 1px solid rgba(99,102,241,0.3);
+    z-index: 2;
+    pointer-events: none;
+  }
+  /* Fade overlays */
+  .drum::after {
+    content: '';
+    position: absolute; left: 0; right: 0; top: 0; bottom: 0;
+    background: linear-gradient(
+      to bottom,
+      #141428 0%,
+      transparent 30%,
+      transparent 70%,
+      #141428 100%
+    );
+    z-index: 3; pointer-events: none;
+  }
+
+  .drum-track {
+    position: absolute; left: 0; right: 0;
+    display: flex; flex-direction: column;
+    align-items: center;
+    top: 50%; transform: translateY(-65%); /* offset to show 5 at selected=3rd */
+  }
+  .drum-item {
+    height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700;
+    color: rgba(255,255,255,0.2);
+    width: 100%;
+    transition: all 0.1s;
+    position: relative; z-index: 1;
+  }
+  .drum-item.selected {
+    font-size: 26px; font-weight: 800;
+    color: #fff;
+  }
+  .drum-item.near {
+    color: rgba(255,255,255,0.45);
+    font-size: 20px;
+  }
+
+  /* RPE drum — amber tint */
+  .drum.rpe::before {
+    background: rgba(251,191,36,0.1);
+    border-top-color: rgba(251,191,36,0.3);
+    border-bottom-color: rgba(251,191,36,0.3);
+  }
+  .drum.rpe .drum-item.selected { color: rgba(251,191,36,0.95); }
+  .drum.rpe .drum-item.near { color: rgba(251,191,36,0.4); }
+
+  /* Side-by-side drums layout */
+  .drums-row {
+    display: flex; gap: 12px;
+  }
+  .drum-wrap { flex: 1; }
+  .drum-title {
+    font-size: 10px; font-weight: 700;
+    color: rgba(255,255,255,0.28);
+    letter-spacing: 1px; text-transform: uppercase;
+    text-align: center; margin-bottom: 6px;
+  }
+
+  /* Notes + save (shared) */
+  .notes-field {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 13px; color: rgba(255,255,255,0.28);
+    font-family: inherit; width: 100%;
+    margin-bottom: 0;
+  }
+
+  .save-btn {
+    background: linear-gradient(135deg, #6366F1, #818cf8);
+    border-radius: 14px; padding: 14px;
+    font-size: 15px; font-weight: 700; font-family: inherit;
+    color: #fff; text-align: center; width: 100%;
+    box-shadow: 0 5px 18px rgba(99,102,241,0.4);
+    margin-top: 16px;
+  }
+
+  /* Optional pill */
+  .opt-pill {
+    font-size: 9px; font-weight: 600;
+    color: rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.06);
+    border-radius: 6px; padding: 1px 6px;
+    vertical-align: middle; margin-left: 4px;
+    letter-spacing: 0.5px; text-transform: none;
+  }
+
+  .choice-note {
+    font-size: 11px; color: rgba(255,255,255,0.3);
+    font-style: italic; text-align: center; margin-top: 6px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Exercise Edit — Input Style Options</h1>
+<p class="subtitle">Timed toggle removed (exercise-level setting) · Target Reps only · Click to select</p>
+
+<div class="columns">
+
+  <!-- ═══════════════════════════════════
+       OPTION A — NUMPAD
+  ═══════════════════════════════════ -->
+  <div class="col">
+    <div class="col-label">A — Numpad</div>
+    <div class="dialog" data-choice="a" onclick="pick(this)">
+      <div class="dialog-scroll">
+        <div class="dialog-header">
+          <div class="dialog-title">Bench Press</div>
+          <div class="dialog-close">✕</div>
+        </div>
+        <div class="dialog-cat">Push · Compound</div>
+
+        <!-- Sets -->
+        <div class="field-label">Sets</div>
+        <div class="big-stepper">
+          <div class="s-circle">−</div>
+          <div class="s-val">
+            <div class="s-num">3</div>
+            <div class="s-unit">sets</div>
+          </div>
+          <div class="s-circle">+</div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <!-- Target Reps tap field (focused) -->
+        <div class="field-label">Target Reps</div>
+        <div class="tap-field focused">
+          <span class="tap-icon">🔢</span>
+          <span class="tap-label">Max reps per set</span>
+          <span class="tap-val indigo">10<span class="tap-caret">|</span></span>
+        </div>
+
+        <div class="section-divider" style="margin-top:14px;"></div>
+
+        <!-- RPE tap field -->
+        <div class="field-label">Target RPE <span class="opt-pill">optional</span></div>
+        <div class="tap-field">
+          <span class="tap-icon">🎯</span>
+          <span class="tap-label">Rate of Perceived Exertion</span>
+          <span class="tap-val amber">8</span>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <div class="field-label">Coaching Note</div>
+        <div class="notes-field">e.g. pause at bottom…</div>
+
+        <div class="save-btn">Save</div>
+      </div>
+
+      <!-- Numpad slides up from bottom -->
+      <div class="numpad" style="margin-top:14px;">
+        <div class="numpad-display">10_</div>
+        <div class="numpad-grid">
+          <div class="np-key">1</div><div class="np-key">2</div><div class="np-key">3</div>
+          <div class="np-key">4</div><div class="np-key">5</div><div class="np-key">6</div>
+          <div class="np-key">7</div><div class="np-key">8</div><div class="np-key">9</div>
+          <div class="np-key np-del">⌫</div><div class="np-key">0</div><div class="np-key np-done">Done</div>
+        </div>
+      </div>
+    </div>
+    <div class="choice-note">Tap a field → numpad slides up · "Done" dismisses it</div>
+  </div>
+
+  <!-- ═══════════════════════════════════
+       OPTION B — CAROUSEL / DRUM WHEEL
+  ═══════════════════════════════════ -->
+  <div class="col">
+    <div class="col-label">B — Drum Wheel</div>
+    <div class="dialog" data-choice="b" onclick="pick(this)">
+      <div class="dialog-scroll">
+        <div class="dialog-header">
+          <div class="dialog-title">Bench Press</div>
+          <div class="dialog-close">✕</div>
+        </div>
+        <div class="dialog-cat">Push · Compound</div>
+
+        <!-- Sets -->
+        <div class="field-label">Sets</div>
+        <div class="big-stepper">
+          <div class="s-circle">−</div>
+          <div class="s-val">
+            <div class="s-num">3</div>
+            <div class="s-unit">sets</div>
+          </div>
+          <div class="s-circle">+</div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <!-- Reps + RPE drums side by side -->
+        <div class="drums-row">
+          <div class="drum-wrap">
+            <div class="drum-title">Target Reps</div>
+            <div class="drum">
+              <div class="drum-track">
+                <div class="drum-item">7</div>
+                <div class="drum-item">8</div>
+                <div class="drum-item near">9</div>
+                <div class="drum-item selected">10</div>
+                <div class="drum-item near">11</div>
+                <div class="drum-item">12</div>
+                <div class="drum-item">13</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="drum-wrap">
+            <div class="drum-title">RPE <span class="opt-pill" style="font-size:9px;color:rgba(255,255,255,0.3);background:rgba(255,255,255,0.06);border-radius:5px;padding:1px 5px;">optional</span></div>
+            <div class="drum rpe">
+              <div class="drum-track">
+                <div class="drum-item">7</div>
+                <div class="drum-item">7.5</div>
+                <div class="drum-item near">7.5</div>
+                <div class="drum-item selected">8</div>
+                <div class="drum-item near">8.5</div>
+                <div class="drum-item">9</div>
+                <div class="drum-item">9.5</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <div class="field-label">Coaching Note</div>
+        <div class="notes-field">e.g. pause at bottom…</div>
+
+        <div class="save-btn">Save</div>
+        <div style="height:22px;"></div>
+      </div>
+    </div>
+    <div class="choice-note">Scroll wheels always visible · Reps &amp; RPE side by side · no tapping to open</div>
+  </div>
+
+</div>
+
+<script>
+  function pick(el) {
+    document.querySelectorAll('.dialog').forEach(d => d.classList.remove('selected'));
+    el.classList.add('selected');
+    try {
+      if (window.parent.__recordChoice) window.parent.__recordChoice(el.dataset.choice, 'input-' + el.dataset.choice);
+    } catch(e){}
+  }
+</script>
+</body>
+</html>

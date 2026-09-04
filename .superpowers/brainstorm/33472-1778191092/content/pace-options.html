@@ -1,0 +1,277 @@
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0d0d0f; color: #f0f0f5; font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 24px 20px 60px; }
+
+  h2 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: rgba(255,255,255,0.45); margin-bottom: 24px; }
+
+  .industry-note {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 24px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.55);
+    line-height: 1.6;
+  }
+  .industry-note strong { color: rgba(255,255,255,0.8); }
+  .industry-note .apps { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .app-tag { background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3); border-radius: 20px; padding: 3px 10px; font-size: 11px; color: #818cf8; font-weight: 600; }
+
+  .options { display: flex; flex-direction: column; gap: 16px; }
+
+  .option {
+    border-radius: 20px;
+    overflow: hidden;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.15s;
+    background: rgba(255,255,255,0.04);
+  }
+  .option:hover { transform: translateY(-1px); }
+  .option.selected { border-color: #6366f1 !important; }
+  .option.recommended { border-color: rgba(99,102,241,0.35); }
+
+  .option-header {
+    padding: 14px 16px 10px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .letter-badge {
+    width: 28px; height: 28px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 13px; flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .option-title { font-size: 14px; font-weight: 700; }
+  .option-sub { font-size: 11.5px; color: rgba(255,255,255,0.45); margin-top: 2px; line-height: 1.4; }
+  .rec-badge {
+    margin-left: auto; flex-shrink: 0;
+    background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.4);
+    border-radius: 20px; padding: 3px 10px; font-size: 10px; font-weight: 700; color: #818cf8;
+  }
+
+  .mockup-body { padding: 14px 16px; }
+
+  /* ── Option A mockup ── */
+  .pace-label { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.35); letter-spacing: 0.8px; margin-bottom: 8px; text-transform: uppercase; }
+  .pace-pills { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+  .pace-pill {
+    flex: 1; min-width: 60px;
+    padding: 8px 6px; border-radius: 12px; text-align: center;
+    border: 1.5px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.04);
+    cursor: pointer;
+  }
+  .pace-pill.active { background: rgba(99,102,241,0.2); border-color: rgba(99,102,241,0.5); }
+  .pace-pill.warn { background: rgba(255,159,10,0.12); border-color: rgba(255,159,10,0.35); }
+  .pace-pill.danger { background: rgba(255,69,58,0.1); border-color: rgba(255,69,58,0.3); }
+  .pace-pill .kg { font-size: 13px; font-weight: 800; }
+  .pace-pill.active .kg { color: #818cf8; }
+  .pace-pill.warn .kg { color: #ff9f0a; }
+  .pace-pill.danger .kg { color: #ff453a; }
+  .pace-pill .sub { font-size: 9px; color: rgba(255,255,255,0.35); margin-top: 1px; }
+
+  .timeline-row {
+    display: flex; align-items: center;
+    background: rgba(99,102,241,0.08); border-radius: 12px;
+    padding: 10px 12px; gap: 10px;
+  }
+  .tl-icon { font-size: 20px; }
+  .tl-text .reach { font-size: 13px; font-weight: 700; }
+  .tl-text .sub { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 1px; }
+  .tl-date { margin-left: auto; font-size: 13px; font-weight: 800; color: #818cf8; }
+
+  /* ── Option B mockup ── */
+  .tl-compare { display: flex; gap: 8px; }
+  .tl-box {
+    flex: 1; border-radius: 12px; padding: 10px 10px;
+    border: 1px solid rgba(255,255,255,0.07);
+    background: rgba(255,255,255,0.04);
+  }
+  .tl-box .box-label { font-size: 9px; font-weight: 700; letter-spacing: 0.7px; text-transform: uppercase; color: rgba(255,255,255,0.35); margin-bottom: 4px; }
+  .tl-box .box-weeks { font-size: 22px; font-weight: 800; }
+  .tl-box .box-unit { font-size: 10px; color: rgba(255,255,255,0.35); }
+  .tl-box .box-date { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 3px; }
+  .tl-box.current { border-color: rgba(255,159,10,0.3); }
+  .tl-box.current .box-weeks { color: #ff9f0a; }
+  .tl-box.healthy { border-color: rgba(52,199,89,0.3); }
+  .tl-box.healthy .box-weeks { color: #34c759; }
+  .tl-box.healthy .box-label { color: #34c759; }
+
+  .info-row {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(255,159,10,0.08); border-radius: 10px;
+    padding: 8px 10px; margin-top: 10px;
+    font-size: 11px; color: rgba(255,255,255,0.5); line-height: 1.4;
+  }
+
+  /* ── Option C mockup ── */
+  .slider-wrap { margin-bottom: 12px; }
+  .slider-track {
+    width: 100%; height: 6px; border-radius: 3px; position: relative;
+    background: linear-gradient(to right, #32ade6 0%, #34c759 30%, #ff9f0a 65%, #ff453a 100%);
+    margin: 8px 0 4px;
+  }
+  .slider-thumb {
+    position: absolute; top: 50%; transform: translate(-50%,-50%);
+    width: 18px; height: 18px; border-radius: 50%;
+    background: white; border: 2.5px solid #ff9f0a;
+    left: 55%;
+  }
+  .slider-labels { display: flex; justify-content: space-between; font-size: 9px; color: rgba(255,255,255,0.3); }
+  .deficit-display {
+    text-align: center; padding: 8px 0 4px;
+    font-size: 20px; font-weight: 800; color: #ff9f0a;
+  }
+  .deficit-display .unit { font-size: 11px; color: rgba(255,255,255,0.35); font-weight: 500; }
+  .warn-banner {
+    display: flex; align-items: flex-start; gap: 8px;
+    background: rgba(255,159,10,0.1); border: 1px solid rgba(255,159,10,0.3);
+    border-radius: 10px; padding: 8px 10px; margin-top: 10px;
+    font-size: 11px; color: rgba(255,159,10,0.9); line-height: 1.4;
+  }
+
+  .pros-cons { display: flex; gap: 8px; margin-top: 10px; }
+  .pros, .cons { flex: 1; }
+  .pros h5, .cons h5 { font-size: 10px; font-weight: 700; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.6px; }
+  .pros h5 { color: #34c759; }
+  .cons h5 { color: #ff453a; }
+  .pros li, .cons li { font-size: 10.5px; color: rgba(255,255,255,0.45); margin-bottom: 3px; line-height: 1.3; list-style: none; padding-left: 12px; position: relative; }
+  .pros li::before { content: '✓'; position: absolute; left: 0; color: #34c759; }
+  .cons li::before { content: '✗'; position: absolute; left: 0; color: #ff453a; }
+</style>
+
+<h2>Pace & Timeline Design</h2>
+<p class="subtitle">Three ways to show the user when they'll reach their goal — tap to select your preferred approach</p>
+
+<div class="industry-note">
+  <strong>What professional fitness apps do:</strong> Most leading apps use a <strong>weekly pace picker</strong> — the user sets how fast they want to lose/gain, the app calculates the required calorie target. This gives a sense of agency while keeping warnings natural.
+  <div class="apps">
+    <span class="app-tag">Lose It! — pace picker</span>
+    <span class="app-tag">MyFitnessPal — pace picker</span>
+    <span class="app-tag">Fitbit — pace picker</span>
+    <span class="app-tag">MacroFactor — adaptive</span>
+    <span class="app-tag">Carbon Diet Coach — pace picker</span>
+  </div>
+</div>
+
+<div class="options">
+
+  <!-- Option A -->
+  <div class="option recommended" data-choice="a" onclick="toggleSelect(this)">
+    <div class="option-header">
+      <div class="letter-badge" style="background:rgba(99,102,241,0.2);color:#818cf8;">A</div>
+      <div>
+        <div class="option-title">Weekly Pace Picker</div>
+        <div class="option-sub">User picks kg/week target → calories adjust → timeline shown with health warnings</div>
+      </div>
+      <div class="rec-badge">⭐ Industry standard</div>
+    </div>
+    <div class="mockup-body">
+      <div class="pace-label">How fast do you want to lose weight?</div>
+      <div class="pace-pills">
+        <div class="pace-pill">
+          <div class="kg">0.25 kg</div>
+          <div class="sub">Gentle</div>
+          <div class="sub" style="color:rgba(52,199,89,0.7);font-size:9px;">−250 kcal</div>
+        </div>
+        <div class="pace-pill active">
+          <div class="kg">0.5 kg</div>
+          <div class="sub">Recommended</div>
+          <div class="sub" style="color:rgba(99,102,241,0.8);font-size:9px;">−500 kcal</div>
+        </div>
+        <div class="pace-pill warn">
+          <div class="kg">0.75 kg</div>
+          <div class="sub">Aggressive</div>
+          <div class="sub" style="color:rgba(255,159,10,0.8);font-size:9px;">−750 kcal ⚠</div>
+        </div>
+        <div class="pace-pill danger">
+          <div class="kg">1.0 kg</div>
+          <div class="sub">Very fast</div>
+          <div class="sub" style="color:rgba(255,69,58,0.8);font-size:9px;">−1000 kcal ⛔</div>
+        </div>
+      </div>
+      <div class="timeline-row">
+        <div class="tl-icon">📅</div>
+        <div class="tl-text">
+          <div class="reach">Reach 80 kg in <strong>~18 weeks</strong></div>
+          <div class="sub">Estimated arrival · Nov 2026</div>
+        </div>
+        <div class="tl-date">Nov '26</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option B -->
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="option-header">
+      <div class="letter-badge" style="background:rgba(52,199,89,0.15);color:#34c759;">B</div>
+      <div>
+        <div class="option-title">Dual Timeline (Informational)</div>
+        <div class="option-sub">No extra input — shows current pace vs healthy pace side by side</div>
+      </div>
+    </div>
+    <div class="mockup-body">
+      <div class="tl-compare">
+        <div class="tl-box current">
+          <div class="box-label">Your pace</div>
+          <div class="box-weeks">18</div>
+          <div class="box-unit">weeks · −500 kcal/day</div>
+          <div class="box-date">≈ Nov 2026</div>
+        </div>
+        <div class="tl-box healthy">
+          <div class="box-label">✓ Healthiest</div>
+          <div class="box-weeks">26</div>
+          <div class="box-unit">weeks · −250 kcal/day</div>
+          <div class="box-date">≈ Jan 2027</div>
+        </div>
+      </div>
+      <div class="info-row">
+        ⚠️ Your current pace is on the aggressive side. Muscle loss risk increases above −500 kcal. You can continue — just something to be aware of.
+      </div>
+    </div>
+  </div>
+
+  <!-- Option C -->
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="option-header">
+      <div class="letter-badge" style="background:rgba(255,159,10,0.15);color:#ff9f0a;">C</div>
+      <div>
+        <div class="option-title">Custom Deficit Slider</div>
+        <div class="option-sub">User drags a slider to set exact daily kcal deficit — full control with live feedback</div>
+      </div>
+    </div>
+    <div class="mockup-body">
+      <div class="pace-label">Daily deficit</div>
+      <div class="deficit-display">−650 <span class="unit">kcal / day</span></div>
+      <div class="slider-wrap">
+        <div class="slider-track">
+          <div class="slider-thumb"></div>
+        </div>
+        <div class="slider-labels">
+          <span>−1000</span>
+          <span>−500</span>
+          <span>0</span>
+          <span>+300</span>
+          <span>+600</span>
+        </div>
+      </div>
+      <div class="warn-banner">
+        ⚠️ A −650 kcal deficit is above the recommended maximum (−500 kcal). You may experience fatigue and muscle loss. You can still proceed.
+      </div>
+      <div class="timeline-row" style="margin-top:10px;">
+        <div class="tl-icon">📅</div>
+        <div class="tl-text">
+          <div class="reach">Reach 80 kg in <strong>~14 weeks</strong></div>
+          <div class="sub">Estimated · Oct 2026</div>
+        </div>
+        <div class="tl-date">Oct '26</div>
+      </div>
+    </div>
+  </div>
+
+</div>

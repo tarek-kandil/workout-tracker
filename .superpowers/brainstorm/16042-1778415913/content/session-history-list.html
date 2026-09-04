@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session History List</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #0f0f1a;
+  color: #e2e2f0;
+  font-family: -apple-system, 'SF Pro Display', sans-serif;
+  min-height: 100vh;
+  padding: 32px 24px 60px;
+}
+h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 6px; }
+.subtitle { font-size: 13px; color: rgba(255,255,255,0.4); margin-bottom: 36px; }
+
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 860px; margin: 0 auto; }
+
+.option {
+  border: 1.5px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.15s;
+  background: rgba(255,255,255,0.03);
+}
+.option:hover { border-color: rgba(99,102,241,0.4); transform: translateY(-2px); }
+.option.selected { border-color: #6366f1; background: rgba(99,102,241,0.07); }
+
+.option-label {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.letter {
+  width: 26px; height: 26px; border-radius: 8px;
+  background: rgba(99,102,241,0.2);
+  border: 1px solid rgba(99,102,241,0.35);
+  color: #818cf8; font-size: 13px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.option-label h3 { font-size: 14px; font-weight: 700; }
+.option-label p { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 1px; }
+
+/* Phone shell */
+.phone {
+  background: #12121f;
+  padding: 0;
+  min-height: 560px;
+  display: flex; flex-direction: column;
+  font-size: 12px;
+}
+
+.ph-bar {
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.ph-bar-title { font-size: 16px; font-weight: 800; letter-spacing: -0.4px; }
+.ph-bar-sub { font-size: 10px; color: rgba(255,255,255,0.3); margin-top: 2px; }
+
+.ph-scroll { flex: 1; overflow: hidden; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+
+/* Week label */
+.week-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
+  color: rgba(255,255,255,0.28);
+  padding: 10px 2px 5px;
+}
+
+/* ── OPTION A: Clean redesign only ── */
+.session-tile-a {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 14px;
+  padding: 10px 12px;
+  margin-bottom: 5px;
+  display: flex; align-items: center; gap: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.session-tile-a:hover { background: rgba(255,255,255,0.08); }
+
+.day-badge {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: rgba(99,102,241,0.15);
+  border: 1px solid rgba(99,102,241,0.2);
+  flex-shrink: 0;
+}
+.day-badge .day-num { font-size: 14px; font-weight: 800; color: #a5b4fc; line-height: 1; }
+.day-badge .day-name { font-size: 7px; font-weight: 600; color: rgba(165,180,252,0.6); letter-spacing: 0.3px; }
+
+.session-info { flex: 1; min-width: 0; }
+.session-name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.session-meta { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+
+.chevron { font-size: 12px; color: rgba(255,255,255,0.2); }
+
+/* PR badge */
+.pr-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #818cf8; flex-shrink: 0;
+}
+
+/* ── OPTION B: Stats preview ── */
+.session-tile-b {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 14px;
+  margin-bottom: 5px;
+  overflow: hidden;
+  cursor: pointer;
+}
+.session-tile-b:hover { background: rgba(255,255,255,0.07); }
+
+.tile-top {
+  padding: 9px 12px 7px;
+  display: flex; align-items: center; gap: 10px;
+}
+.tile-bottom {
+  padding: 6px 12px 8px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  display: flex; gap: 12px;
+  background: rgba(0,0,0,0.15);
+}
+
+.stat-chip { display: flex; flex-direction: column; }
+.stat-chip .val { font-size: 12px; font-weight: 800; color: #e2e2f0; }
+.stat-chip .val.accent { color: #818cf8; }
+.stat-chip .lbl { font-size: 8px; font-weight: 600; color: rgba(255,255,255,0.28); letter-spacing: 0.4px; margin-top: 1px; }
+
+.pr-chip {
+  margin-left: auto;
+  background: rgba(99,102,241,0.18);
+  border: 1px solid rgba(99,102,241,0.28);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 9px; font-weight: 800; color: #a5b4fc;
+  display: flex; align-items: center; gap: 3px;
+  align-self: center;
+}
+
+.vol-delta-up { font-size: 9px; color: #34d399; font-weight: 700; }
+.vol-delta-dn { font-size: 9px; color: #f87171; font-weight: 700; }
+
+/* PR session highlight */
+.session-tile-b.has-pr {
+  border-color: rgba(99,102,241,0.25);
+}
+.session-tile-b.has-pr .tile-top { background: rgba(99,102,241,0.05); }
+
+/* active program week banner */
+.week-banner {
+  background: linear-gradient(90deg, rgba(99,102,241,0.15), rgba(99,102,241,0.05));
+  border: 1px solid rgba(99,102,241,0.2);
+  border-radius: 10px;
+  padding: 7px 10px;
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 5px;
+}
+.week-banner-text { font-size: 10px; font-weight: 700; color: #a5b4fc; }
+.week-banner-sub { font-size: 9px; color: rgba(165,180,252,0.5); margin-top: 1px; }
+
+.selected-indicator { text-align:center; padding:14px; font-size:12px; color:#818cf8; font-weight:600; }
+</style>
+</head>
+<body>
+
+<h1>Session History List</h1>
+<p class="subtitle">Compact redesign vs. stats preview — which feels more useful at a glance?</p>
+
+<div class="split">
+
+  <!-- ── OPTION A: Clean redesign ── -->
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="option-label">
+      <div class="letter">A</div>
+      <div>
+        <h3>Clean Redesign</h3>
+        <p>Date badge, better typography, PR indicator dot</p>
+      </div>
+    </div>
+    <div class="phone">
+      <div class="ph-bar">
+        <div class="ph-bar-title">History</div>
+        <div class="ph-bar-sub">42 sessions logged</div>
+      </div>
+      <div class="ph-scroll">
+
+        <div class="week-label">THIS WEEK · 5–11 MAY</div>
+
+        <div class="session-tile-a">
+          <div class="day-badge"><div class="day-num">10</div><div class="day-name">MON</div></div>
+          <div class="session-info">
+            <div class="session-name">Push Day</div>
+            <div class="session-meta">Week 3 · Hypertrophy Block · 58 min</div>
+          </div>
+          <div class="pr-dot" title="PR hit"></div>
+          <div class="chevron">›</div>
+        </div>
+
+        <div class="session-tile-a">
+          <div class="day-badge" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.1);">
+            <div class="day-num" style="color:rgba(255,255,255,0.6);">8</div>
+            <div class="day-name" style="color:rgba(255,255,255,0.3);">SAT</div>
+          </div>
+          <div class="session-info">
+            <div class="session-name">Leg Day</div>
+            <div class="session-meta">Week 3 · Hypertrophy Block · 71 min</div>
+          </div>
+          <div class="chevron">›</div>
+        </div>
+
+        <div class="week-label">LAST WEEK · 28 APR – 4 MAY</div>
+
+        <div class="session-tile-a">
+          <div class="day-badge" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.1);">
+            <div class="day-num" style="color:rgba(255,255,255,0.6);">3</div>
+            <div class="day-name" style="color:rgba(255,255,255,0.3);">FRI</div>
+          </div>
+          <div class="session-info">
+            <div class="session-name">Pull Day</div>
+            <div class="session-meta">Week 2 · Hypertrophy Block · 63 min</div>
+          </div>
+          <div class="pr-dot"></div>
+          <div class="chevron">›</div>
+        </div>
+
+        <div class="session-tile-a">
+          <div class="day-badge" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.1);">
+            <div class="day-num" style="color:rgba(255,255,255,0.6);">1</div>
+            <div class="day-name" style="color:rgba(255,255,255,0.3);">WED</div>
+          </div>
+          <div class="session-info">
+            <div class="session-name">Push Day</div>
+            <div class="session-meta">Week 2 · Hypertrophy Block · 55 min</div>
+          </div>
+          <div class="chevron">›</div>
+        </div>
+
+        <div class="session-tile-a">
+          <div class="day-badge" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.1);">
+            <div class="day-num" style="color:rgba(255,255,255,0.6);">29</div>
+            <div class="day-name" style="color:rgba(255,255,255,0.3);">MON</div>
+          </div>
+          <div class="session-info">
+            <div class="session-name">Leg Day</div>
+            <div class="session-meta">Week 2 · Hypertrophy Block · 68 min</div>
+          </div>
+          <div class="chevron">›</div>
+        </div>
+
+        <div class="week-label">21–27 APR</div>
+
+        <div class="session-tile-a">
+          <div class="day-badge" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.1);">
+            <div class="day-num" style="color:rgba(255,255,255,0.6);">26</div>
+            <div class="day-name" style="color:rgba(255,255,255,0.3);">SAT</div>
+          </div>
+          <div class="session-info">
+            <div class="session-name">Full Body</div>
+            <div class="session-meta">Ad hoc · 45 min</div>
+          </div>
+          <div class="chevron">›</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── OPTION B: Stats preview ── -->
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="option-label">
+      <div class="letter">B</div>
+      <div>
+        <h3>Stats Preview</h3>
+        <p>Volume, sets, PRs per session visible in list</p>
+      </div>
+    </div>
+    <div class="phone">
+      <div class="ph-bar">
+        <div class="ph-bar-title">History</div>
+        <div class="ph-bar-sub">42 sessions logged</div>
+      </div>
+      <div class="ph-scroll">
+
+        <div class="week-label">THIS WEEK · 5–11 MAY</div>
+
+        <!-- PR session -->
+        <div class="session-tile-b has-pr">
+          <div class="tile-top">
+            <div class="day-badge"><div class="day-num">10</div><div class="day-name">MON</div></div>
+            <div class="session-info">
+              <div class="session-name">Push Day</div>
+              <div class="session-meta">Week 3 · 58 min</div>
+            </div>
+            <div class="pr-chip">🏆 2 PRs</div>
+          </div>
+          <div class="tile-bottom">
+            <div class="stat-chip">
+              <div class="val accent">12,480</div>
+              <div class="lbl">VOLUME kg</div>
+            </div>
+            <div class="vol-delta-up">↑ +7%</div>
+            <div style="width:1px;background:rgba(255,255,255,0.07);"></div>
+            <div class="stat-chip">
+              <div class="val">24</div>
+              <div class="lbl">SETS</div>
+            </div>
+            <div style="width:1px;background:rgba(255,255,255,0.07);"></div>
+            <div class="stat-chip">
+              <div class="val">8.1</div>
+              <div class="lbl">AVG RPE</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="session-tile-b">
+          <div class="tile-top">
+            <div class="day-badge" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.1);">
+              <div class="day-num" style="color:rgba(255,255,255,0.6);">8</div>
+              <div class="day-name" style="color:rgba(255,255,255,0.3);">SAT</div>
+            </div>
+            <div class="session-info">
+              <div class="session-name">Leg Day</div>
+              <div class="session-meta">Week 3 · 71 min</div>
+            </div>
+          </div>
+          <div class="tile-bottom">
+            <div class="stat-chip">
+              <div class="val">18,200</div>
+              <div class="lbl">VOLUME kg</div>
+            </div>
+            <div class="vol-delta-up">↑ +3%</div>
+            <div style="width:1px;background:rgba(255,255,255,0.07);"></div>
+            <div class="stat-chip">
+              <div class="val">20</div>
+              <div class="lbl">SETS</div>
+            </div>
+            <div style="width:1px;background:rgba(255,255,255,0.07);"></div>
+            <div class="stat-chip">
+              <div class="val">7.8</div>
+              <div class="lbl">AVG RPE</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="week-label">LAST WEEK · 28 APR – 4 MAY</div>
+
+        <div class="session-tile-b has-pr">
+          <div class="tile-top">
+            <div class="day-badge" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.1);">
+              <div class="day-num" style="color:rgba(255,255,255,0.6);">3</div>
+              <div class="day-name" style="color:rgba(255,255,255,0.3);">FRI</div>
+            </div>
+            <div class="session-info">
+              <div class="session-name">Pull Day</div>
+              <div class="session-meta">Week 2 · 63 min</div>
+            </div>
+            <div class="pr-chip">🏆 1 PR</div>
+          </div>
+          <div class="tile-bottom">
+            <div class="stat-chip">
+              <div class="val">9,860</div>
+              <div class="lbl">VOLUME kg</div>
+            </div>
+            <div class="vol-delta-dn">↓ −2%</div>
+            <div style="width:1px;background:rgba(255,255,255,0.07);"></div>
+            <div class="stat-chip">
+              <div class="val">18</div>
+              <div class="lbl">SETS</div>
+            </div>
+            <div style="width:1px;background:rgba(255,255,255,0.07);"></div>
+            <div class="stat-chip">
+              <div class="val">8.3</div>
+              <div class="lbl">AVG RPE</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="session-tile-b">
+          <div class="tile-top">
+            <div class="day-badge" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.1);">
+              <div class="day-num" style="color:rgba(255,255,255,0.6);">1</div>
+              <div class="day-name" style="color:rgba(255,255,255,0.3);">WED</div>
+            </div>
+            <div class="session-info">
+              <div class="session-name">Push Day</div>
+              <div class="session-meta">Week 2 · 55 min</div>
+            </div>
+          </div>
+          <div class="tile-bottom">
+            <div class="stat-chip">
+              <div class="val">11,640</div>
+              <div class="lbl">VOLUME kg</div>
+            </div>
+            <div style="width:1px;background:rgba(255,255,255,0.07);"></div>
+            <div class="stat-chip">
+              <div class="val">22</div>
+              <div class="lbl">SETS</div>
+            </div>
+            <div style="width:1px;background:rgba(255,255,255,0.07);"></div>
+            <div class="stat-chip">
+              <div class="val">7.5</div>
+              <div class="lbl">AVG RPE</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="max-width:860px;margin:24px auto 0;padding:14px 18px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:14px;">
+  <div style="font-size:12px;color:rgba(255,255,255,0.45);line-height:1.7;">
+    <strong style="color:rgba(255,255,255,0.75);">A</strong> is faster to scroll (compact, one line per session) and works well if you mostly just want to tap in. <strong style="color:rgba(255,255,255,0.75);">B</strong> lets you spot your best weeks, worst sessions, and PR days at a glance — but takes more vertical space per session. Both use the same date-badge and week grouping.
+  </div>
+</div>
+
+<div id="selection-indicator" style="text-align:center;padding:16px;font-size:12px;color:#818cf8;font-weight:600;display:none;max-width:860px;margin:0 auto;"></div>
+
+<script>
+function toggleSelect(el) {
+  document.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  const choice = el.dataset.choice;
+  const label = el.querySelector('h3').textContent;
+  const ind = document.getElementById('selection-indicator');
+  ind.style.display = 'block';
+  ind.textContent = `Selected: Option ${choice.toUpperCase()} — ${label}`;
+  if (window.__superpowers_record) window.__superpowers_record({ type: 'click', choice, text: label });
+}
+</script>
+</body>
+</html>

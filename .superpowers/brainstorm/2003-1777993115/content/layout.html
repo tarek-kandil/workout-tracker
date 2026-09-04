@@ -1,0 +1,247 @@
+<style>
+  .mockup-phone {
+    background: #0f0f1a;
+    border-radius: 28px;
+    border: 2px solid #2a2a3e;
+    overflow: hidden;
+    font-family: -apple-system, sans-serif;
+    color: #fff;
+    width: 260px;
+    min-height: 480px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    font-size: 11px;
+  }
+  .phone-bar {
+    background: #1a1a2e;
+    padding: 8px 12px 6px;
+    border-bottom: 1px solid #2a2a40;
+  }
+  .phone-bar .title { font-size: 13px; font-weight: 700; }
+  .phone-bar .subtitle { font-size: 10px; color: #888; }
+  .phone-bar .progress { height: 2px; background: #2a2a40; border-radius: 1px; margin-top: 6px; }
+  .phone-bar .progress-fill { height: 2px; background: #6c63ff; border-radius: 1px; width: 30%; }
+
+  /* OPTION A styles */
+  .ex-card {
+    margin: 8px;
+    border-radius: 14px;
+    padding: 10px;
+    border: 1px solid #2a2a40;
+    background: rgba(255,255,255,0.04);
+  }
+  .ex-card.current {
+    background: rgba(108,99,255,0.12);
+    border: 1.5px solid rgba(108,99,255,0.6);
+    box-shadow: 0 0 14px rgba(108,99,255,0.2);
+  }
+  .ex-card.done {
+    background: rgba(34,197,94,0.06);
+    border-color: rgba(34,197,94,0.2);
+  }
+  .ex-card.upcoming { opacity: 0.7; }
+  .ex-name { font-weight: 700; font-size: 12px; }
+  .ex-meta { color: #888; font-size: 9px; margin-top: 1px; }
+  .current-badge { display:inline-block; background:#6c63ff; color:#fff; font-size:8px; font-weight:800; padding:1px 6px; border-radius:4px; letter-spacing:0.5px; margin-bottom:4px; }
+  .done-badge { display:inline-block; background:rgba(34,197,94,0.2); color:#4ade80; font-size:8px; font-weight:700; padding:1px 6px; border-radius:4px; margin-bottom:4px; }
+  .set-log { color:#4ade80; font-size:9px; margin-top:4px; }
+  .set-input { display:flex; gap:6px; margin-top:8px; }
+  .set-input .field { flex:1; background:rgba(255,255,255,0.08); border-radius:8px; padding:5px; text-align:center; }
+  .set-input .field .lbl { font-size:8px; color:#888; }
+  .set-input .field .val { font-size:14px; font-weight:700; }
+  .done-btn { margin-top:8px; background:#6c63ff; color:#fff; border-radius:8px; padding:6px; text-align:center; font-weight:700; font-size:10px; }
+  .last-pr { display:flex; gap:8px; margin-top:6px; }
+  .last-pr span { font-size:9px; color:#666; }
+  .last-pr span b { color:#aaa; }
+  .insert-btn { text-align:center; color:#6c63ff; font-size:9px; padding:2px 0; opacity:0.6; }
+  .menu-dots { float:right; color:#555; font-size:11px; }
+  .upcoming-target { font-size:9px; color:#666; margin-top:3px; }
+  .upcoming-last { font-size:9px; color:#4ade80; margin-top:1px; }
+
+  /* OPTION B styles */
+  .sticky-card {
+    background: rgba(108,99,255,0.14);
+    border-bottom: 1.5px solid rgba(108,99,255,0.5);
+    padding: 10px 12px;
+    box-shadow: 0 4px 16px rgba(108,99,255,0.15);
+  }
+  .scroll-area { overflow: hidden; }
+  .up-next-label { font-size:9px; font-weight:700; color:#555; letter-spacing:1px; padding: 6px 12px 2px; }
+  .mini-card { margin: 4px 8px; padding: 7px 10px; border-radius: 10px; border: 1px solid #2a2a40; background: rgba(255,255,255,0.03); }
+  .mini-card.done-mini { border-color: rgba(34,197,94,0.2); background: rgba(34,197,94,0.04); }
+
+  /* OPTION C styles */
+  .timeline-line { position:absolute; left:22px; top:0; bottom:0; width:2px; background:#2a2a40; }
+  .timeline-wrap { position:relative; padding: 8px 8px 8px 40px; }
+  .tl-dot { position:absolute; left:16px; width:14px; height:14px; border-radius:50%; background:#2a2a40; border:2px solid #3a3a55; top:12px; }
+  .tl-dot.active { background:#6c63ff; border-color:#6c63ff; box-shadow:0 0 8px rgba(108,99,255,0.6); }
+  .tl-dot.done-dot { background:#166534; border-color:#4ade80; }
+  .tl-card { border-radius:12px; border:1px solid #2a2a40; padding:8px; background:rgba(255,255,255,0.03); }
+  .tl-card.tl-active { border-color:rgba(108,99,255,0.6); background:rgba(108,99,255,0.1); }
+  .tl-spacer { height:6px; }
+
+  .cards { display: flex; flex-direction: column; gap: 20px; align-items: center; }
+  .card { cursor: pointer; width: 100%; max-width: 560px; }
+  .card-image { display: flex; justify-content: center; padding: 24px 16px 16px; }
+  .approach-label { font-size: 11px; font-weight: 700; color: #888; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; text-align:center; }
+  .approach-tag { display:inline-block; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:700; }
+  .tag-rec { background:rgba(108,99,255,0.2); color:#a5b4fc; }
+  .tag-alt { background:rgba(255,255,255,0.06); color:#888; }
+</style>
+
+<h2>Active Session Layout</h2>
+<p class="subtitle">How should exercises be displayed during a workout? All three show all exercises expanded with the current one highlighted.</p>
+
+<div class="cards">
+
+  <!-- OPTION A -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup-phone">
+        <div class="phone-bar">
+          <div class="title">Workout A · <span style="color:#888;font-size:10px;font-weight:400">Week 3</span></div>
+          <div class="subtitle">Set 2 / 4 · Bench Press</div>
+          <div class="progress"><div class="progress-fill"></div></div>
+        </div>
+        <!-- Done exercise -->
+        <div class="insert-btn">＋ add exercise</div>
+        <div class="ex-card done">
+          <span class="done-badge">✓ DONE</span><span class="menu-dots">···</span>
+          <div class="ex-name">Squat</div>
+          <div class="set-log">80kg×8 · 82.5kg×8 · 82.5kg×7</div>
+        </div>
+        <div class="insert-btn">＋ add exercise</div>
+        <!-- Current exercise -->
+        <div class="ex-card current">
+          <span class="current-badge">▶ NOW</span><span class="menu-dots">···</span>
+          <div class="ex-name" style="font-size:14px;">Bench Press</div>
+          <div class="ex-meta">4 sets · 8–10 reps</div>
+          <div class="set-log">Set 1: 80kg × 9 ✓</div>
+          <div class="set-input">
+            <div class="field"><div class="lbl">WEIGHT</div><div class="val">80kg</div></div>
+            <div class="field"><div class="lbl">REPS</div><div class="val">9</div></div>
+          </div>
+          <div class="last-pr"><span>Last <b>80×9</b></span><span>PR <b>90 kg</b></span></div>
+          <div class="done-btn">✓ Done Set</div>
+        </div>
+        <div class="insert-btn">＋ add exercise</div>
+        <!-- Upcoming -->
+        <div class="ex-card upcoming">
+          <span class="menu-dots">···</span>
+          <div class="ex-name">Romanian Deadlift</div>
+          <div class="ex-meta">3 sets · 10–12 reps</div>
+          <div class="upcoming-last">Last: 70kg×11 · 70kg×10</div>
+        </div>
+        <div class="insert-btn">＋ add exercise</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="approach-label">Option A &nbsp;<span class="approach-tag tag-rec">Recommended</span></div>
+      <h3>Flat scrollable list</h3>
+      <p>All exercises as full cards in one continuous list. Current exercise glows with a border/badge. Completed exercises show logged sets. Upcoming show last session data. "＋ add" buttons between every exercise. "···" menu on each card for swap/skip/reorder.</p>
+    </div>
+  </div>
+
+  <!-- OPTION B -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup-phone">
+        <div class="phone-bar">
+          <div class="title">Workout A</div>
+          <div class="subtitle">Set 2 / 4</div>
+          <div class="progress"><div class="progress-fill"></div></div>
+        </div>
+        <!-- Sticky current -->
+        <div class="sticky-card">
+          <div style="font-size:9px;color:#a5b4fc;font-weight:800;letter-spacing:1px;">▶ NOW PLAYING</div>
+          <div style="font-size:15px;font-weight:800;margin-top:2px;">Bench Press</div>
+          <div style="font-size:9px;color:#888;">4 sets · 8–10 reps</div>
+          <div class="set-input" style="margin-top:8px;">
+            <div class="field"><div class="lbl">WEIGHT</div><div class="val">80kg</div></div>
+            <div class="field"><div class="lbl">REPS</div><div class="val">9</div></div>
+          </div>
+          <div class="last-pr" style="margin-top:4px;"><span>Last <b>80×9</b></span><span>PR <b>90 kg</b></span></div>
+          <div class="done-btn" style="margin-top:6px;">✓ Done Set</div>
+        </div>
+        <!-- Scrollable rest -->
+        <div class="up-next-label">COMPLETED</div>
+        <div class="mini-card done-mini">
+          <span style="color:#4ade80;font-size:10px;">✓</span> <b style="font-size:10px;">Squat</b>
+          <div style="font-size:9px;color:#666;">80×8 · 82.5×8 · 82.5×7</div>
+        </div>
+        <div class="up-next-label">UP NEXT</div>
+        <div class="mini-card">
+          <b style="font-size:10px;">Romanian Deadlift</b>
+          <div style="font-size:9px;color:#666;">3×10–12 · Last: 70kg×11</div>
+        </div>
+        <div class="mini-card">
+          <b style="font-size:10px;">Cable Row</b>
+          <div style="font-size:9px;color:#666;">3×12–15 · Last: 55kg×13</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="approach-label">Option B &nbsp;<span class="approach-tag tag-alt">Alternative</span></div>
+      <h3>Sticky active + scrollable list</h3>
+      <p>Current exercise is pinned at the top (large, always visible). Completed and upcoming exercises scroll below as compact cards. Simpler to focus but upcoming exercises lose some detail density.</p>
+    </div>
+  </div>
+
+  <!-- OPTION C -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup-phone">
+        <div class="phone-bar">
+          <div class="title">Workout A</div>
+          <div class="subtitle">Exercise 2 of 4</div>
+          <div class="progress"><div class="progress-fill"></div></div>
+        </div>
+        <div class="timeline-wrap">
+          <div class="timeline-line"></div>
+          <!-- Done -->
+          <div style="position:relative; margin-bottom:8px;">
+            <div class="tl-dot done-dot"></div>
+            <div class="tl-card">
+              <span class="done-badge">✓ DONE</span>
+              <div class="ex-name">Squat</div>
+              <div class="set-log">80×8 · 82.5×8 · 82.5×7</div>
+            </div>
+          </div>
+          <!-- Active -->
+          <div style="position:relative; margin-bottom:8px;">
+            <div class="tl-dot active"></div>
+            <div class="tl-card tl-active">
+              <span class="current-badge">▶ NOW</span>
+              <div class="ex-name" style="font-size:13px;">Bench Press</div>
+              <div class="set-input" style="margin-top:6px;">
+                <div class="field"><div class="lbl">WEIGHT</div><div class="val">80kg</div></div>
+                <div class="field"><div class="lbl">REPS</div><div class="val">9</div></div>
+              </div>
+              <div class="done-btn">✓ Done Set</div>
+            </div>
+          </div>
+          <!-- Upcoming -->
+          <div style="position:relative; margin-bottom:8px;">
+            <div class="tl-dot"></div>
+            <div class="tl-card" style="opacity:0.75;">
+              <div class="ex-name">Romanian Deadlift</div>
+              <div class="upcoming-target">3×10–12 · Last: 70kg×11</div>
+            </div>
+          </div>
+          <div style="position:relative;">
+            <div class="tl-dot"></div>
+            <div class="tl-card" style="opacity:0.65;">
+              <div class="ex-name">Cable Row</div>
+              <div class="upcoming-target">3×12–15 · Last: 55kg×13</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="approach-label">Option C &nbsp;<span class="approach-tag tag-alt">Alternative</span></div>
+      <h3>Timeline with vertical connector</h3>
+      <p>A vertical timeline line connects all exercises. Each exercise is a card on the timeline. Current node pulses. Visual sense of progress through the workout. More decorative — the line takes up some horizontal space.</p>
+    </div>
+  </div>
+
+</div>

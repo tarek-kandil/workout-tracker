@@ -1,0 +1,213 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&display=swap" rel="stylesheet">
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0d0d0f; color: #f0f0f5; font-family: -apple-system, sans-serif; padding: 20px 16px 80px; }
+
+.options { display: flex; flex-direction: column; gap: 16px; margin-top: 4px; }
+.option {
+  border-radius: 20px; border: 2px solid transparent;
+  background: rgba(255,255,255,0.04); overflow: hidden;
+  cursor: pointer; transition: border-color 0.18s, transform 0.12s;
+}
+.option:hover { transform: translateY(-1px); }
+.option.selected { border-color: #6366f1; }
+.option-header {
+  padding: 12px 16px 10px; display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.letter-badge { width: 26px; height: 26px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; flex-shrink: 0; }
+.option-title { font-size: 13px; font-weight: 700; }
+.option-sub { font-size: 10.5px; color: rgba(255,255,255,0.4); margin-top: 2px; line-height: 1.4; }
+.rec-badge { margin-left: auto; background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.4); border-radius: 20px; padding: 3px 10px; font-size: 10px; font-weight: 700; color: #818cf8; flex-shrink: 0; }
+.effort-badge { margin-left: auto; border-radius: 20px; padding: 3px 10px; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+.effort-low { background: rgba(52,199,89,0.15); border: 1px solid rgba(52,199,89,0.35); color: #34c759; }
+.effort-med { background: rgba(255,159,10,0.15); border: 1px solid rgba(255,159,10,0.35); color: #ff9f0a; }
+
+/* App mockup shell */
+.app-mockup {
+  margin: 14px; background: rgba(8,8,12,0.85); border-radius: 16px;
+  overflow: hidden; border: 1px solid rgba(255,255,255,0.07);
+}
+.app-bar { padding: 14px 16px 12px; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 18px; font-weight: 600; }
+.app-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 14px; }
+
+/* Glass card */
+.card {
+  background: rgba(255,255,255,0.05); border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.08); padding: 14px;
+}
+.big-num { font-size: 42px; font-weight: 800; line-height: 1; }
+.big-num-sub { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 4px; letter-spacing: 0.5px; }
+.card-label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.35); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; }
+.row { display: flex; gap: 10px; }
+.stat-pill { flex: 1; background: rgba(99,102,241,0.1); border-radius: 12px; border: 1px solid rgba(99,102,241,0.2); padding: 10px 12px; }
+.stat-val { font-size: 22px; font-weight: 800; color: #818cf8; }
+.stat-lbl { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+.exercise-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.exercise-row:last-child { border: none; padding-bottom: 0; }
+.ex-name { font-size: 14px; font-weight: 600; flex: 1; }
+.ex-val { font-size: 13px; color: rgba(255,255,255,0.5); font-weight: 500; }
+.badge { display: inline-block; background: rgba(52,199,89,0.15); color: #34c759; border: 1px solid rgba(52,199,89,0.3); border-radius: 20px; padding: 3px 9px; font-size: 10px; font-weight: 700; }
+
+/* Current = SF Pro / system */
+.font-system { font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+.font-inter { font-family: 'Inter', sans-serif; }
+.font-outfit { font-family: 'Outfit', sans-serif; }
+.font-grotesk { font-family: 'Space Grotesk', sans-serif; }
+.font-dm { font-family: 'DM Sans', sans-serif; }
+
+.current-tag { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 2px 8px; font-size: 10px; color: rgba(255,255,255,0.5); margin-left: 6px; font-weight: 500; }
+</style>
+
+<h2>Font options — 4 directions</h2>
+<p class="subtitle">All mockups show the same app content. The current font (SF Pro system default) is shown first as your baseline.</p>
+
+<div class="options">
+
+  <!-- Option A: System default (current) -->
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="option-header">
+      <div class="letter-badge" style="background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);">A</div>
+      <div>
+        <div class="option-title">SF Pro (current) <span class="current-tag">CURRENT</span></div>
+        <div class="option-sub">iOS system default — clean and neutral, but no fitness personality</div>
+      </div>
+      <div class="effort-badge effort-low">No change</div>
+    </div>
+    <div class="app-mockup font-system">
+      <div class="app-bar">Today</div>
+      <div class="app-body">
+        <div class="card">
+          <div class="card-label">Next Workout</div>
+          <div class="big-num">Day 4</div>
+          <div class="big-num-sub">Upper Body · 6 exercises</div>
+        </div>
+        <div class="card">
+          <div class="card-label">This Week</div>
+          <div class="row">
+            <div class="stat-pill"><div class="stat-val">3</div><div class="stat-lbl">Sessions</div></div>
+            <div class="stat-pill"><div class="stat-val">2,840</div><div class="stat-lbl">Volume (kg)</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">Last Session — PRs</div>
+          <div class="exercise-row"><div class="ex-name">Bench Press</div><div class="ex-val">100kg × 5</div><div class="badge">PR</div></div>
+          <div class="exercise-row"><div class="ex-name">Overhead Press</div><div class="ex-val">65kg × 6</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option B: Inter -->
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="option-header">
+      <div class="letter-badge" style="background:rgba(99,102,241,0.2);color:#818cf8;">B</div>
+      <div>
+        <div class="option-title">Inter — Modern & data-forward</div>
+        <div class="option-sub">Tall x-height, sharp, optimised for screens. Used by Strava, Notion, Linear. Numbers read very clean at any weight.</div>
+      </div>
+      <div class="effort-badge effort-low">Low — 1 line</div>
+    </div>
+    <div class="app-mockup font-inter">
+      <div class="app-bar">Today</div>
+      <div class="app-body">
+        <div class="card">
+          <div class="card-label">Next Workout</div>
+          <div class="big-num">Day 4</div>
+          <div class="big-num-sub">Upper Body · 6 exercises</div>
+        </div>
+        <div class="card">
+          <div class="card-label">This Week</div>
+          <div class="row">
+            <div class="stat-pill"><div class="stat-val">3</div><div class="stat-lbl">Sessions</div></div>
+            <div class="stat-pill"><div class="stat-val">2,840</div><div class="stat-lbl">Volume (kg)</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">Last Session — PRs</div>
+          <div class="exercise-row"><div class="ex-name">Bench Press</div><div class="ex-val">100kg × 5</div><div class="badge">PR</div></div>
+          <div class="exercise-row"><div class="ex-name">Overhead Press</div><div class="ex-val">65kg × 6</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option C: Outfit -->
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="option-header">
+      <div class="letter-badge" style="background:rgba(52,199,89,0.15);color:#34c759;">C</div>
+      <div>
+        <div class="option-title">Outfit — Sporty & energetic ⭐</div>
+        <div class="option-sub">Geometric, slightly wide, high-energy. Heavy weights hit hard — matches the glass aesthetic and fitness vibe. Closest to what Apple Fitness uses (SF Rounded).</div>
+      </div>
+      <div class="rec-badge">⭐ Recommended</div>
+    </div>
+    <div class="app-mockup font-outfit">
+      <div class="app-bar">Today</div>
+      <div class="app-body">
+        <div class="card">
+          <div class="card-label">Next Workout</div>
+          <div class="big-num">Day 4</div>
+          <div class="big-num-sub">Upper Body · 6 exercises</div>
+        </div>
+        <div class="card">
+          <div class="card-label">This Week</div>
+          <div class="row">
+            <div class="stat-pill"><div class="stat-val">3</div><div class="stat-lbl">Sessions</div></div>
+            <div class="stat-pill"><div class="stat-val">2,840</div><div class="stat-lbl">Volume (kg)</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">Last Session — PRs</div>
+          <div class="exercise-row"><div class="ex-name">Bench Press</div><div class="ex-val">100kg × 5</div><div class="badge">PR</div></div>
+          <div class="exercise-row"><div class="ex-name">Overhead Press</div><div class="ex-val">65kg × 6</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option D: Space Grotesk -->
+  <div class="option" data-choice="d" onclick="toggleSelect(this)">
+    <div class="option-header">
+      <div class="letter-badge" style="background:rgba(255,159,10,0.15);color:#ff9f0a;">D</div>
+      <div>
+        <div class="option-title">Space Grotesk — Technical & bold</div>
+        <div class="option-sub">Quirky geometric terminals, techy feel. Good for a performance/data-heavy app. More personality than Inter but more restrained than Outfit.</div>
+      </div>
+      <div class="effort-badge effort-low">Low — 1 line</div>
+    </div>
+    <div class="app-mockup font-grotesk">
+      <div class="app-bar">Today</div>
+      <div class="app-body">
+        <div class="card">
+          <div class="card-label">Next Workout</div>
+          <div class="big-num">Day 4</div>
+          <div class="big-num-sub">Upper Body · 6 exercises</div>
+        </div>
+        <div class="card">
+          <div class="card-label">This Week</div>
+          <div class="row">
+            <div class="stat-pill"><div class="stat-val">3</div><div class="stat-lbl">Sessions</div></div>
+            <div class="stat-pill"><div class="stat-val">2,840</div><div class="stat-lbl">Volume (kg)</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">Last Session — PRs</div>
+          <div class="exercise-row"><div class="ex-name">Bench Press</div><div class="ex-val">100kg × 5</div><div class="badge">PR</div></div>
+          <div class="exercise-row"><div class="ex-name">Overhead Press</div><div class="ex-val">65kg × 6</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:20px;padding:14px 16px;background:rgba(255,255,255,0.03);border-radius:14px;border:1px solid rgba(255,255,255,0.07);">
+  <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.3);letter-spacing:1px;margin-bottom:8px;">EFFORT SUMMARY</div>
+  <div style="font-size:12px;color:rgba(255,255,255,0.5);line-height:1.8;">
+    All three alternatives (B, C, D) = <strong style="color:#34c759;">1 line change</strong> in <code style="font-size:11px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:4px;">lib/theme/app_theme.dart</code> — add <code style="font-size:11px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:4px;">fontFamily:</code> to ThemeData and add the <code style="font-size:11px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:4px;">google_fonts</code> package. Every TextStyle in the app inherits it automatically.
+  </div>
+</div>

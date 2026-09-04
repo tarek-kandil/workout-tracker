@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manage Programs — Redesign Mockup</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0f0f1a;
+    font-family: 'Space Grotesk', -apple-system, sans-serif;
+    color: #fff;
+    padding: 24px;
+    min-height: 100vh;
+  }
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap');
+
+  h1 { font-size: 18px; font-weight: 700; margin-bottom: 6px; color: #fff; }
+  .subtitle { font-size: 13px; color: rgba(255,255,255,0.45); margin-bottom: 28px; }
+
+  .phone-frame {
+    width: 390px;
+    margin: 0 auto;
+    background: linear-gradient(160deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    border-radius: 44px;
+    padding: 20px 0 40px;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,255,255,0.08);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Mesh gradient blobs */
+  .phone-frame::before {
+    content: '';
+    position: absolute;
+    top: -80px; left: -60px;
+    width: 250px; height: 250px;
+    background: radial-gradient(circle, rgba(99,102,241,0.25) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .phone-frame::after {
+    content: '';
+    position: absolute;
+    bottom: 60px; right: -40px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(6,182,212,0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* Status bar */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 28px;
+    margin-bottom: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.7);
+  }
+  .status-icons { display: flex; gap: 6px; align-items: center; }
+
+  /* App bar */
+  .app-bar {
+    display: flex;
+    align-items: center;
+    padding: 0 20px 16px;
+    gap: 12px;
+  }
+  .back-btn {
+    width: 36px; height: 36px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .app-bar-title {
+    font-size: 22px;
+    font-weight: 800;
+    flex: 1;
+    letter-spacing: -0.3px;
+  }
+
+  /* Content area */
+  .content {
+    padding: 0 16px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Glass card */
+  .glass-card {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.13);
+    border-radius: 20px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 16px;
+    margin-bottom: 10px;
+    position: relative;
+    overflow: hidden;
+  }
+  .glass-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+  }
+
+  .card-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  /* Emoji badge */
+  .emoji-badge {
+    width: 48px; height: 48px;
+    background: rgba(99,102,241,0.18);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    border: 1px solid rgba(99,102,241,0.25);
+    flex-shrink: 0;
+  }
+  .emoji-badge.draft {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.12);
+  }
+  .emoji-badge.completed {
+    background: rgba(50,173,230,0.15);
+    border-color: rgba(50,173,230,0.25);
+  }
+
+  .card-info { flex: 1; min-width: 0; }
+  .card-name {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .card-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 5px;
+  }
+  .status-pill {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    letter-spacing: 0.3px;
+  }
+  .status-pill.active {
+    background: rgba(99,102,241,0.22);
+    color: #818cf8;
+    border: 1px solid rgba(99,102,241,0.35);
+  }
+  .status-pill.draft {
+    background: rgba(255,255,255,0.07);
+    color: rgba(255,255,255,0.45);
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+  .status-pill.completed {
+    background: rgba(50,173,230,0.15);
+    color: #67c9e8;
+    border: 1px solid rgba(50,173,230,0.25);
+  }
+  .card-detail {
+    font-size: 12px;
+    color: rgba(255,255,255,0.35);
+  }
+
+  .card-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .icon-btn {
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    color: rgba(255,255,255,0.25);
+  }
+  .icon-btn.danger { color: rgba(255,69,58,0.6); }
+
+  /* Active card highlight */
+  .glass-card.active-card {
+    border-color: rgba(99,102,241,0.35);
+    background: rgba(99,102,241,0.09);
+  }
+  .glass-card.active-card::before {
+    background: linear-gradient(90deg, transparent, rgba(99,102,241,0.5), transparent);
+  }
+
+  /* Active indicator line */
+  .active-indicator {
+    position: absolute;
+    left: 0; top: 16px; bottom: 16px;
+    width: 3px;
+    background: linear-gradient(180deg, #6366F1, #818cf8);
+    border-radius: 0 3px 3px 0;
+  }
+
+  /* Section label */
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    padding: 0 4px;
+    margin-bottom: 10px;
+    margin-top: 6px;
+  }
+
+  /* FAB */
+  .fab {
+    position: sticky;
+    bottom: 16px;
+    display: flex;
+    justify-content: center;
+    margin-top: 16px;
+    z-index: 10;
+  }
+  .fab-btn {
+    background: linear-gradient(135deg, #6366F1, #818cf8);
+    border-radius: 28px;
+    padding: 14px 28px;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 8px 24px rgba(99,102,241,0.45), 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .fab-btn .plus { font-size: 18px; font-weight: 400; }
+
+  /* Annotation */
+  .annotation {
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    margin-top: 6px;
+    padding-left: 4px;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+
+<h1>Manage Programs — Redesigned</h1>
+<p class="subtitle">Glass aesthetic · Indigo palette · LiquidGlassContainer cards</p>
+
+<div class="phone-frame">
+  <!-- Status bar -->
+  <div class="status-bar">
+    <span>9:41</span>
+    <div class="status-icons">
+      <span>●●●</span>
+      <span>WiFi</span>
+      <span>🔋</span>
+    </div>
+  </div>
+
+  <!-- App bar -->
+  <div class="app-bar">
+    <div class="back-btn">‹</div>
+    <div class="app-bar-title">Programs</div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- Active section -->
+    <div class="section-label">Active</div>
+
+    <div class="glass-card active-card">
+      <div class="active-indicator"></div>
+      <div class="card-row">
+        <div class="emoji-badge">🏋️</div>
+        <div class="card-info">
+          <div class="card-name">12-Week PPL</div>
+          <div class="card-meta">
+            <span class="status-pill active">Active</span>
+            <span class="card-detail">Week 3 · 6 workouts</span>
+          </div>
+        </div>
+        <div class="card-actions">
+          <div class="icon-btn danger">🗑</div>
+          <div class="icon-btn">›</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Other programs -->
+    <div class="section-label" style="margin-top:16px;">Library</div>
+
+    <div class="glass-card">
+      <div class="card-row">
+        <div class="emoji-badge draft">🏋️</div>
+        <div class="card-info">
+          <div class="card-name">Upper/Lower Split</div>
+          <div class="card-meta">
+            <span class="status-pill draft">Draft</span>
+            <span class="card-detail">8 weeks · 4 workouts</span>
+          </div>
+        </div>
+        <div class="card-actions">
+          <div class="icon-btn danger">🗑</div>
+          <div class="icon-btn">›</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass-card">
+      <div class="card-row">
+        <div class="emoji-badge completed">🏋️</div>
+        <div class="card-info">
+          <div class="card-name">5×5 Strength</div>
+          <div class="card-meta">
+            <span class="status-pill completed">Completed</span>
+            <span class="card-detail">12 weeks · 3 workouts</span>
+          </div>
+        </div>
+        <div class="card-actions">
+          <div class="icon-btn danger">🗑</div>
+          <div class="icon-btn">›</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAB -->
+    <div class="fab">
+      <div class="fab-btn">
+        <span class="plus">+</span>
+        <span>New Program</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="annotation">Cards use LiquidGlassContainer styling · Active card gets indigo tint + left accent bar · Status pills replace plain text labels</p>
+
+</body>
+</html>

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WOD Card — One Pencil, Two Zones</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a14;
+    font-family: 'Space Grotesk', sans-serif;
+    color: #fff;
+    padding: 28px 20px 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 36px;
+  }
+  h1 { font-size: 18px; font-weight: 800; letter-spacing: -0.3px; text-align:center; }
+  .sub { font-size: 12px; color: rgba(255,255,255,0.35); margin-top: 4px; text-align: center; }
+
+  .row { display: flex; gap: 24px; width: 100%; max-width: 860px; align-items: flex-start; flex-wrap: wrap; justify-content: center; }
+  .col { display: flex; flex-direction: column; align-items: center; gap: 12px; flex: 1; min-width: 260px; max-width: 380px; }
+  .col-label { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.28); letter-spacing: 1px; text-transform: uppercase; }
+
+  /* ── Card ── */
+  .wod-card {
+    width: 100%;
+    background: rgba(255,255,255,0.06);
+    border: 1.5px solid rgba(255,255,255,0.09);
+    border-radius: 18px;
+    overflow: hidden;
+    position: relative;
+  }
+  .wod-card::before {
+    content: '';
+    position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+    pointer-events: none;
+  }
+
+  /* ── Header zone: name + pencil + delete ── */
+  .header-zone {
+    padding: 12px 10px 0 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .drag { color: rgba(255,255,255,0.2); font-size: 16px; flex-shrink: 0; cursor: grab; }
+  .wod-badge {
+    width: 26px; height: 26px; border-radius: 8px; flex-shrink: 0;
+    background: rgba(99,102,241,0.18); border: 1px solid rgba(99,102,241,0.28);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 800; color: #818cf8;
+  }
+
+  /* Name tap target */
+  .name-tap {
+    flex: 1; font-size: 14px; font-weight: 700; letter-spacing: -0.2px;
+    padding: 3px 5px; border-radius: 7px; cursor: text;
+    transition: background 0.15s;
+    position: relative;
+  }
+  .name-tap:hover { background: rgba(255,255,255,0.05); }
+  .name-tap.editing {
+    border-bottom: 1.5px solid rgba(99,102,241,0.5);
+    border-radius: 0;
+  }
+
+  .cursor { display: inline-block; width: 1.5px; height: 13px; background: #818cf8; margin-left: 1px; animation: blink 1s step-end infinite; vertical-align: middle; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* One pencil icon — decorative affordance */
+  .pencil-icon {
+    width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(99,102,241,0.45); font-size: 14px;
+    /* Not a button — just shows card is editable */
+  }
+  .delete-btn {
+    width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,69,58,0.4); font-size: 14px; cursor: pointer;
+  }
+
+  .wod-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 8px 12px 0; }
+
+  /* Exercises tap target */
+  .exercises-tap {
+    padding: 8px 12px 12px;
+    display: flex; flex-direction: column; gap: 5px;
+    cursor: pointer;
+    border-radius: 0 0 16px 16px;
+    transition: background 0.15s;
+  }
+  .exercises-tap:hover { background: rgba(255,255,255,0.03); }
+  .exercises-tap.active { background: rgba(99,102,241,0.06); }
+
+  .ex-row { display: flex; align-items: center; gap: 6px; }
+  .ex-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(99,102,241,0.5); flex-shrink: 0; }
+  .ex-name { flex: 1; font-size: 12px; color: rgba(255,255,255,0.55); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pill { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.07); border-radius: 6px; padding: 2px 7px; }
+
+  /* ── Zone labels ── */
+  .zone-wrap { position: relative; width: 100%; }
+  .zone-label {
+    position: absolute;
+    font-size: 9px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 6px; pointer-events: none;
+    white-space: nowrap;
+  }
+  .zone-label.name-label {
+    background: rgba(99,102,241,0.25); color: #a5b4fc;
+    top: 10px; right: -10px;
+  }
+  .zone-label.ex-label {
+    background: rgba(52,211,153,0.2); color: rgba(52,211,153,0.9);
+    bottom: 10px; right: -10px;
+  }
+  .zone-border-name {
+    position: absolute;
+    top: 6px; left: -4px; right: 32px; bottom: auto;
+    height: 36px;
+    border: 1.5px dashed rgba(99,102,241,0.4);
+    border-radius: 10px;
+    pointer-events: none;
+  }
+  .zone-border-ex {
+    position: absolute;
+    top: auto; left: -4px; right: -4px;
+    bottom: -4px;
+    border: 1.5px dashed rgba(52,211,153,0.35);
+    border-radius: 0 0 20px 20px;
+    pointer-events: none;
+    /* top border removed to flow from divider */
+    border-top: none;
+  }
+
+  /* callouts */
+  .callout {
+    display: flex; align-items: flex-start; gap: 10px;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px; padding: 12px 14px; width: 100%;
+  }
+  .callout-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+  .callout-dot.indigo { background: rgba(99,102,241,0.7); }
+  .callout-dot.green { background: rgba(52,211,153,0.7); }
+  .callout-text h4 { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+  .callout-text p { font-size: 11px; color: rgba(255,255,255,0.4); line-height: 1.5; }
+
+  /* summary */
+  .summary {
+    width: 100%; max-width: 860px;
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px; padding: 16px;
+  }
+  .summary-label { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.25); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; }
+  .summary-item { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; margin-bottom: 7px; }
+  .summary-num { color: #818cf8; font-weight: 800; flex-shrink: 0; width: 16px; }
+  .summary-text { color: rgba(255,255,255,0.6); line-height: 1.5; }
+  code { background: rgba(255,255,255,0.07); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div>
+  <h1>WOD Card — One Pencil, Two Tap Zones</h1>
+  <p class="sub">✎ = edit indicator · tap name to rename · tap exercises to edit them</p>
+</div>
+
+<div class="row">
+
+  <!-- Annotated card -->
+  <div class="col">
+    <div class="col-label">Annotated — tap zones</div>
+    <div class="zone-wrap">
+      <div class="wod-card">
+        <div class="header-zone">
+          <span class="drag">☰</span>
+          <div class="wod-badge">1</div>
+          <div class="name-tap">Day 1 — Push</div>
+          <div class="pencil-icon">✎</div>
+          <div class="delete-btn">🗑</div>
+        </div>
+        <div class="wod-divider"></div>
+        <div class="exercises-tap">
+          <div class="ex-row"><div class="ex-dot"></div><div class="ex-name">Bench Press</div><div class="pill">4×6–10</div></div>
+          <div class="ex-row"><div class="ex-dot"></div><div class="ex-name">Incline DB Press</div><div class="pill">3×8–12</div></div>
+          <div class="ex-row"><div class="ex-dot"></div><div class="ex-name">Lateral Raise</div><div class="pill">3×15–25</div></div>
+        </div>
+      </div>
+      <!-- Zone outlines -->
+      <div class="zone-border-name"></div>
+      <div class="zone-border-ex"></div>
+      <!-- Labels -->
+      <div class="zone-label name-label" style="top:8px;">TAP → RENAME</div>
+      <div class="zone-label ex-label" style="bottom:8px; background:rgba(52,211,153,0.18); color:rgba(52,211,153,0.85);">TAP → EDIT EXERCISES</div>
+    </div>
+
+    <div class="callout">
+      <div class="callout-dot indigo"></div>
+      <div class="callout-text">
+        <h4>Name zone</h4>
+        <p>Tap the WOD name → edits it in-place, no dialog. Confirm with Return or tap outside.</p>
+      </div>
+    </div>
+    <div class="callout">
+      <div class="callout-dot green"></div>
+      <div class="callout-text">
+        <h4>Exercises zone</h4>
+        <p>Tap anywhere on the exercise list → navigates to the exercise editing screen for this WOD.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Name editing state -->
+  <div class="col">
+    <div class="col-label">Name being edited</div>
+    <div class="wod-card" style="border-color:rgba(99,102,241,0.3);">
+      <div class="header-zone">
+        <span class="drag">☰</span>
+        <div class="wod-badge">1</div>
+        <div class="name-tap editing">Day 1 — Push<span class="cursor"></span></div>
+        <div class="pencil-icon">✎</div>
+        <div class="delete-btn">🗑</div>
+      </div>
+      <div class="wod-divider"></div>
+      <div class="exercises-tap">
+        <div class="ex-row"><div class="ex-dot"></div><div class="ex-name">Bench Press</div><div class="pill">4×6–10</div></div>
+        <div class="ex-row"><div class="ex-dot"></div><div class="ex-name">Incline DB Press</div><div class="pill">3×8–12</div></div>
+        <div class="ex-row"><div class="ex-dot"></div><div class="ex-name">Lateral Raise</div><div class="pill">3×15–25</div></div>
+      </div>
+    </div>
+
+    <div class="col-label" style="margin-top:16px;">Exercises tapped → entering screen</div>
+    <div class="wod-card" style="border-color:rgba(52,211,153,0.25);">
+      <div class="header-zone">
+        <span class="drag">☰</span>
+        <div class="wod-badge">2</div>
+        <div class="name-tap">Day 2 — Pull</div>
+        <div class="pencil-icon">✎</div>
+        <div class="delete-btn">🗑</div>
+      </div>
+      <div class="wod-divider"></div>
+      <div class="exercises-tap active">
+        <div class="ex-row"><div class="ex-dot"></div><div class="ex-name">Pull-up</div><div class="pill">4×5–8</div></div>
+        <div class="ex-row"><div class="ex-dot"></div><div class="ex-name">Barbell Row</div><div class="pill">4×6–10</div></div>
+        <div class="ex-row" style="margin-top:2px; justify-content:center;">
+          <span style="font-size:10px; color:rgba(52,211,153,0.6); font-weight:600;">→ Opening exercise screen…</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="summary">
+  <div class="summary-label">All changes</div>
+  <div class="summary-item"><span class="summary-num">1</span><span class="summary-text">Remove "Edit Workouts" button from program screen header · each card gets one <strong>✎</strong> indicator · name tap = rename in-place · exercises tap = open exercise screen</span></div>
+  <div class="summary-item"><span class="summary-num">2</span><span class="summary-text">Exercise dialog: split rest into "Between Sets" + "After Exercise" — both default 90 s silently, both independently overridable</span></div>
+  <div class="summary-item"><span class="summary-num">3</span><span class="summary-text">Remove "Xs rest" button from app bar in exercise setup screen</span></div>
+  <div class="summary-item"><span class="summary-num" style="color:rgba(251,191,36,0.8);">DB</span><span class="summary-text">Schema v12: add <code>rest_between_sets_seconds</code> to <code>wod_template_exercises</code></span></div>
+</div>
+
+</body>
+</html>

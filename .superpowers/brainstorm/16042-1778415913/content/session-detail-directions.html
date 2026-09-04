@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session Detail — Design Directions</title>
+<script src="../../../.superpowers/brainstorm/16042-1778415913/state/../../../.superpowers/brainstorm/16042-1778415913/content/../scripts/helper.js" defer></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0f0f1a;
+    color: #e2e2f0;
+    font-family: -apple-system, 'SF Pro Display', sans-serif;
+    min-height: 100vh;
+    padding: 32px 24px 60px;
+  }
+  h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 6px; }
+  .subtitle { font-size: 13px; color: rgba(255,255,255,0.4); margin-bottom: 36px; }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 1100px; margin: 0 auto; }
+
+  .option {
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.15s;
+    background: rgba(255,255,255,0.03);
+  }
+  .option:hover { border-color: rgba(99,102,241,0.4); transform: translateY(-2px); }
+  .option.selected { border-color: #6366f1; background: rgba(99,102,241,0.07); }
+
+  .option-label {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .letter {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: rgba(99,102,241,0.2);
+    border: 1px solid rgba(99,102,241,0.35);
+    color: #818cf8; font-size: 13px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .option-label h3 { font-size: 14px; font-weight: 700; }
+  .option-label p { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 1px; }
+
+  /* Phone mockup */
+  .phone {
+    background: #12121f;
+    margin: 0;
+    padding: 0;
+    min-height: 520px;
+    display: flex; flex-direction: column;
+    font-size: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ─── SHARED COMPONENTS ─── */
+  .ph-bar {
+    padding: 12px 14px 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .ph-bar-title { font-size: 14px; font-weight: 800; letter-spacing: -0.3px; }
+  .ph-bar-sub { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+  .ph-back { font-size: 11px; color: #818cf8; }
+  .ph-action { font-size: 11px; color: #818cf8; font-weight: 600; }
+
+  .ph-scroll { flex: 1; overflow: hidden; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+
+  /* stat row */
+  .stat-row { display: flex; gap: 6px; }
+  .stat-box {
+    flex: 1; border-radius: 10px; padding: 8px 10px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .stat-box.indigo { background: rgba(99,102,241,0.1); border-color: rgba(99,102,241,0.2); }
+  .stat-val { font-size: 15px; font-weight: 800; color: #e2e2f0; letter-spacing: -0.5px; }
+  .stat-val.accent { color: #818cf8; }
+  .stat-lbl { font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.3); letter-spacing: 0.5px; margin-top: 1px; }
+
+  /* exercise block */
+  .ex-block {
+    border-radius: 12px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    overflow: hidden;
+  }
+  .ex-header {
+    padding: 8px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .ex-dot { width: 6px; height: 6px; border-radius: 50%; background: #6366f1; flex-shrink: 0; }
+  .ex-name { font-size: 12px; font-weight: 700; }
+  .ex-meta { font-size: 9px; color: rgba(255,255,255,0.3); margin-left: auto; }
+
+  .set-row {
+    padding: 5px 10px;
+    display: flex; align-items: center; gap: 6px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .set-row:last-child { border-bottom: none; }
+  .set-num { font-size: 9px; color: rgba(255,255,255,0.25); width: 22px; }
+  .set-val { font-size: 12px; font-weight: 600; flex: 1; }
+  .set-rpe { font-size: 9px; color: rgba(255,255,255,0.3); }
+  .set-pr { font-size: 9px; background: rgba(99,102,241,0.2); color: #818cf8; padding: 1px 5px; border-radius: 4px; font-weight: 700; }
+
+  /* ─── OPTION A — INLINE EDIT ─── */
+  .set-row.editable { cursor: pointer; }
+  .set-row.editable:hover { background: rgba(255,255,255,0.04); }
+  .edit-icon { font-size: 10px; color: rgba(99,102,241,0.5); margin-left: auto; }
+  .set-row.editing { background: rgba(99,102,241,0.08); border-radius: 6px; }
+  .mini-input {
+    background: rgba(99,102,241,0.15);
+    border: 1px solid rgba(99,102,241,0.4);
+    border-radius: 5px; padding: 2px 6px;
+    font-size: 11px; font-weight: 700; color: #a5b4fc;
+    width: 38px; text-align: center;
+  }
+  .mini-x { font-size: 10px; color: rgba(255,255,255,0.3); }
+  .mini-save { font-size: 9px; background: #6366f1; color: white; border-radius: 4px; padding: 2px 6px; font-weight: 700; }
+
+  /* ─── OPTION B — EDIT MODE ─── */
+  .edit-fab {
+    position: absolute; bottom: 12px; right: 12px;
+    background: #6366f1; border-radius: 14px;
+    padding: 7px 14px; font-size: 11px; font-weight: 700; color: white;
+    display: flex; align-items: center; gap: 5px;
+    box-shadow: 0 4px 16px rgba(99,102,241,0.4);
+  }
+  .delete-btn { font-size: 9px; color: rgba(255,80,80,0.6); margin-left: auto; background: rgba(255,80,80,0.08); padding: 2px 5px; border-radius: 4px; }
+  .add-set-row { padding: 6px 10px; border-top: 1px dashed rgba(255,255,255,0.08); display: flex; align-items: center; gap: 4px; color: rgba(99,102,241,0.6); font-size: 10px; font-weight: 600; }
+
+  /* ─── OPTION C — SWIPE ─── */
+  .set-row-wrap { position: relative; overflow: hidden; }
+  .set-actions {
+    position: absolute; right: 0; top: 0; bottom: 0;
+    display: flex;
+  }
+  .swipe-edit { background: rgba(99,102,241,0.8); display: flex; align-items: center; padding: 0 10px; font-size: 9px; font-weight: 700; }
+  .swipe-del { background: rgba(220,50,50,0.8); display: flex; align-items: center; padding: 0 10px; font-size: 9px; font-weight: 700; }
+
+  /* progress bar on set */
+  .vol-bar { height: 3px; background: rgba(99,102,241,0.15); border-radius: 2px; margin: 0 10px 6px; }
+  .vol-fill { height: 3px; background: #6366f1; border-radius: 2px; }
+
+  /* session summary card */
+  .session-card {
+    border-radius: 12px; padding: 10px 12px;
+    background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(99,102,241,0.05));
+    border: 1px solid rgba(99,102,241,0.2);
+    margin-bottom: 2px;
+  }
+  .session-card-title { font-size: 13px; font-weight: 800; letter-spacing: -0.3px; }
+  .session-card-sub { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+  .delta { font-size: 10px; color: #34d399; font-weight: 600; }
+  .delta.down { color: #f87171; }
+
+  /* bottom bar */
+  .bottom-bar {
+    padding: 8px 12px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    display: flex; gap: 6px;
+  }
+  .btn-save { flex: 1; background: #6366f1; border-radius: 8px; padding: 7px; text-align: center; font-size: 11px; font-weight: 700; }
+  .btn-cancel { padding: 7px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); font-size: 11px; color: rgba(255,255,255,0.4); }
+
+  .selected-indicator {
+    text-align: center; padding: 14px; font-size: 12px;
+    color: #818cf8; font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<h1>Session Detail — 3 Design Directions</h1>
+<p class="subtitle">How should editing and stats work inside a completed session?</p>
+
+<div class="grid">
+
+  <!-- ── OPTION A ── -->
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="option-label">
+      <div class="letter">A</div>
+      <div>
+        <h3>Tap to Edit Inline</h3>
+        <p>Tap any set → fields open in place</p>
+      </div>
+    </div>
+    <div class="phone">
+      <div class="ph-bar">
+        <div>
+          <div class="ph-back">← History</div>
+          <div class="ph-bar-title">Push Day</div>
+          <div class="ph-bar-sub">Mon, 10 May · 58 min</div>
+        </div>
+        <div class="ph-action">Done</div>
+      </div>
+      <div class="ph-scroll">
+
+        <!-- Stats -->
+        <div class="stat-row">
+          <div class="stat-box indigo">
+            <div class="stat-val accent">12,480</div>
+            <div class="stat-lbl">TOTAL VOL (kg)</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-val">6</div>
+            <div class="stat-lbl">EXERCISES</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-val">24</div>
+            <div class="stat-lbl">SETS</div>
+          </div>
+        </div>
+
+        <!-- Bench Press -->
+        <div class="ex-block">
+          <div class="ex-header">
+            <div class="ex-dot"></div>
+            <div class="ex-name">Bench Press</div>
+            <div class="ex-meta">4 sets · best 100kg×5</div>
+          </div>
+          <!-- Normal set -->
+          <div class="set-row editable">
+            <div class="set-num">SET 1</div>
+            <div class="set-val">80 kg × 8</div>
+            <div class="set-rpe">RPE 7</div>
+            <div class="edit-icon">✏️</div>
+          </div>
+          <!-- Expanded / editing state -->
+          <div class="set-row editing">
+            <div class="set-num">SET 2</div>
+            <div class="mini-input">90</div>
+            <div class="mini-x">kg ×</div>
+            <div class="mini-input">6</div>
+            <div class="mini-x">reps</div>
+            <div class="mini-save">Save</div>
+          </div>
+          <div class="set-row editable">
+            <div class="set-num">SET 3</div>
+            <div class="set-val">100 kg × 5</div>
+            <div class="set-pr">PR</div>
+            <div class="edit-icon">✏️</div>
+          </div>
+          <div class="set-row editable">
+            <div class="set-num">SET 4</div>
+            <div class="set-val">95 kg × 5</div>
+            <div class="set-rpe">RPE 9</div>
+            <div class="edit-icon">✏️</div>
+          </div>
+        </div>
+
+        <!-- Incline -->
+        <div class="ex-block">
+          <div class="ex-header">
+            <div class="ex-dot"></div>
+            <div class="ex-name">Incline Bench Press</div>
+            <div class="ex-meta">3 sets</div>
+          </div>
+          <div class="set-row editable">
+            <div class="set-num">SET 1</div>
+            <div class="set-val">70 kg × 10</div>
+            <div class="edit-icon">✏️</div>
+          </div>
+          <div class="set-row editable">
+            <div class="set-num">SET 2</div>
+            <div class="set-val">75 kg × 8</div>
+            <div class="edit-icon">✏️</div>
+          </div>
+          <div class="set-row editable">
+            <div class="set-num">SET 3</div>
+            <div class="set-val">75 kg × 7</div>
+            <div class="edit-icon">✏️</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── OPTION B ── -->
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="option-label">
+      <div class="letter">B</div>
+      <div>
+        <h3>Edit Mode + Rich Stats</h3>
+        <p>Edit button → full edit mode. Stats dashboard on top.</p>
+      </div>
+    </div>
+    <div class="phone">
+      <div class="ph-bar">
+        <div>
+          <div class="ph-back">← History</div>
+          <div class="ph-bar-title">Push Day</div>
+          <div class="ph-bar-sub">Mon, 10 May · Week 3</div>
+        </div>
+        <div class="ph-action">✏️ Edit</div>
+      </div>
+      <div class="ph-scroll">
+
+        <!-- Session summary card -->
+        <div class="session-card">
+          <div class="session-card-title">Session Summary</div>
+          <div class="session-card-sub">Mon, 10 May 2026 · 58 min</div>
+          <div style="display:flex; gap:16px; margin-top:8px;">
+            <div>
+              <div style="font-size:16px;font-weight:800;color:#a5b4fc;">12,480<span style="font-size:10px;font-weight:500;color:rgba(255,255,255,0.4);margin-left:2px;">kg</span></div>
+              <div style="font-size:9px;color:rgba(255,255,255,0.35);letter-spacing:0.5px;">VOLUME</div>
+              <div class="delta">↑ +840 vs last</div>
+            </div>
+            <div>
+              <div style="font-size:16px;font-weight:800;">24</div>
+              <div style="font-size:9px;color:rgba(255,255,255,0.35);letter-spacing:0.5px;">SETS</div>
+            </div>
+            <div>
+              <div style="font-size:16px;font-weight:800;">2</div>
+              <div style="font-size:9px;color:rgba(255,255,255,0.35);letter-spacing:0.5px;">NEW PRs</div>
+              <div style="font-size:10px;color:#818cf8;font-weight:600;">🏆 Bench, OHP</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Edit mode: Bench Press -->
+        <div class="ex-block">
+          <div class="ex-header">
+            <div class="ex-dot"></div>
+            <div class="ex-name">Bench Press</div>
+            <div class="ex-meta">4 sets · 3,100 kg vol</div>
+          </div>
+          <div class="set-row">
+            <div class="set-num">SET 1</div>
+            <div class="mini-input">80</div>
+            <div class="mini-x">kg ×</div>
+            <div class="mini-input">8</div>
+            <div class="mini-x">reps</div>
+            <div class="delete-btn">✕</div>
+          </div>
+          <div class="set-row">
+            <div class="set-num">SET 2</div>
+            <div class="mini-input">90</div>
+            <div class="mini-x">kg ×</div>
+            <div class="mini-input">6</div>
+            <div class="mini-x">reps</div>
+            <div class="delete-btn">✕</div>
+          </div>
+          <div class="set-row">
+            <div class="set-num">SET 3</div>
+            <div class="mini-input" style="border-color:rgba(99,102,241,0.6);color:#a5b4fc;">100</div>
+            <div class="mini-x">kg ×</div>
+            <div class="mini-input">5</div>
+            <div class="mini-x">reps</div>
+            <div class="set-pr">PR</div>
+            <div class="delete-btn">✕</div>
+          </div>
+          <div class="add-set-row">+ Add set</div>
+        </div>
+
+        <!-- Vol bar -->
+        <div style="padding: 0 2px;">
+          <div style="font-size:9px;color:rgba(255,255,255,0.25);margin-bottom:3px;padding:0 2px;">Volume per exercise</div>
+          <div class="vol-bar"><div class="vol-fill" style="width:100%;"></div></div>
+          <div class="vol-bar"><div class="vol-fill" style="width:68%;"></div></div>
+          <div class="vol-bar"><div class="vol-fill" style="width:45%;"></div></div>
+        </div>
+
+      </div>
+      <div class="bottom-bar">
+        <div class="btn-cancel">Cancel</div>
+        <div class="btn-save">Save Changes</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── OPTION C ── -->
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="option-label">
+      <div class="letter">C</div>
+      <div>
+        <h3>Stats-First + Long Press</h3>
+        <p>Prominent stats header, long-press set to edit/delete</p>
+      </div>
+    </div>
+    <div class="phone">
+      <div class="ph-bar">
+        <div>
+          <div class="ph-back">← History</div>
+          <div class="ph-bar-title">Push Day</div>
+          <div class="ph-bar-sub">Mon, 10 May · Week 3</div>
+        </div>
+      </div>
+      <div class="ph-scroll">
+
+        <!-- Big stats section -->
+        <div style="display:flex; flex-direction:column; gap:5px;">
+          <div class="stat-row">
+            <div class="stat-box indigo" style="flex:2;">
+              <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+                <div>
+                  <div class="stat-val accent" style="font-size:20px;">12,480</div>
+                  <div class="stat-lbl">TOTAL VOLUME · kg</div>
+                </div>
+                <div class="delta" style="font-size:11px; font-weight:700;">↑ +7%</div>
+              </div>
+            </div>
+            <div class="stat-box" style="flex:1; display:flex; flex-direction:column; gap:4px; padding:6px 8px;">
+              <div>
+                <div style="font-size:13px;font-weight:800;">58m</div>
+                <div class="stat-lbl">DURATION</div>
+              </div>
+              <div style="height:1px;background:rgba(255,255,255,0.06);"></div>
+              <div>
+                <div style="font-size:13px;font-weight:800;">24</div>
+                <div class="stat-lbl">SETS</div>
+              </div>
+            </div>
+          </div>
+          <div class="stat-row">
+            <div class="stat-box">
+              <div class="stat-val">2 🏆</div>
+              <div class="stat-lbl">NEW PRs</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-val">8.2</div>
+              <div class="stat-lbl">AVG RPE</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-val">100<span style="font-size:9px;color:rgba(255,255,255,0.4);">kg</span></div>
+              <div class="stat-lbl">TOP WEIGHT</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sets — long-press hint -->
+        <div style="font-size:9px;color:rgba(255,255,255,0.2);text-align:center;padding:4px 0;">Long-press any set to edit or delete</div>
+
+        <!-- Bench Press -->
+        <div class="ex-block">
+          <div class="ex-header">
+            <div class="ex-dot"></div>
+            <div class="ex-name">Bench Press</div>
+            <div class="ex-meta">4 sets · 3,100 kg</div>
+          </div>
+          <div class="set-row">
+            <div class="set-num">SET 1</div>
+            <div class="set-val">80 kg × 8</div>
+            <div class="set-rpe">RPE 7</div>
+          </div>
+          <div class="set-row">
+            <div class="set-num">SET 2</div>
+            <div class="set-val">90 kg × 6</div>
+            <div class="set-rpe">RPE 8</div>
+          </div>
+          <!-- "long pressed" set -->
+          <div class="set-row" style="background:rgba(99,102,241,0.1); border-radius:6px; margin:0 4px;">
+            <div class="set-num">SET 3</div>
+            <div class="set-val">100 kg × 5</div>
+            <div class="set-pr">PR</div>
+            <div style="display:flex;gap:4px;margin-left:auto;">
+              <div style="font-size:9px;background:rgba(99,102,241,0.3);color:#a5b4fc;padding:2px 6px;border-radius:4px;font-weight:700;">Edit</div>
+              <div style="font-size:9px;background:rgba(255,60,60,0.2);color:#f87171;padding:2px 6px;border-radius:4px;font-weight:700;">Del</div>
+            </div>
+          </div>
+          <div class="set-row">
+            <div class="set-num">SET 4</div>
+            <div class="set-val">95 kg × 5</div>
+            <div class="set-rpe">RPE 9</div>
+          </div>
+        </div>
+
+        <!-- OHP -->
+        <div class="ex-block">
+          <div class="ex-header">
+            <div class="ex-dot"></div>
+            <div class="ex-name">Overhead Press</div>
+            <div class="ex-meta">3 sets</div>
+          </div>
+          <div class="set-row">
+            <div class="set-num">SET 1</div>
+            <div class="set-val">60 kg × 8</div>
+          </div>
+          <div class="set-row">
+            <div class="set-num">SET 2</div>
+            <div class="set-val">65 kg × 6</div>
+            <div class="set-pr">PR</div>
+          </div>
+          <div class="set-row">
+            <div class="set-num">SET 3</div>
+            <div class="set-val">65 kg × 5</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="max-width:1100px; margin: 28px auto 0; padding: 16px 20px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 14px;">
+  <div style="font-size:12px; color:rgba(255,255,255,0.5); line-height:1.7;">
+    <strong style="color:rgba(255,255,255,0.8);">All 3 options include:</strong> total volume, set count, PR badges, volume vs last session delta, editable weight & reps, delete set. The difference is <em>how</em> you trigger editing.
+  </div>
+</div>
+
+<div id="selection-indicator" class="selected-indicator" style="display:none; margin-top:20px;"></div>
+
+<script>
+function toggleSelect(el) {
+  const allOptions = document.querySelectorAll('.option');
+  allOptions.forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+
+  const choice = el.dataset.choice;
+  const label = el.querySelector('h3').textContent;
+
+  const indicator = document.getElementById('selection-indicator');
+  indicator.style.display = 'block';
+  indicator.textContent = `Selected: Option ${choice.toUpperCase()} — ${label}`;
+
+  if (window.__superpowers_record) {
+    window.__superpowers_record({ type: 'click', choice, text: label });
+  }
+}
+</script>
+</body>
+</html>

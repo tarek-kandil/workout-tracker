@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Program Overview — Size Options</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0f0f1a;
+    font-family: 'Space Grotesk', -apple-system, sans-serif;
+    color: #fff;
+    padding: 32px 24px;
+  }
+  h1 { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { font-size: 12px; color: rgba(255,255,255,0.4); margin-bottom: 28px; }
+
+  .columns {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  .col {
+    width: 340px;
+    flex-shrink: 0;
+  }
+
+  .col-label {
+    font-size: 11px; font-weight: 700;
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 1.1px; text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 12px;
+  }
+
+  .phone {
+    background: linear-gradient(160deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    border-radius: 36px;
+    padding: 16px 0 28px;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.08);
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.2s;
+  }
+  .phone::before {
+    content: '';
+    position: absolute;
+    top: -60px; left: -40px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .phone.selected { border-color: #6366F1; }
+  .phone:hover { border-color: rgba(99,102,241,0.4); }
+
+  .phone-label {
+    font-size: 10px; font-weight: 800;
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding: 0 16px 10px;
+  }
+
+  .app-bar {
+    display: flex; align-items: center;
+    padding: 0 16px 14px; gap: 10px;
+  }
+  .back-btn {
+    width: 32px; height: 32px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; color: rgba(255,255,255,0.6);
+  }
+  .app-bar-title { font-size: 18px; font-weight: 800; flex: 1; letter-spacing: -0.3px; }
+  .edit-btn { font-size: 13px; color: rgba(99,102,241,0.9); font-weight: 600; }
+
+  .content { padding: 0 12px; }
+
+  /* Program header card */
+  .header-card {
+    background: rgba(99,102,241,0.09);
+    border: 1px solid rgba(99,102,241,0.22);
+    border-radius: 16px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(99,102,241,0.5), transparent);
+  }
+  .header-name { font-size: 17px; font-weight: 800; letter-spacing: -0.3px; }
+  .header-meta { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 3px; }
+
+  .section-label {
+    font-size: 10px; font-weight: 700;
+    color: rgba(255,255,255,0.28);
+    letter-spacing: 1.1px; text-transform: uppercase;
+    margin-bottom: 8px; padding: 0 2px;
+  }
+
+  /* ─── CURRENT (reference) ─── */
+  .wod-card-sm {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-bottom: 6px;
+    position: relative; overflow: hidden;
+  }
+  .wod-card-sm::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+  }
+  .wod-title-row-sm {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 6px;
+  }
+  .drag-sm { color: rgba(255,255,255,0.2); font-size: 14px; }
+  .wod-name-sm { font-size: 13px; font-weight: 700; flex: 1; }
+  .chevron-sm { font-size: 12px; color: rgba(255,255,255,0.18); }
+  .ex-row-sm {
+    display: flex; align-items: center; gap: 6px;
+    padding: 2px 0;
+  }
+  .dot-sm {
+    width: 3px; height: 3px; border-radius: 50%;
+    background: rgba(255,255,255,0.25); flex-shrink: 0;
+  }
+  .ex-name-sm { font-size: 11px; color: rgba(255,255,255,0.5); flex: 1; }
+  .ex-reps-sm { font-size: 11px; color: rgba(255,255,255,0.28); }
+
+  /* ─── OPTION B: Slightly bigger ─── */
+  .wod-card-md {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 16px;
+    padding: 14px 14px;
+    margin-bottom: 8px;
+    position: relative; overflow: hidden;
+  }
+  .wod-card-md::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  }
+  .wod-title-row-md {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 10px;
+  }
+  .wod-num-badge {
+    width: 24px; height: 24px;
+    background: rgba(99,102,241,0.18);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 800; color: #818cf8;
+    flex-shrink: 0;
+  }
+  .wod-name-md { font-size: 14px; font-weight: 700; flex: 1; }
+  .chevron-md { font-size: 14px; color: rgba(255,255,255,0.2); }
+  .ex-row-md {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 0;
+  }
+  .dot-md {
+    width: 4px; height: 4px; border-radius: 50%;
+    background: rgba(255,255,255,0.22); flex-shrink: 0; margin-left: 2px;
+  }
+  .ex-name-md { font-size: 12.5px; color: rgba(255,255,255,0.55); flex: 1; }
+  .ex-reps-md { font-size: 12px; color: rgba(255,255,255,0.3); }
+
+  /* ─── OPTION C: Generous ─── */
+  .wod-card-lg {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 18px;
+    padding: 16px;
+    margin-bottom: 10px;
+    position: relative; overflow: hidden;
+  }
+  .wod-card-lg::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+  }
+  .wod-title-row-lg {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 12px;
+  }
+  .wod-num-badge-lg {
+    width: 30px; height: 30px;
+    background: rgba(99,102,241,0.18);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 800; color: #818cf8;
+    flex-shrink: 0;
+  }
+  .wod-name-lg { font-size: 15px; font-weight: 700; flex: 1; }
+  .chevron-lg { font-size: 16px; color: rgba(255,255,255,0.2); }
+  .ex-divider { height: 1px; background: rgba(255,255,255,0.06); margin-bottom: 8px; }
+  .ex-row-lg {
+    display: flex; align-items: center; gap: 10px;
+    padding: 5px 0;
+  }
+  .dot-lg {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: rgba(99,102,241,0.45); flex-shrink: 0;
+  }
+  .ex-name-lg { font-size: 13px; color: rgba(255,255,255,0.6); flex: 1; }
+  .ex-reps-lg {
+    font-size: 12px; font-weight: 600;
+    color: rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.06);
+    padding: 2px 7px; border-radius: 6px;
+  }
+
+  .choice-label {
+    text-align: center;
+    margin-top: 10px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.35);
+    font-style: italic;
+  }
+  .phone.selected + .choice-label { color: #818cf8; font-style: normal; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<h1>Program Overview — WOD Cards: Size Comparison</h1>
+<p class="subtitle">Same layout, same information — just scaled up. Click to select.</p>
+
+<div class="columns">
+
+  <!-- ── CURRENT ── -->
+  <div class="col">
+    <div class="col-label">A — Current (reference)</div>
+    <div class="phone" data-choice="a" onclick="pick(this)">
+      <div class="app-bar">
+        <div class="back-btn">‹</div>
+        <div class="app-bar-title">12-Week PPL</div>
+        <div class="edit-btn">Edit</div>
+      </div>
+      <div class="content">
+        <div class="header-card">
+          <div class="header-name">12-Week PPL</div>
+          <div class="header-meta">12 weeks · Week 3 of 12</div>
+        </div>
+        <div class="section-label">Workouts</div>
+
+        <div class="wod-card-sm">
+          <div class="wod-title-row-sm">
+            <span class="drag-sm">⠿</span>
+            <span class="wod-name-sm">WOD 1 — Push</span>
+            <span class="chevron-sm">›</span>
+          </div>
+          <div class="ex-row-sm"><div class="dot-sm"></div><span class="ex-name-sm">Bench Press</span><span class="ex-reps-sm">3×6–10</span></div>
+          <div class="ex-row-sm"><div class="dot-sm"></div><span class="ex-name-sm">Overhead Press</span><span class="ex-reps-sm">3×8–12</span></div>
+          <div class="ex-row-sm"><div class="dot-sm"></div><span class="ex-name-sm">Tricep Pushdown</span><span class="ex-reps-sm">3×10–15</span></div>
+        </div>
+
+        <div class="wod-card-sm">
+          <div class="wod-title-row-sm">
+            <span class="drag-sm">⠿</span>
+            <span class="wod-name-sm">WOD 2 — Pull</span>
+            <span class="chevron-sm">›</span>
+          </div>
+          <div class="ex-row-sm"><div class="dot-sm"></div><span class="ex-name-sm">Pull-ups</span><span class="ex-reps-sm">3×5–8</span></div>
+          <div class="ex-row-sm"><div class="dot-sm"></div><span class="ex-name-sm">Barbell Row</span><span class="ex-reps-sm">3×6–10</span></div>
+          <div class="ex-row-sm"><div class="dot-sm"></div><span class="ex-name-sm">Face Pulls</span><span class="ex-reps-sm">3×12–15</span></div>
+        </div>
+
+        <div class="wod-card-sm">
+          <div class="wod-title-row-sm">
+            <span class="drag-sm">⠿</span>
+            <span class="wod-name-sm">WOD 3 — Legs</span>
+            <span class="chevron-sm">›</span>
+          </div>
+          <div class="ex-row-sm"><div class="dot-sm"></div><span class="ex-name-sm">Squat</span><span class="ex-reps-sm">4×5–8</span></div>
+          <div class="ex-row-sm"><div class="dot-sm"></div><span class="ex-name-sm">Romanian Deadlift</span><span class="ex-reps-sm">3×8–12</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="choice-label">Compact — fits more on screen</div>
+  </div>
+
+  <!-- ── OPTION B: Slightly bigger ── -->
+  <div class="col">
+    <div class="col-label">B — Slightly Bigger</div>
+    <div class="phone" data-choice="b" onclick="pick(this)">
+      <div class="app-bar">
+        <div class="back-btn">‹</div>
+        <div class="app-bar-title">12-Week PPL</div>
+        <div class="edit-btn">Edit</div>
+      </div>
+      <div class="content">
+        <div class="header-card">
+          <div class="header-name">12-Week PPL</div>
+          <div class="header-meta">12 weeks · Week 3 of 12</div>
+        </div>
+        <div class="section-label">Workouts</div>
+
+        <div class="wod-card-md">
+          <div class="wod-title-row-md">
+            <div class="wod-num-badge">1</div>
+            <span class="wod-name-md">WOD 1 — Push</span>
+            <span class="chevron-md">›</span>
+          </div>
+          <div class="ex-row-md"><div class="dot-md"></div><span class="ex-name-md">Bench Press</span><span class="ex-reps-md">3×6–10</span></div>
+          <div class="ex-row-md"><div class="dot-md"></div><span class="ex-name-md">Overhead Press</span><span class="ex-reps-md">3×8–12</span></div>
+          <div class="ex-row-md"><div class="dot-md"></div><span class="ex-name-md">Tricep Pushdown</span><span class="ex-reps-md">3×10–15</span></div>
+        </div>
+
+        <div class="wod-card-md">
+          <div class="wod-title-row-md">
+            <div class="wod-num-badge">2</div>
+            <span class="wod-name-md">WOD 2 — Pull</span>
+            <span class="chevron-md">›</span>
+          </div>
+          <div class="ex-row-md"><div class="dot-md"></div><span class="ex-name-md">Pull-ups</span><span class="ex-reps-md">3×5–8</span></div>
+          <div class="ex-row-md"><div class="dot-md"></div><span class="ex-name-md">Barbell Row</span><span class="ex-reps-md">3×6–10</span></div>
+        </div>
+
+        <div class="wod-card-md">
+          <div class="wod-title-row-md">
+            <div class="wod-num-badge">3</div>
+            <span class="wod-name-md">WOD 3 — Legs</span>
+            <span class="chevron-md">›</span>
+          </div>
+          <div class="ex-row-md"><div class="dot-md"></div><span class="ex-name-md">Squat</span><span class="ex-reps-md">4×5–8</span></div>
+          <div class="ex-row-md"><div class="dot-md"></div><span class="ex-name-md">Romanian Deadlift</span><span class="ex-reps-md">3×8–12</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="choice-label">Numbered badge replaces drag handle · more padding · slightly bigger fonts</div>
+  </div>
+
+  <!-- ── OPTION C: Generous ── -->
+  <div class="col">
+    <div class="col-label">C — Generous</div>
+    <div class="phone" data-choice="c" onclick="pick(this)">
+      <div class="app-bar">
+        <div class="back-btn">‹</div>
+        <div class="app-bar-title">12-Week PPL</div>
+        <div class="edit-btn">Edit</div>
+      </div>
+      <div class="content">
+        <div class="header-card">
+          <div class="header-name">12-Week PPL</div>
+          <div class="header-meta">12 weeks · Week 3 of 12</div>
+        </div>
+        <div class="section-label">Workouts</div>
+
+        <div class="wod-card-lg">
+          <div class="wod-title-row-lg">
+            <div class="wod-num-badge-lg">1</div>
+            <span class="wod-name-lg">WOD 1 — Push</span>
+            <span class="chevron-lg">›</span>
+          </div>
+          <div class="ex-divider"></div>
+          <div class="ex-row-lg"><div class="dot-lg"></div><span class="ex-name-lg">Bench Press</span><span class="ex-reps-lg">3×6–10</span></div>
+          <div class="ex-row-lg"><div class="dot-lg"></div><span class="ex-name-lg">Overhead Press</span><span class="ex-reps-lg">3×8–12</span></div>
+          <div class="ex-row-lg"><div class="dot-lg"></div><span class="ex-name-lg">Tricep Pushdown</span><span class="ex-reps-lg">3×10–15</span></div>
+        </div>
+
+        <div class="wod-card-lg">
+          <div class="wod-title-row-lg">
+            <div class="wod-num-badge-lg">2</div>
+            <span class="wod-name-lg">WOD 2 — Pull</span>
+            <span class="chevron-lg">›</span>
+          </div>
+          <div class="ex-divider"></div>
+          <div class="ex-row-lg"><div class="dot-lg"></div><span class="ex-name-lg">Pull-ups</span><span class="ex-reps-lg">3×5–8</span></div>
+          <div class="ex-row-lg"><div class="dot-lg"></div><span class="ex-name-lg">Barbell Row</span><span class="ex-reps-lg">3×6–10</span></div>
+        </div>
+
+        <div class="wod-card-lg">
+          <div class="wod-title-row-lg">
+            <div class="wod-num-badge-lg">3</div>
+            <span class="wod-name-lg">WOD 3 — Legs</span>
+            <span class="chevron-lg">›</span>
+          </div>
+          <div class="ex-divider"></div>
+          <div class="ex-row-lg"><div class="dot-lg"></div><span class="ex-name-lg">Squat</span><span class="ex-reps-lg">4×5–8</span></div>
+          <div class="ex-row-lg"><div class="dot-lg"></div><span class="ex-name-lg">Romanian Deadlift</span><span class="ex-reps-lg">3×8–12</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="choice-label">Divider between title and exercises · reps in pill · indigo dots</div>
+  </div>
+
+</div>
+
+<script>
+  function pick(el) {
+    document.querySelectorAll('.phone').forEach(p => p.classList.remove('selected'));
+    el.classList.add('selected');
+    const choice = el.dataset.choice;
+    try {
+      if (window.parent && window.parent.__recordChoice) window.parent.__recordChoice(choice, 'size-' + choice);
+    } catch(e) {}
+  }
+</script>
+</body>
+</html>

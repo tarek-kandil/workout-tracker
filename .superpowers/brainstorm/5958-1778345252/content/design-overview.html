@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Program Design — Three Changes</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a14;
+    font-family: 'Space Grotesk', sans-serif;
+    color: #fff;
+    padding: 28px 20px 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+  }
+
+  h1 { font-size: 18px; font-weight: 800; letter-spacing: -0.3px; }
+  .page-sub { font-size: 12px; color: rgba(255,255,255,0.35); margin-top: 4px; }
+
+  /* ── Section headers ── */
+  .section-head {
+    width: 100%;
+    max-width: 820px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: -24px;
+  }
+  .section-num {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.35);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 800; color: #818cf8;
+    flex-shrink: 0;
+  }
+  .section-title { font-size: 15px; font-weight: 700; }
+  .section-sub { font-size: 12px; color: rgba(255,255,255,0.38); margin-top: 2px; }
+
+  /* ── Panels row ── */
+  .row { display: flex; gap: 20px; width: 100%; max-width: 820px; align-items: flex-start; flex-wrap: wrap; }
+
+  /* ── Phone frame ── */
+  .phone {
+    background: #111122;
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 32px;
+    overflow: hidden;
+    flex: 1;
+    min-width: 230px;
+    max-width: 340px;
+    position: relative;
+  }
+  .phone::before {
+    content: '';
+    position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+  }
+  .phone-label {
+    font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.25);
+    letter-spacing: 1px; text-transform: uppercase; text-align: center;
+    margin-bottom: 6px;
+  }
+
+  /* ── App chrome ── */
+  .appbar {
+    background: rgba(255,255,255,0.04);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    padding: 14px 16px 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .appbar-back { color: rgba(255,255,255,0.4); font-size: 18px; }
+  .appbar-title { font-size: 17px; font-weight: 700; flex: 1; }
+  .appbar-action { font-size: 13px; color: rgba(255,255,255,0.4); }
+  .screen-body { padding: 12px 12px 20px; display: flex; flex-direction: column; gap: 8px; }
+
+  /* ── WOD card ── */
+  .wod-card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 18px;
+    overflow: hidden;
+    position: relative;
+  }
+  .wod-card::before {
+    content: '';
+    position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+  }
+  .wod-header {
+    padding: 12px 12px 0;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .wod-badge {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: rgba(99,102,241,0.18); border: 1px solid rgba(99,102,241,0.28);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 800; color: #818cf8; flex-shrink: 0;
+  }
+  .wod-name { flex: 1; font-size: 14px; font-weight: 700; letter-spacing: -0.2px; }
+  .wod-name-editing {
+    flex: 1; font-size: 14px; font-weight: 700; letter-spacing: -0.2px;
+    color: rgba(255,255,255,0.9);
+    border-bottom: 1.5px solid rgba(99,102,241,0.5);
+    padding-bottom: 1px;
+  }
+  .icon-btn {
+    width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.3); font-size: 15px; cursor: pointer; flex-shrink: 0;
+  }
+  .icon-btn.pencil { color: rgba(99,102,241,0.6); }
+  .icon-btn.delete { color: rgba(255,69,58,0.5); }
+  .wod-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 8px 12px 0; }
+  .wod-exercises { padding: 8px 12px 12px; display: flex; flex-direction: column; gap: 5px; }
+  .ex-row { display: flex; align-items: center; gap: 6px; }
+  .ex-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(99,102,241,0.5); flex-shrink: 0; }
+  .ex-name { flex: 1; font-size: 12px; color: rgba(255,255,255,0.55); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pill {
+    font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.07); border-radius: 6px;
+    padding: 2px 7px; flex-shrink: 0;
+  }
+  .pill-rpe {
+    font-size: 10px; font-weight: 700; color: rgba(251,191,36,0.75);
+    background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.25);
+    border-radius: 6px; padding: 2px 6px; flex-shrink: 0;
+  }
+
+  /* ── Edit dialog mockup ── */
+  .dialog {
+    background: #141428;
+    border-radius: 24px;
+    padding: 20px;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .dlg-title { font-size: 18px; font-weight: 800; letter-spacing: -0.3px; }
+  .dlg-sub { font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 2px; }
+  .dlg-divider { height: 1px; background: rgba(255,255,255,0.07); margin: 14px 0; }
+  .dlg-label {
+    font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.35);
+    letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 8px;
+  }
+  .stepper-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    margin-bottom: 8px;
+  }
+  .stepper-icon { font-size: 15px; color: rgba(255,255,255,0.35); flex-shrink: 0; }
+  .stepper-label { flex: 1; font-size: 13px; color: rgba(255,255,255,0.6); }
+  .stepper-val { font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.85); }
+  .stepper-btn { font-size: 18px; color: rgba(255,255,255,0.3); width: 24px; text-align: center; cursor: pointer; }
+  .stepper-btn.active { color: #818cf8; }
+
+  .save-btn {
+    width: 100%; padding: 13px; border-radius: 14px;
+    background: linear-gradient(135deg, #6366f1, #818cf8);
+    font-size: 15px; font-weight: 700; color: #fff; text-align: center;
+    margin-top: 16px;
+    box-shadow: 0 6px 20px rgba(99,102,241,0.35);
+  }
+
+  /* drum stub */
+  .drum-stub {
+    height: 80px; border-radius: 12px;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 2px;
+    position: relative;
+  }
+  .drum-center-line {
+    position: absolute; left: 0; right: 0;
+    height: 32px; top: 50%; transform: translateY(-50%);
+    background: rgba(99,102,241,0.1);
+    border-top: 1px solid rgba(99,102,241,0.3);
+    border-bottom: 1px solid rgba(99,102,241,0.3);
+  }
+  .drum-selected { font-size: 22px; font-weight: 900; color: #818cf8; position: relative; z-index: 1; }
+  .drum-above { font-size: 14px; font-weight: 600; color: rgba(129,140,248,0.35); margin-bottom: 4px; }
+  .drum-below { font-size: 14px; font-weight: 600; color: rgba(129,140,248,0.35); margin-top: 4px; }
+
+  /* ── Annotation ── */
+  .anno {
+    font-size: 11px; color: rgba(99,102,241,0.7);
+    font-weight: 600; display: flex; align-items: center; gap: 5px;
+    margin-top: 4px;
+  }
+  .anno::before { content: '↑'; }
+
+  /* ── Change description cards ── */
+  .change-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 16px;
+    flex: 1; min-width: 200px;
+  }
+  .change-tag {
+    display: inline-block;
+    font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 6px; margin-bottom: 10px;
+  }
+  .tag-ux { background: rgba(99,102,241,0.15); color: #818cf8; }
+  .tag-db { background: rgba(251,191,36,0.12); color: rgba(251,191,36,0.8); }
+  .change-card h4 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .change-card p { font-size: 12px; color: rgba(255,255,255,0.45); line-height: 1.55; }
+
+  /* rest pills on tile */
+  .pill-rest {
+    font-size: 10px; font-weight: 600; color: rgba(100,220,200,0.7);
+    background: rgba(100,220,200,0.08); border: 1px solid rgba(100,220,200,0.2);
+    border-radius: 6px; padding: 2px 6px; flex-shrink: 0;
+  }
+
+  /* inline editing cursor */
+  .cursor { display: inline-block; width: 1.5px; height: 14px; background: #818cf8; margin-left: 1px; animation: blink 1s step-end infinite; vertical-align: middle; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .full-width { width: 100%; max-width: 820px; }
+</style>
+</head>
+<body>
+
+<div>
+  <h1>Three Changes — Design Overview</h1>
+  <p class="page-sub">Program setup + exercise editing redesign</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- CHANGE 1: Pencil + In-place name -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+<div class="section-head">
+  <div class="section-num">1</div>
+  <div>
+    <div class="section-title">Edit pencil + In-place WOD name editing</div>
+    <div class="section-sub">Program setup screen — each WOD card</div>
+  </div>
+</div>
+
+<div class="row">
+
+  <!-- Before -->
+  <div style="flex:1; min-width:230px; max-width:340px;">
+    <div class="phone-label" style="text-align:center; margin-bottom:8px;">BEFORE</div>
+    <div class="phone">
+      <div class="appbar">
+        <span class="appbar-back">←</span>
+        <span class="appbar-title">Push Pull Legs</span>
+        <span class="appbar-action" style="color:#818cf8; font-weight:600;">✎ Edit Workouts</span>
+      </div>
+      <div class="screen-body">
+        <div class="wod-card">
+          <div class="wod-header">
+            <div style="width:16px;height:16px;color:rgba(255,255,255,0.2)">☰</div>
+            <div class="wod-badge">1</div>
+            <div class="wod-name">Day 1 — Push</div>
+            <div class="icon-btn">›</div>
+          </div>
+          <div class="wod-divider"></div>
+          <div class="wod-exercises">
+            <div class="ex-row"><div class="ex-dot"></div><div class="ex-name">Bench Press</div><div class="pill">4×6–10</div></div>
+            <div class="ex-row"><div class="ex-dot"></div><div class="ex-name">Incline DB Press</div><div class="pill">3×8–12</div></div>
+            <div class="ex-row"><div class="ex-dot"></div><div class="ex-name">Lateral Raise</div><div class="pill">3×15–25</div></div>
+          </div>
+        </div>
+        <div class="wod-card">
+          <div class="wod-header">
+            <div style="width:16px;height:16px;color:rgba(255,255,255,0.2)">☰</div>
+            <div class="wod-badge">2</div>
+            <div class="wod-name">Day 2 — Pull</div>
+            <div class="icon-btn">›</div>
+          </div>
+          <div class="wod-divider"></div>
+          <div class="wod-exercises">
+            <div class="ex-row"><div class="ex-dot"></div><div class="ex-name">Pull-up</div><div class="pill">4×5–8</div></div>
+            <div class="ex-row"><div class="ex-dot"></div><div class="ex-name">Barbell Row</div><div class="pill">4×6–10</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="anno" style="justify-content:center; margin-top:8px;">"Edit Workouts" applies to all — unclear which</div>
+  </div>
+
+  <!-- After -->
+  <div style="flex:1; min-width:230px; max-width:340px;">
+    <div class="phone-label" style="text-align:center; margin-bottom:8px;">AFTER</div>
+    <div class="phone">
+      <div class="appbar">
+        <span class="appbar-back">←</span>
+        <span class="appbar-title">Push Pull Legs</span>
+      </div>
+      <div class="screen-body">
+        <!-- Card 1: normal state -->
+        <div class="wod-card">
+          <div class="wod-header">
+            <div style="width:16px;height:16px;color:rgba(255,255,255,0.2)">☰</div>
+            <div class="wod-badge">1</div>
+            <div class="wod-name">Day 1 — Push</div>
+            <div class="icon-btn pencil" title="Edit exercises">✎</div>
+            <div class="icon-btn delete">🗑</div>
+          </div>
+          <div class="wod-divider"></div>
+          <div class="wod-exercises">
+            <div class="ex-row"><div class="ex-dot"></div><div class="ex-name">Bench Press</div><div class="pill">4×6–10</div></div>
+            <div class="ex-row"><div class="ex-dot"></div><div class="ex-name">Incline DB Press</div><div class="pill">3×8–12</div></div>
+            <div class="ex-row"><div class="ex-dot"></div><div class="ex-name">Lateral Raise</div><div class="pill">3×15–25</div></div>
+          </div>
+        </div>
+        <!-- Card 2: name being edited in-place -->
+        <div class="wod-card" style="border-color:rgba(99,102,241,0.3);">
+          <div class="wod-header">
+            <div style="width:16px;height:16px;color:rgba(255,255,255,0.2)">☰</div>
+            <div class="wod-badge">2</div>
+            <div class="wod-name-editing">Day 2 — Pull<span class="cursor"></span></div>
+            <div class="icon-btn pencil">✎</div>
+            <div class="icon-btn delete">🗑</div>
+          </div>
+          <div class="wod-divider"></div>
+          <div class="wod-exercises">
+            <div class="ex-row"><div class="ex-dot"></div><div class="ex-name">Pull-up</div><div class="pill">4×5–8</div></div>
+            <div class="ex-row"><div class="ex-dot"></div><div class="ex-name">Barbell Row</div><div class="pill">4×6–10</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="anno" style="justify-content:center; margin-top:8px;">Card 2: name tapped → editable inline, card highlights</div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- CHANGE 2: Rest restructure in edit dialog -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+<div class="section-head">
+  <div class="section-num">2</div>
+  <div>
+    <div class="section-title">Rest — Between Sets &amp; After Exercise</div>
+    <div class="section-sub">Exercise edit dialog · 90 s implicit default · per-exercise override</div>
+  </div>
+</div>
+
+<div class="row">
+
+  <!-- Before dialog -->
+  <div style="flex:1; min-width:230px; max-width:360px;">
+    <div class="phone-label" style="text-align:center; margin-bottom:8px;">BEFORE — one "Rest after exercise" field</div>
+    <div class="dialog">
+      <div class="dlg-title">Bench Press</div>
+      <div class="dlg-sub">Push · 4 sets</div>
+      <div class="dlg-divider"></div>
+
+      <div class="dlg-label">REST AFTER THIS EXERCISE</div>
+      <div class="stepper-row">
+        <span class="stepper-icon">⏱</span>
+        <span class="stepper-label">Rest</span>
+        <span class="stepper-btn">−</span>
+        <span class="stepper-val">90s</span>
+        <span class="stepper-btn">+</span>
+      </div>
+      <div style="font-size:11px; color:rgba(255,255,255,0.22); margin-top:2px; padding-left:2px;">What about rest between sets? Not configurable.</div>
+
+      <div class="save-btn">Save</div>
+    </div>
+  </div>
+
+  <!-- After dialog -->
+  <div style="flex:1; min-width:230px; max-width:360px;">
+    <div class="phone-label" style="text-align:center; margin-bottom:8px;">AFTER — two independent rest fields</div>
+    <div class="dialog">
+      <div class="dlg-title">Bench Press</div>
+      <div class="dlg-sub">Push · 4 sets</div>
+      <div class="dlg-divider"></div>
+
+      <div class="dlg-label">REST BETWEEN SETS</div>
+      <div class="stepper-row">
+        <span class="stepper-icon">⏱</span>
+        <span class="stepper-label">Between sets</span>
+        <span class="stepper-btn active">−</span>
+        <span class="stepper-val" style="color:#818cf8;">2:00</span>
+        <span class="stepper-btn active">+</span>
+      </div>
+      <div style="font-size:11px; color:rgba(99,102,241,0.45); margin-top:-4px; margin-bottom:12px; padding-left:2px;">Default 90 s — overridden here</div>
+
+      <div class="dlg-label">REST AFTER EXERCISE</div>
+      <div class="stepper-row">
+        <span class="stepper-icon">⏱</span>
+        <span class="stepper-label">After exercise</span>
+        <span class="stepper-btn">−</span>
+        <span class="stepper-val">1:30</span>
+        <span class="stepper-btn">+</span>
+      </div>
+      <div style="font-size:11px; color:rgba(255,255,255,0.22); margin-top:-4px; padding-left:2px;">Default 90 s — unchanged</div>
+
+      <div class="save-btn">Save</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- CHANGE 3: Remove WOD-level rest from app bar -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+<div class="section-head">
+  <div class="section-num">3</div>
+  <div>
+    <div class="section-title">Exercise setup screen — app bar cleanup</div>
+    <div class="section-sub">WodExerciseSetupScreen — remove the "Xs rest" button</div>
+  </div>
+</div>
+
+<div class="row">
+  <div style="flex:1; min-width:230px; max-width:340px;">
+    <div class="phone-label" style="text-align:center; margin-bottom:8px;">BEFORE</div>
+    <div class="phone">
+      <div class="appbar">
+        <span class="appbar-back">←</span>
+        <span class="appbar-title">Day 1 — Push</span>
+        <span class="appbar-action" style="font-size:12px;">⏱ 90s rest</span>
+      </div>
+      <div class="screen-body">
+        <div style="font-size:11px; color:rgba(255,255,255,0.25); text-align:center; padding:8px 0;">WOD-level rest — confusing global control</div>
+      </div>
+    </div>
+  </div>
+  <div style="flex:1; min-width:230px; max-width:340px;">
+    <div class="phone-label" style="text-align:center; margin-bottom:8px;">AFTER</div>
+    <div class="phone">
+      <div class="appbar">
+        <span class="appbar-back">←</span>
+        <span class="appbar-title">Day 1 — Push</span>
+      </div>
+      <div class="screen-body">
+        <div style="font-size:11px; color:rgba(255,255,255,0.25); text-align:center; padding:8px 0;">Clean — rest configured per-exercise via edit dialog</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- DB changes summary -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+<div class="full-width">
+  <div style="background:rgba(251,191,36,0.06); border:1px solid rgba(251,191,36,0.18); border-radius:16px; padding:16px;">
+    <div style="font-size:10px; font-weight:700; color:rgba(251,191,36,0.7); letter-spacing:1px; text-transform:uppercase; margin-bottom:10px;">DB Schema Change (migration v12)</div>
+    <div style="font-size:13px; color:rgba(255,255,255,0.65); line-height:1.7; font-family:monospace;">
+      ALTER TABLE wod_template_exercises<br>
+      &nbsp;&nbsp;ADD COLUMN rest_between_sets_seconds INTEGER;<br>
+      <br>
+      <span style="color:rgba(255,255,255,0.35);">-- existing rest_seconds column becomes "rest after exercise"</span><br>
+      <span style="color:rgba(255,255,255,0.35);">-- wod_templates.rest_seconds kept in DB but removed from UI</span>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

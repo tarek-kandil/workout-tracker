@@ -1,0 +1,11 @@
+{
+  "universe_usage_history": [
+    { "universe": "descriptive", "assigned_at": "2026-09-04", "agent_count": 4 }
+  ],
+  "assignment_cast_snapshots": {
+    "2026-09-04": {
+      "universe": "descriptive",
+      "agents": ["lead", "flutter", "coach", "tester", "designer"]
+    }
+  }
+}

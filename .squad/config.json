@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "agentModelOverrides": {
+    "flutter": "claude-sonnet-5"
+  }
+}

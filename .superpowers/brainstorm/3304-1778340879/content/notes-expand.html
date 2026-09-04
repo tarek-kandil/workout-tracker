@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notes Field — Expand Behaviour</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0f0f1a;
+    font-family: 'Space Grotesk', -apple-system, sans-serif;
+    color: #fff;
+    padding: 28px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  h1 { font-size: 17px; font-weight: 700; margin-bottom: 2px; }
+  .subtitle { font-size: 12px; color: rgba(255,255,255,0.4); }
+
+  .row { display: flex; gap: 24px; align-items: flex-start; justify-content: center; }
+  .col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .col-label { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.28); letter-spacing: 1px; text-transform: uppercase; }
+
+  .card {
+    width: 360px;
+    background: #141428;
+    border: 2px solid transparent;
+    border-radius: 24px;
+    padding: 22px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+    cursor: pointer;
+    transition: border-color 0.2s;
+    position: relative;
+  }
+  .card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+    border-radius: 24px 24px 0 0;
+  }
+  .card:hover { border-color: rgba(99,102,241,0.4); }
+  .card.selected { border-color: #6366F1; }
+
+  .field-label {
+    font-size: 10px; font-weight: 700;
+    color: rgba(255,255,255,0.28);
+    letter-spacing: 1.1px; text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .opt-pill {
+    font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.06); border-radius: 5px;
+    padding: 2px 7px; letter-spacing: 0.3px; text-transform: none;
+  }
+
+  /* ── Shared field base ── */
+  .notes-base {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 14px;
+    padding: 14px 16px;
+    font-size: 14px;
+    color: rgba(255,255,255,0.6);
+    font-family: inherit;
+    width: 100%;
+    line-height: 1.55;
+  }
+
+  /* ── OPTION A: Fixed (2 lines, scrolls) ── */
+  .notes-fixed {
+    height: 72px;
+    overflow: hidden;
+    position: relative;
+  }
+  .notes-fixed-text {
+    /* simulates clipped text */
+  }
+  /* fade at bottom when clipped */
+  .notes-fixed::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 28px;
+    background: linear-gradient(transparent, #141428);
+    border-radius: 0 0 14px 14px;
+    pointer-events: none;
+  }
+  .overflow-hint {
+    display: flex; align-items: center; gap: 6px;
+    margin-top: 6px;
+    font-size: 11px; color: rgba(255,255,255,0.25); font-style: italic;
+  }
+  .overflow-hint svg { flex-shrink: 0; }
+
+  /* ── OPTION B: Auto-expand ── */
+  .notes-short { min-height: 52px; }
+  .notes-long  { min-height: 110px; }
+
+  .expand-arrow {
+    display: flex; justify-content: center; align-items: center;
+    gap: 6px; margin: 10px 0 6px;
+    color: rgba(99,102,241,0.5); font-size: 20px;
+  }
+
+  /* comparison label */
+  .state-label {
+    font-size: 11px; font-weight: 700;
+    color: rgba(255,255,255,0.25); letter-spacing: 0.5px;
+    text-align: center; margin-bottom: 6px;
+    text-transform: uppercase; font-size: 10px;
+  }
+
+  .save-btn {
+    background: linear-gradient(135deg, #6366F1, #818cf8);
+    border-radius: 14px; padding: 14px;
+    font-size: 15px; font-weight: 700;
+    color: #fff; text-align: center; width: 100%;
+    box-shadow: 0 5px 16px rgba(99,102,241,0.4);
+    margin-top: 18px;
+  }
+
+  .note-text { white-space: pre-wrap; }
+
+  .choice-note {
+    font-size: 11px; color: rgba(255,255,255,0.3);
+    font-style: italic; text-align: center; max-width: 320px;
+    line-height: 1.5;
+  }
+  .card.selected + .choice-note { color: #818cf8; font-style: normal; }
+</style>
+</head>
+<body>
+
+<h1>Coaching Notes — Expand Behaviour</h1>
+<p class="subtitle">Click to select</p>
+
+<div class="row">
+
+  <!-- OPTION A: Fixed height, fade + hint -->
+  <div class="col">
+    <div class="col-label">A — Fixed Height</div>
+    <div class="card" data-choice="a" onclick="pick(this)">
+      <div class="field-label">Coaching Note <span class="opt-pill">optional</span></div>
+
+      <div class="state-label">Short note</div>
+      <div class="notes-base notes-fixed" style="height:52px;">
+        <div class="note-text">Pause 1s at chest.</div>
+      </div>
+
+      <div class="expand-arrow">↓</div>
+
+      <div class="state-label">Long note — clipped</div>
+      <div class="notes-base notes-fixed" style="position:relative;">
+        <div class="note-text">Pause 1s at chest. Keep shoulder blades retracted throughout. Drive through full ROM. Keep core tight and feet flat on the floor.</div>
+      </div>
+      <div class="overflow-hint">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20 12l-8 8-8-8 1.4-1.4L11 17.2V4h2v13.2l5.6-5.6L20 12z"/></svg>
+        Scrollable inside the box
+      </div>
+
+      <div class="save-btn">Save</div>
+    </div>
+    <div class="choice-note">Always the same size. Long notes scroll inside the box — you can't see how much you've written.</div>
+  </div>
+
+  <!-- OPTION B: Auto-expand -->
+  <div class="col">
+    <div class="col-label">B — Auto-Expand</div>
+    <div class="card" data-choice="b" onclick="pick(this)">
+      <div class="field-label">Coaching Note <span class="opt-pill">optional</span></div>
+
+      <div class="state-label">Short note</div>
+      <div class="notes-base notes-short">
+        <div class="note-text">Pause 1s at chest.</div>
+      </div>
+
+      <div class="expand-arrow">↓ grows as you type</div>
+
+      <div class="state-label">Long note — fully visible</div>
+      <div class="notes-base notes-long">
+        <div class="note-text">Pause 1s at chest. Keep shoulder blades retracted throughout. Drive through full ROM. Keep core tight and feet flat on the floor.</div>
+      </div>
+
+      <div class="save-btn" style="margin-top:18px;">Save</div>
+    </div>
+    <div class="choice-note">Starts small, grows line by line as you type. Everything always visible — Save button floats down with it.</div>
+  </div>
+
+</div>
+
+<script>
+  function pick(el) {
+    document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    try { if (window.parent.__recordChoice) window.parent.__recordChoice(el.dataset.choice, 'notes-' + el.dataset.choice); } catch(e){}
+  }
+</script>
+</body>
+</html>

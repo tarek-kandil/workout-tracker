@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exercise Library — Redesign</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a14;
+    font-family: 'Space Grotesk', sans-serif;
+    color: #fff;
+    padding: 28px 20px 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+  }
+  h1 { font-size: 18px; font-weight: 800; letter-spacing: -0.3px; text-align: center; }
+  .sub { font-size: 12px; color: rgba(255,255,255,0.35); margin-top: 4px; text-align: center; }
+
+  .columns { display: flex; gap: 32px; width: 100%; max-width: 900px; align-items: flex-start; flex-wrap: wrap; justify-content: center; }
+  .col { display: flex; flex-direction: column; gap: 0; flex: 1; min-width: 280px; max-width: 360px; }
+  .col-label { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.25); letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 14px; text-align: center; }
+
+  /* Phone frame */
+  .phone {
+    background: rgba(255,255,255,0.04);
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 28px;
+    overflow: hidden;
+    position: relative;
+  }
+  .phone::before {
+    content: '';
+    position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  }
+
+  /* App bar */
+  .app-bar {
+    padding: 14px 16px 10px;
+    font-size: 17px; font-weight: 800; letter-spacing: -0.3px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .app-bar-actions { display: flex; align-items: center; gap: 4px; }
+
+  /* Search */
+  .search-bar {
+    margin: 10px 12px 6px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 12px;
+    padding: 9px 12px;
+    font-size: 13px; color: rgba(255,255,255,0.3);
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* Section header */
+  .section-header {
+    padding: 14px 12px 6px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-title {
+    font-size: 11px; font-weight: 700; color: rgba(99,102,241,0.8);
+    letter-spacing: 1px; text-transform: uppercase;
+  }
+  .section-count {
+    font-size: 11px; color: rgba(255,255,255,0.25); font-weight: 600;
+  }
+
+  /* ── OLD card ── */
+  .old-card {
+    margin: 0 12px 5px;
+    background: rgba(0,0,0,0.15);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 10px 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .old-card-name { flex: 1; font-size: 14px; color: rgba(255,255,255,0.85); }
+  .old-pencil { color: rgba(255,255,255,0.25); font-size: 14px; }
+  .timer-icon { color: rgba(99,102,241,0.6); font-size: 13px; }
+
+  /* ── NEW card ── */
+  .new-card {
+    margin: 0 12px 8px;
+    background: rgba(255,255,255,0.05);
+    border: 1.5px solid rgba(255,255,255,0.09);
+    border-radius: 16px;
+    padding: 13px 14px 11px;
+    position: relative;
+    overflow: hidden;
+  }
+  .new-card::before {
+    content: '';
+    position: absolute; top: 0; left: 8%; right: 8%; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.14), transparent);
+  }
+  .new-card-name {
+    font-size: 15px; font-weight: 700; letter-spacing: -0.2px;
+    color: rgba(255,255,255,0.92);
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .new-card-name .timer-chip {
+    font-size: 10px; font-weight: 700; color: rgba(129,140,248,0.9);
+    background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.2);
+    border-radius: 6px; padding: 2px 6px; letter-spacing: 0.3px;
+  }
+  .muscle-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+
+  /* Primary muscle chip */
+  .muscle-primary {
+    font-size: 11px; font-weight: 700;
+    color: rgba(129,140,248,0.95);
+    background: rgba(99,102,241,0.15);
+    border: 1px solid rgba(99,102,241,0.28);
+    border-radius: 7px; padding: 3px 8px;
+  }
+  /* Secondary muscle chip */
+  .muscle-secondary {
+    font-size: 11px; font-weight: 600;
+    color: rgba(255,255,255,0.38);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 7px; padding: 3px 8px;
+  }
+
+  /* FAB */
+  .fab {
+    position: absolute; bottom: 16px; right: 16px;
+    width: 48px; height: 48px; border-radius: 16px;
+    background: rgba(99,102,241,0.9);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; color: white; font-weight: 300;
+    box-shadow: 0 4px 16px rgba(99,102,241,0.4);
+  }
+
+  /* Dialog */
+  .dialog-wrap {
+    margin: 10px 12px 40px;
+    background: #141428;
+    border-radius: 22px;
+    padding: 20px;
+  }
+  .dialog-title {
+    font-size: 18px; font-weight: 800; letter-spacing: -0.3px;
+    margin-bottom: 18px;
+  }
+  .field-label {
+    font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.3);
+    letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px;
+  }
+  .field-input {
+    background: rgba(255,255,255,0.05);
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 10px 13px;
+    font-size: 14px; color: rgba(255,255,255,0.7);
+    width: 100%; margin-bottom: 14px;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .field-input.focused { border-color: rgba(99,102,241,0.5); }
+  .muscle-grid {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px;
+  }
+  .muscle-chip {
+    font-size: 12px; font-weight: 600;
+    padding: 5px 11px; border-radius: 9px;
+    cursor: pointer;
+    border: 1.5px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.04);
+    color: rgba(255,255,255,0.5);
+  }
+  .muscle-chip.selected-primary {
+    background: rgba(99,102,241,0.2);
+    border-color: rgba(99,102,241,0.5);
+    color: #a5b4fc;
+  }
+  .muscle-chip.selected-secondary {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.75);
+  }
+  .muscle-hint {
+    font-size: 11px; color: rgba(255,255,255,0.25); margin-bottom: 14px;
+  }
+  .badge-row { display: flex; gap: 6px; margin-bottom: 16px; }
+  .badge-primary {
+    font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 6px;
+    background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.4);
+    color: #a5b4fc;
+  }
+  .badge-secondary {
+    font-size: 10px; font-weight: 600; padding: 3px 9px; border-radius: 6px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.5);
+  }
+  .save-btn {
+    width: 100%; padding: 13px; border-radius: 14px;
+    background: rgba(99,102,241,0.9); color: white;
+    font-size: 15px; font-weight: 700; text-align: center;
+    letter-spacing: -0.2px;
+  }
+  .timed-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0; margin-bottom: 14px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .timed-label { font-size: 14px; color: rgba(255,255,255,0.6); }
+  .toggle {
+    width: 40px; height: 24px; border-radius: 12px;
+    background: rgba(99,102,241,0.8);
+    position: relative;
+  }
+  .toggle::after {
+    content: ''; position: absolute;
+    width: 18px; height: 18px; border-radius: 9px;
+    background: white; top: 3px; right: 3px;
+  }
+  .note {
+    font-size: 11px; color: rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px; padding: 8px 12px; margin-top: -8px; margin-bottom: 14px;
+    line-height: 1.5;
+  }
+
+  /* Summary */
+  .summary {
+    width: 100%; max-width: 900px;
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px; padding: 18px 20px;
+  }
+  .summary-title { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.25); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; }
+  .change { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; margin-bottom: 8px; }
+  .change-num { color: #818cf8; font-weight: 800; flex-shrink: 0; min-width: 18px; }
+  .change-text { color: rgba(255,255,255,0.6); line-height: 1.5; }
+  code { background: rgba(255,255,255,0.07); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div>
+  <h1>Exercise Library — Redesign</h1>
+  <p class="sub">Bigger cards · no pencil · muscle groups (first = primary)</p>
+</div>
+
+<div class="columns">
+
+  <!-- LEFT: Before -->
+  <div class="col">
+    <div class="col-label">Before</div>
+    <div class="phone" style="min-height: 520px; position: relative;">
+      <div class="app-bar">Exercise Library</div>
+      <div class="search-bar">🔍 Search exercises…</div>
+
+      <div class="section-header">
+        <span class="section-title">Chest</span>
+        <span class="section-count">3</span>
+      </div>
+      <div class="old-card"><span class="old-card-name">Bench Press</span><span class="old-pencil">✎</span></div>
+      <div class="old-card"><span class="old-card-name">Cable Fly</span><span class="old-pencil">✎</span></div>
+      <div class="old-card"><span class="old-card-name">Incline DB Press</span><span class="old-pencil">✎</span></div>
+
+      <div class="section-header">
+        <span class="section-title">Back</span>
+        <span class="section-count">2</span>
+      </div>
+      <div class="old-card"><span class="old-card-name">Pull-up</span><span class="timer-icon">⏱</span><span class="old-pencil">✎</span></div>
+      <div class="old-card"><span class="old-card-name">Barbell Row</span><span class="old-pencil">✎</span></div>
+
+      <div class="section-header">
+        <span class="section-title">Shoulders</span>
+        <span class="section-count">2</span>
+      </div>
+      <div class="old-card"><span class="old-card-name">Lateral Raise</span><span class="old-pencil">✎</span></div>
+      <div class="old-card"><span class="old-card-name">OHP</span><span class="old-pencil">✎</span></div>
+
+      <div class="fab">+</div>
+    </div>
+  </div>
+
+  <!-- RIGHT: After -->
+  <div class="col">
+    <div class="col-label">After</div>
+    <div class="phone" style="min-height: 520px; position: relative;">
+      <div class="app-bar">Exercise Library</div>
+      <div class="search-bar">🔍 Search exercises…</div>
+
+      <div class="section-header">
+        <span class="section-title">Chest</span>
+        <span class="section-count">3</span>
+      </div>
+      <div class="new-card">
+        <div class="new-card-name">Bench Press</div>
+        <div class="muscle-row">
+          <span class="muscle-primary">Chest</span>
+          <span class="muscle-secondary">Triceps</span>
+          <span class="muscle-secondary">Front Delt</span>
+        </div>
+      </div>
+      <div class="new-card">
+        <div class="new-card-name">Cable Fly</div>
+        <div class="muscle-row">
+          <span class="muscle-primary">Chest</span>
+          <span class="muscle-secondary">Front Delt</span>
+        </div>
+      </div>
+      <div class="new-card">
+        <div class="new-card-name">Incline DB Press</div>
+        <div class="muscle-row">
+          <span class="muscle-primary">Chest</span>
+          <span class="muscle-secondary">Triceps</span>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <span class="section-title">Back</span>
+        <span class="section-count">2</span>
+      </div>
+      <div class="new-card">
+        <div class="new-card-name">Pull-up <span class="timer-chip">TIMED</span></div>
+        <div class="muscle-row">
+          <span class="muscle-primary">Back</span>
+          <span class="muscle-secondary">Biceps</span>
+          <span class="muscle-secondary">Core</span>
+        </div>
+      </div>
+      <div class="new-card">
+        <div class="new-card-name">Barbell Row</div>
+        <div class="muscle-row">
+          <span class="muscle-primary">Back</span>
+          <span class="muscle-secondary">Biceps</span>
+          <span class="muscle-secondary">Rear Delt</span>
+        </div>
+      </div>
+
+      <div class="fab">+</div>
+    </div>
+  </div>
+
+  <!-- DIALOG: Edit exercise -->
+  <div class="col" style="max-width: 360px;">
+    <div class="col-label">Edit Dialog</div>
+    <div class="phone">
+      <div class="app-bar" style="font-size: 14px;">Edit Exercise</div>
+      <div class="dialog-wrap">
+        <div class="field-label">Name</div>
+        <input class="field-input focused" value="Bench Press" readonly style="color:rgba(255,255,255,0.9);" />
+
+        <div class="field-label">Muscle Groups</div>
+        <p class="note">Tap to add. First selected = primary muscle. Tap again to remove.</p>
+        <div class="muscle-grid">
+          <span class="muscle-chip selected-primary">Chest</span>
+          <span class="muscle-chip">Back</span>
+          <span class="muscle-chip">Shoulders</span>
+          <span class="muscle-chip selected-secondary">Triceps</span>
+          <span class="muscle-chip selected-secondary">Front Delt</span>
+          <span class="muscle-chip">Biceps</span>
+          <span class="muscle-chip">Rear Delt</span>
+          <span class="muscle-chip">Quads</span>
+          <span class="muscle-chip">Hamstrings</span>
+          <span class="muscle-chip">Glutes</span>
+          <span class="muscle-chip">Core</span>
+          <span class="muscle-chip">Calves</span>
+          <span class="muscle-chip">Full Body</span>
+        </div>
+        <div class="badge-row">
+          <span class="badge-primary">● Chest — primary</span>
+          <span class="badge-secondary">Triceps</span>
+          <span class="badge-secondary">Front Delt</span>
+        </div>
+
+        <div class="timed-row">
+          <span class="timed-label">Timed exercise</span>
+          <div class="toggle"></div>
+        </div>
+
+        <div class="save-btn">Save</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="summary">
+  <div class="summary-title">Changes</div>
+  <div class="change"><span class="change-num">1</span><span class="change-text"><strong>Bigger cards</strong> — padding increased, name is bolder, border-radius 16px. No pencil icon.</span></div>
+  <div class="change"><span class="change-num">2</span><span class="change-text"><strong>Muscle groups replace category</strong> — grouped on screen by primary muscle. Each card shows primary chip (indigo) + secondary chips (dim). Cards with no muscles show ungrouped under "Other".</span></div>
+  <div class="change"><span class="change-num">3</span><span class="change-text"><strong>Predefined muscle list</strong> — tap to select (order = priority). First tap = primary. Tap again = remove. Free text not needed.</span></div>
+  <div class="change"><span class="change-num">DB</span><span class="change-text">New table <code>exercise_muscles(exercise_id, muscle, sort_order)</code>. Existing <code>category</code> column kept but ignored in UI. Schema v13.</span></div>
+</div>
+
+</body>
+</html>

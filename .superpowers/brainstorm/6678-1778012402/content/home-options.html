@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home Screen Design Options</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif; background: #0a0a0f; color: #fff; padding: 32px 24px 60px; }
+
+  h1 { font-size: 22px; font-weight: 700; text-align: center; margin-bottom: 6px; color: #fff; }
+  .subtitle { text-align: center; color: rgba(255,255,255,0.45); font-size: 14px; margin-bottom: 40px; }
+
+  .options-row { display: flex; gap: 28px; justify-content: center; flex-wrap: wrap; }
+
+  /* ── Phone shell ── */
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; cursor: pointer; }
+  .phone-wrap:hover .phone { transform: translateY(-4px); }
+  .phone { width: 220px; border-radius: 42px; padding: 14px; transition: transform 0.25s ease; position: relative; overflow: hidden; border: 1.5px solid rgba(255,255,255,0.18); }
+  .phone-dark { background: #0d0d1a; box-shadow: 0 20px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06) inset; }
+  .phone-light { background: #f0f4ff; box-shadow: 0 20px 60px rgba(80,100,180,0.25), 0 0 0 1px rgba(255,255,255,0.9) inset; border-color: rgba(180,190,220,0.5); }
+  .phone-screen { border-radius: 30px; overflow: hidden; height: 430px; position: relative; }
+
+  .phone-label { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.4); letter-spacing: 0.5px; text-transform: uppercase; }
+  .phone-label-light { color: rgba(80,80,120,0.6); }
+
+  .option-title { font-size: 17px; font-weight: 700; color: #fff; margin-top: 4px; }
+  .option-desc { font-size: 12px; color: rgba(255,255,255,0.4); max-width: 220px; text-align: center; line-height: 1.5; margin-top: 4px; }
+
+  .selected-ring { display: none; position: absolute; inset: -4px; border-radius: 46px; border: 3px solid #6366f1; pointer-events: none; }
+  .phone-wrap.selected .selected-ring { display: block; }
+  .phone-wrap.selected .option-title { color: #a5b4fc; }
+
+  /* ── Option A: Hero Focus (Dark) ── */
+  .a-dark { background: linear-gradient(160deg, #0d0d2b 0%, #13122a 100%); }
+  .a-dark .status-bar { display: flex; justify-content: space-between; padding: 12px 16px 6px; }
+  .a-dark .status-time { font-size: 13px; font-weight: 600; color: #fff; }
+  .a-dark .status-icons { font-size: 12px; color: rgba(255,255,255,0.7); }
+  .a-dark .page-title { font-size: 26px; font-weight: 800; color: #fff; padding: 8px 18px 12px; letter-spacing: -0.5px; }
+  .a-dark .hero-card {
+    margin: 0 14px; border-radius: 26px; padding: 20px 18px;
+    background: linear-gradient(135deg, rgba(99,102,241,0.35) 0%, rgba(139,92,246,0.25) 100%);
+    border: 1px solid rgba(139,92,246,0.35);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 8px 32px rgba(99,102,241,0.2), inset 0 1px 0 rgba(255,255,255,0.12);
+    position: relative; overflow: hidden;
+  }
+  .a-dark .hero-card::before {
+    content: ''; position: absolute; top: -30px; right: -20px;
+    width: 120px; height: 120px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(139,92,246,0.4) 0%, transparent 70%);
+  }
+  .a-dark .hero-badge { font-size: 9px; font-weight: 800; color: #a5b4fc; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+  .a-dark .hero-workout { font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 2px; }
+  .a-dark .hero-meta { font-size: 11px; color: rgba(255,255,255,0.5); margin-bottom: 14px; }
+  .a-dark .hero-btn {
+    display: inline-block; background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff; font-size: 13px; font-weight: 700; padding: 10px 20px;
+    border-radius: 50px; box-shadow: 0 4px 16px rgba(99,102,241,0.45);
+  }
+  .a-dark .mini-cards { display: flex; gap: 8px; padding: 10px 14px 0; }
+  .a-dark .mini-card {
+    flex: 1; border-radius: 18px; padding: 12px 10px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.09);
+    backdrop-filter: blur(12px);
+  }
+  .a-dark .mini-icon { font-size: 16px; margin-bottom: 4px; }
+  .a-dark .mini-val { font-size: 14px; font-weight: 700; color: #fff; }
+  .a-dark .mini-lbl { font-size: 9px; color: rgba(255,255,255,0.35); margin-top: 1px; }
+  .a-dark .streak-row { display: flex; align-items: center; gap: 8px; margin: 8px 14px 0; padding: 10px 14px; border-radius: 16px; background: rgba(251,146,60,0.1); border: 1px solid rgba(251,146,60,0.2); }
+  .a-dark .streak-icon { font-size: 18px; }
+  .a-dark .streak-text { font-size: 12px; font-weight: 600; color: #fb923c; }
+
+  /* ── Option A: Hero Focus (Light) ── */
+  .a-light { background: linear-gradient(160deg, #eef0ff 0%, #f5f0ff 100%); }
+  .a-light .status-bar { display: flex; justify-content: space-between; padding: 12px 16px 6px; }
+  .a-light .status-time { font-size: 13px; font-weight: 600; color: #1a1a2e; }
+  .a-light .status-icons { font-size: 12px; color: rgba(30,30,60,0.6); }
+  .a-light .page-title { font-size: 26px; font-weight: 800; color: #1a1a2e; padding: 8px 18px 12px; letter-spacing: -0.5px; }
+  .a-light .hero-card {
+    margin: 0 14px; border-radius: 26px; padding: 20px 18px;
+    background: linear-gradient(135deg, rgba(99,102,241,0.18) 0%, rgba(139,92,246,0.12) 100%);
+    border: 1px solid rgba(99,102,241,0.25);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 8px 32px rgba(99,102,241,0.12), inset 0 1px 0 rgba(255,255,255,0.8);
+    position: relative; overflow: hidden;
+  }
+  .a-light .hero-card::before {
+    content: ''; position: absolute; top: -30px; right: -20px;
+    width: 120px; height: 120px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%);
+  }
+  .a-light .hero-badge { font-size: 9px; font-weight: 800; color: #6366f1; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+  .a-light .hero-workout { font-size: 18px; font-weight: 800; color: #1a1a2e; margin-bottom: 2px; }
+  .a-light .hero-meta { font-size: 11px; color: rgba(30,30,60,0.45); margin-bottom: 14px; }
+  .a-light .hero-btn {
+    display: inline-block; background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff; font-size: 13px; font-weight: 700; padding: 10px 20px;
+    border-radius: 50px; box-shadow: 0 4px 16px rgba(99,102,241,0.3);
+  }
+  .a-light .mini-cards { display: flex; gap: 8px; padding: 10px 14px 0; }
+  .a-light .mini-card {
+    flex: 1; border-radius: 18px; padding: 12px 10px;
+    background: rgba(255,255,255,0.7);
+    border: 1px solid rgba(99,102,241,0.12);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 2px 12px rgba(80,80,180,0.08);
+  }
+  .a-light .mini-icon { font-size: 16px; margin-bottom: 4px; }
+  .a-light .mini-val { font-size: 14px; font-weight: 700; color: #1a1a2e; }
+  .a-light .mini-lbl { font-size: 9px; color: rgba(30,30,60,0.4); margin-top: 1px; }
+  .a-light .streak-row { display: flex; align-items: center; gap: 8px; margin: 8px 14px 0; padding: 10px 14px; border-radius: 16px; background: rgba(251,146,60,0.08); border: 1px solid rgba(251,146,60,0.2); }
+  .a-light .streak-icon { font-size: 18px; }
+  .a-light .streak-text { font-size: 12px; font-weight: 600; color: #ea580c; }
+
+  /* ── Option B: Minimal Stream (Dark) ── */
+  .b-dark { background: #080810; }
+  .b-dark .status-bar { display: flex; justify-content: space-between; padding: 12px 16px 6px; }
+  .b-dark .status-time { font-size: 13px; font-weight: 600; color: #fff; }
+  .b-dark .greeting { font-size: 13px; color: rgba(255,255,255,0.35); padding: 10px 18px 2px; }
+  .b-dark .page-title { font-size: 24px; font-weight: 800; color: #fff; padding: 0 18px 14px; letter-spacing: -0.5px; }
+  .b-dark .next-card {
+    margin: 0 14px 10px; border-radius: 22px; padding: 16px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(24px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+  .b-dark .next-label { font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.3); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+  .b-dark .next-name { font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+  .b-dark .next-detail { font-size: 11px; color: rgba(255,255,255,0.4); margin-bottom: 12px; }
+  .b-dark .start-btn {
+    width: 100%; background: rgba(99,102,241,0.9); color: #fff;
+    font-size: 13px; font-weight: 700; padding: 10px;
+    border-radius: 14px; text-align: center;
+    box-shadow: 0 4px 20px rgba(99,102,241,0.4);
+  }
+  .b-dark .stat-row { display: flex; gap: 8px; margin: 0 14px 10px; }
+  .b-dark .stat { flex: 1; padding: 12px 10px; border-radius: 18px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); text-align: center; }
+  .b-dark .stat-num { font-size: 18px; font-weight: 800; color: #fff; }
+  .b-dark .stat-lbl { font-size: 9px; color: rgba(255,255,255,0.3); margin-top: 2px; }
+  .b-dark .task-card { margin: 0 14px 8px; padding: 12px 14px; border-radius: 16px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); display: flex; align-items: center; gap: 10px; }
+  .b-dark .task-dot { width: 8px; height: 8px; border-radius: 50%; background: #6366f1; flex-shrink: 0; }
+  .b-dark .task-text { font-size: 12px; color: rgba(255,255,255,0.6); }
+
+  /* ── Option B: Minimal Stream (Light) ── */
+  .b-light { background: #f7f8ff; }
+  .b-light .status-bar { display: flex; justify-content: space-between; padding: 12px 16px 6px; }
+  .b-light .status-time { font-size: 13px; font-weight: 600; color: #111; }
+  .b-light .greeting { font-size: 13px; color: rgba(30,30,60,0.4); padding: 10px 18px 2px; }
+  .b-light .page-title { font-size: 24px; font-weight: 800; color: #111; padding: 0 18px 14px; letter-spacing: -0.5px; }
+  .b-light .next-card {
+    margin: 0 14px 10px; border-radius: 22px; padding: 16px;
+    background: rgba(255,255,255,0.85);
+    border: 1px solid rgba(99,102,241,0.15);
+    backdrop-filter: blur(24px);
+    box-shadow: 0 4px 20px rgba(80,80,180,0.1), inset 0 1px 0 rgba(255,255,255,1);
+  }
+  .b-light .next-label { font-size: 9px; font-weight: 700; color: rgba(80,80,180,0.5); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+  .b-light .next-name { font-size: 15px; font-weight: 700; color: #111; margin-bottom: 4px; }
+  .b-light .next-detail { font-size: 11px; color: rgba(30,30,60,0.4); margin-bottom: 12px; }
+  .b-light .start-btn { width: 100%; background: #6366f1; color: #fff; font-size: 13px; font-weight: 700; padding: 10px; border-radius: 14px; text-align: center; box-shadow: 0 4px 16px rgba(99,102,241,0.3); }
+  .b-light .stat-row { display: flex; gap: 8px; margin: 0 14px 10px; }
+  .b-light .stat { flex: 1; padding: 12px 10px; border-radius: 18px; background: rgba(255,255,255,0.9); border: 1px solid rgba(99,102,241,0.1); text-align: center; box-shadow: 0 2px 8px rgba(80,80,180,0.06); }
+  .b-light .stat-num { font-size: 18px; font-weight: 800; color: #111; }
+  .b-light .stat-lbl { font-size: 9px; color: rgba(30,30,60,0.35); margin-top: 2px; }
+  .b-light .task-card { margin: 0 14px 8px; padding: 12px 14px; border-radius: 16px; background: rgba(255,255,255,0.9); border: 1px solid rgba(99,102,241,0.1); display: flex; align-items: center; gap: 10px; }
+  .b-light .task-dot { width: 8px; height: 8px; border-radius: 50%; background: #6366f1; flex-shrink: 0; }
+  .b-light .task-text { font-size: 12px; color: rgba(30,30,60,0.55); }
+
+  /* ── Option C: Full Glass (Dark) ── */
+  .c-dark {
+    background: linear-gradient(145deg, #090918 0%, #0f0e25 50%, #080e1a 100%);
+    position: relative;
+  }
+  .c-dark::before {
+    content: ''; position: absolute; width: 160px; height: 160px;
+    border-radius: 50%; top: 40px; left: -30px;
+    background: radial-gradient(circle, rgba(99,102,241,0.25) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .c-dark::after {
+    content: ''; position: absolute; width: 120px; height: 120px;
+    border-radius: 50%; top: 80px; right: -20px;
+    background: radial-gradient(circle, rgba(139,92,246,0.2) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .c-dark .status-bar { display: flex; justify-content: space-between; padding: 12px 16px 6px; position: relative; z-index: 2; }
+  .c-dark .status-time { font-size: 13px; font-weight: 600; color: #fff; }
+  .c-dark .page-title { font-size: 26px; font-weight: 800; color: #fff; padding: 8px 18px 14px; letter-spacing: -0.5px; position: relative; z-index: 2; }
+  .c-dark .glass-hero {
+    margin: 0 12px 10px; border-radius: 28px; padding: 20px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.04) 100%);
+    border: 1px solid rgba(255,255,255,0.14);
+    backdrop-filter: blur(28px) saturate(1.8);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.15), inset 0 -1px 0 rgba(0,0,0,0.2);
+    position: relative; z-index: 2;
+  }
+  .c-dark .pill { display: inline-block; background: rgba(99,102,241,0.25); border: 1px solid rgba(99,102,241,0.4); color: #a5b4fc; font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 3px 8px; border-radius: 20px; margin-bottom: 8px; }
+  .c-dark .workout-name { font-size: 17px; font-weight: 800; color: #fff; margin-bottom: 3px; }
+  .c-dark .workout-detail { font-size: 11px; color: rgba(255,255,255,0.45); margin-bottom: 14px; }
+  .c-dark .prog-bar { height: 3px; background: rgba(255,255,255,0.1); border-radius: 4px; margin-bottom: 14px; overflow: hidden; }
+  .c-dark .prog-fill { height: 100%; width: 60%; background: linear-gradient(90deg, #6366f1, #8b5cf6); border-radius: 4px; }
+  .c-dark .go-btn {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    background: linear-gradient(135deg, rgba(99,102,241,0.95), rgba(139,92,246,0.95));
+    color: #fff; font-size: 14px; font-weight: 700; padding: 12px;
+    border-radius: 18px; box-shadow: 0 6px 24px rgba(99,102,241,0.5), inset 0 1px 0 rgba(255,255,255,0.2);
+  }
+  .c-dark .glass-row { display: flex; gap: 8px; margin: 0 12px 10px; position: relative; z-index: 2; }
+  .c-dark .glass-mini {
+    flex: 1; border-radius: 20px; padding: 14px 10px; text-align: center;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(20px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+  }
+  .c-dark .glass-mini-val { font-size: 16px; font-weight: 800; color: #fff; }
+  .c-dark .glass-mini-lbl { font-size: 9px; color: rgba(255,255,255,0.3); margin-top: 2px; }
+  .c-dark .glass-task { margin: 0 12px 6px; padding: 10px 14px; border-radius: 16px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(16px); display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 2; }
+  .c-dark .glass-task-left { display: flex; align-items: center; gap: 8px; }
+  .c-dark .glass-task-icon { width: 24px; height: 24px; border-radius: 8px; background: rgba(99,102,241,0.2); display: flex; align-items: center; justify-content: center; font-size: 13px; }
+  .c-dark .glass-task-name { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.75); }
+  .c-dark .glass-task-check { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.2); }
+
+  /* ── Option C: Full Glass (Light) ── */
+  .c-light {
+    background: linear-gradient(145deg, #dfe6ff 0%, #ede8ff 50%, #dff0ff 100%);
+    position: relative;
+  }
+  .c-light::before {
+    content: ''; position: absolute; width: 160px; height: 160px;
+    border-radius: 50%; top: 40px; left: -30px;
+    background: radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .c-light::after {
+    content: ''; position: absolute; width: 120px; height: 120px;
+    border-radius: 50%; top: 80px; right: -20px;
+    background: radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .c-light .status-bar { display: flex; justify-content: space-between; padding: 12px 16px 6px; position: relative; z-index: 2; }
+  .c-light .status-time { font-size: 13px; font-weight: 600; color: #1a1a3e; }
+  .c-light .page-title { font-size: 26px; font-weight: 800; color: #1a1a3e; padding: 8px 18px 14px; letter-spacing: -0.5px; position: relative; z-index: 2; }
+  .c-light .glass-hero {
+    margin: 0 12px 10px; border-radius: 28px; padding: 20px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.65) 0%, rgba(255,255,255,0.45) 100%);
+    border: 1px solid rgba(255,255,255,0.9);
+    backdrop-filter: blur(28px) saturate(1.8);
+    box-shadow: 0 8px 40px rgba(80,80,180,0.12), inset 0 1px 0 rgba(255,255,255,0.95), inset 0 -1px 0 rgba(80,80,180,0.05);
+    position: relative; z-index: 2;
+  }
+  .c-light .pill { display: inline-block; background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.3); color: #6366f1; font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 3px 8px; border-radius: 20px; margin-bottom: 8px; }
+  .c-light .workout-name { font-size: 17px; font-weight: 800; color: #1a1a3e; margin-bottom: 3px; }
+  .c-light .workout-detail { font-size: 11px; color: rgba(30,30,80,0.45); margin-bottom: 14px; }
+  .c-light .prog-bar { height: 3px; background: rgba(80,80,180,0.12); border-radius: 4px; margin-bottom: 14px; overflow: hidden; }
+  .c-light .prog-fill { height: 100%; width: 60%; background: linear-gradient(90deg, #6366f1, #8b5cf6); border-radius: 4px; }
+  .c-light .go-btn {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff; font-size: 14px; font-weight: 700; padding: 12px;
+    border-radius: 18px; box-shadow: 0 6px 24px rgba(99,102,241,0.35), inset 0 1px 0 rgba(255,255,255,0.25);
+  }
+  .c-light .glass-row { display: flex; gap: 8px; margin: 0 12px 10px; position: relative; z-index: 2; }
+  .c-light .glass-mini {
+    flex: 1; border-radius: 20px; padding: 14px 10px; text-align: center;
+    background: rgba(255,255,255,0.6);
+    border: 1px solid rgba(255,255,255,0.9);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 4px 16px rgba(80,80,180,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
+  }
+  .c-light .glass-mini-val { font-size: 16px; font-weight: 800; color: #1a1a3e; }
+  .c-light .glass-mini-lbl { font-size: 9px; color: rgba(30,30,80,0.4); margin-top: 2px; }
+  .c-light .glass-task { margin: 0 12px 6px; padding: 10px 14px; border-radius: 16px; background: rgba(255,255,255,0.55); border: 1px solid rgba(255,255,255,0.85); backdrop-filter: blur(16px); display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 2; }
+  .c-light .glass-task-left { display: flex; align-items: center; gap: 8px; }
+  .c-light .glass-task-icon { width: 24px; height: 24px; border-radius: 8px; background: rgba(99,102,241,0.12); display: flex; align-items: center; justify-content: center; font-size: 13px; }
+  .c-light .glass-task-name { font-size: 12px; font-weight: 600; color: rgba(30,30,80,0.7); }
+  .c-light .glass-task-check { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid rgba(80,80,180,0.25); }
+
+  /* Selection */
+  .phone-wrap { position: relative; }
+  .selected-indicator { display: none; position: absolute; top: -8px; right: -8px; width: 26px; height: 26px; background: #6366f1; border-radius: 50%; border: 2px solid #0a0a0f; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: bold; }
+  .phone-wrap.selected .selected-indicator { display: flex; }
+  .phone-wrap.selected .phone { box-shadow: 0 0 0 3px #6366f1, 0 20px 60px rgba(99,102,241,0.4); }
+
+  .section-title { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.3); letter-spacing: 1px; text-transform: uppercase; text-align: center; margin-bottom: 16px; }
+  .mode-group { margin-bottom: 40px; }
+  .mode-row { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-bottom: 32px; }
+
+  .footer { text-align: center; color: rgba(255,255,255,0.25); font-size: 12px; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<h1>Home Screen Design Options</h1>
+<p class="subtitle">3 directions · dark & light mode · tap to select</p>
+
+<!-- OPTION A -->
+<div class="mode-group">
+  <div class="section-title">Option A — Hero Focus</div>
+  <div class="mode-row">
+    <!-- A Dark -->
+    <div class="phone-wrap" data-choice="a" onclick="select(this)">
+      <div class="selected-indicator">✓</div>
+      <div class="phone phone-dark">
+        <div class="phone-screen a-dark">
+          <div class="status-bar"><span class="status-time">9:41</span><span class="status-icons">●●●</span></div>
+          <div class="page-title">Good morning 👋</div>
+          <div class="hero-card">
+            <div class="hero-badge">▶ UP NEXT · Week 2</div>
+            <div class="hero-workout">Upper Strength A</div>
+            <div class="hero-meta">Bench · OHP · Row · Curl · 4 exercises</div>
+            <div class="hero-btn">▶  Start Workout</div>
+          </div>
+          <div class="mini-cards">
+            <div class="mini-card"><div class="mini-icon">⚡</div><div class="mini-val">7</div><div class="mini-lbl">Streak</div></div>
+            <div class="mini-card"><div class="mini-icon">🏋️</div><div class="mini-val">24</div><div class="mini-lbl">Sessions</div></div>
+            <div class="mini-card"><div class="mini-icon">📅</div><div class="mini-val">Wk 2</div><div class="mini-lbl">Program</div></div>
+          </div>
+          <div class="streak-row">
+            <div class="streak-icon">🔥</div>
+            <div class="streak-text">7-day streak — keep it going!</div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-label">Dark</div>
+      <div class="option-title">A — Hero Focus</div>
+    </div>
+
+    <!-- A Light -->
+    <div class="phone-wrap" data-choice="a-light" onclick="select(this)">
+      <div class="selected-indicator">✓</div>
+      <div class="phone phone-light">
+        <div class="phone-screen a-light">
+          <div class="status-bar"><span class="status-time">9:41</span><span class="status-icons" style="color:rgba(30,30,60,0.5)">●●●</span></div>
+          <div class="page-title">Good morning 👋</div>
+          <div class="hero-card">
+            <div class="hero-badge">▶ UP NEXT · Week 2</div>
+            <div class="hero-workout">Upper Strength A</div>
+            <div class="hero-meta">Bench · OHP · Row · Curl · 4 exercises</div>
+            <div class="hero-btn">▶  Start Workout</div>
+          </div>
+          <div class="mini-cards">
+            <div class="mini-card"><div class="mini-icon">⚡</div><div class="mini-val" style="color:#1a1a2e">7</div><div class="mini-lbl">Streak</div></div>
+            <div class="mini-card"><div class="mini-icon">🏋️</div><div class="mini-val" style="color:#1a1a2e">24</div><div class="mini-lbl">Sessions</div></div>
+            <div class="mini-card"><div class="mini-icon">📅</div><div class="mini-val" style="color:#1a1a2e">Wk 2</div><div class="mini-lbl">Program</div></div>
+          </div>
+          <div class="streak-row">
+            <div class="streak-icon">🔥</div>
+            <div class="streak-text">7-day streak — keep it going!</div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-label phone-label-light">Light</div>
+      <div class="option-title">A — Hero Focus</div>
+    </div>
+  </div>
+</div>
+
+<!-- OPTION B -->
+<div class="mode-group">
+  <div class="section-title">Option B — Clean & Minimal</div>
+  <div class="mode-row">
+    <!-- B Dark -->
+    <div class="phone-wrap" data-choice="b" onclick="select(this)">
+      <div class="selected-indicator">✓</div>
+      <div class="phone phone-dark">
+        <div class="phone-screen b-dark">
+          <div class="status-bar"><span class="status-time">9:41</span><span style="font-size:12px;color:rgba(255,255,255,0.7)">●●●</span></div>
+          <div class="greeting">Good morning, Tarek</div>
+          <div class="page-title">Today</div>
+          <div class="next-card">
+            <div class="next-label">Next Workout</div>
+            <div class="next-name">Upper Strength A</div>
+            <div class="next-detail">Week 2 · 4 exercises · ~45 min</div>
+            <div class="start-btn">▶  Start Workout</div>
+          </div>
+          <div class="stat-row">
+            <div class="stat"><div class="stat-num">7</div><div class="stat-lbl">Day streak</div></div>
+            <div class="stat"><div class="stat-num">24</div><div class="stat-lbl">Sessions</div></div>
+            <div class="stat"><div class="stat-num">Wk 2</div><div class="stat-lbl">Progress</div></div>
+          </div>
+          <div style="font-size:9px;color:rgba(255,255,255,0.25);letter-spacing:1px;text-transform:uppercase;padding:4px 18px 6px;">Daily Tasks</div>
+          <div class="task-card"><div class="task-dot"></div><div class="task-text">10,000 steps</div></div>
+          <div class="task-card"><div class="task-dot" style="background:#14b8a6"></div><div class="task-text">2L water</div></div>
+        </div>
+      </div>
+      <div class="phone-label">Dark</div>
+      <div class="option-title">B — Clean & Minimal</div>
+    </div>
+
+    <!-- B Light -->
+    <div class="phone-wrap" data-choice="b-light" onclick="select(this)">
+      <div class="selected-indicator">✓</div>
+      <div class="phone phone-light">
+        <div class="phone-screen b-light">
+          <div class="status-bar"><span class="status-time" style="color:#111">9:41</span><span style="font-size:12px;color:rgba(30,30,60,0.5)">●●●</span></div>
+          <div class="greeting" style="color:rgba(30,30,60,0.4)">Good morning, Tarek</div>
+          <div class="page-title">Today</div>
+          <div class="next-card">
+            <div class="next-label">Next Workout</div>
+            <div class="next-name">Upper Strength A</div>
+            <div class="next-detail">Week 2 · 4 exercises · ~45 min</div>
+            <div class="start-btn">▶  Start Workout</div>
+          </div>
+          <div class="stat-row">
+            <div class="stat"><div class="stat-num">7</div><div class="stat-lbl">Day streak</div></div>
+            <div class="stat"><div class="stat-num">24</div><div class="stat-lbl">Sessions</div></div>
+            <div class="stat"><div class="stat-num">Wk 2</div><div class="stat-lbl">Progress</div></div>
+          </div>
+          <div style="font-size:9px;color:rgba(30,30,80,0.3);letter-spacing:1px;text-transform:uppercase;padding:4px 18px 6px;">Daily Tasks</div>
+          <div class="task-card"><div class="task-dot"></div><div class="task-text" style="color:rgba(30,30,60,0.6)">10,000 steps</div></div>
+          <div class="task-card"><div class="task-dot" style="background:#14b8a6"></div><div class="task-text" style="color:rgba(30,30,60,0.6)">2L water</div></div>
+        </div>
+      </div>
+      <div class="phone-label phone-label-light">Light</div>
+      <div class="option-title">B — Clean & Minimal</div>
+    </div>
+  </div>
+</div>
+
+<!-- OPTION C -->
+<div class="mode-group">
+  <div class="section-title">Option C — Full Liquid Glass</div>
+  <div class="mode-row">
+    <!-- C Dark -->
+    <div class="phone-wrap" data-choice="c" onclick="select(this)">
+      <div class="selected-indicator">✓</div>
+      <div class="phone phone-dark">
+        <div class="phone-screen c-dark">
+          <div class="status-bar"><span class="status-time">9:41</span><span style="font-size:12px;color:rgba(255,255,255,0.6)">●●●</span></div>
+          <div class="page-title">Good morning 🌅</div>
+          <div class="glass-hero">
+            <div class="pill">▶ UP NEXT</div>
+            <div class="workout-name">Upper Strength A</div>
+            <div class="workout-detail">Week 2 of 8 · Bench · OHP · Row · Curl</div>
+            <div class="prog-bar"><div class="prog-fill"></div></div>
+            <div class="go-btn">▶ &nbsp; Start Workout</div>
+          </div>
+          <div class="glass-row">
+            <div class="glass-mini"><div class="glass-mini-val">🔥 7</div><div class="glass-mini-lbl">Streak</div></div>
+            <div class="glass-mini"><div class="glass-mini-val">24</div><div class="glass-mini-lbl">Sessions</div></div>
+            <div class="glass-mini"><div class="glass-mini-val">Wk 2</div><div class="glass-mini-lbl">Progress</div></div>
+          </div>
+          <div class="glass-task"><div class="glass-task-left"><div class="glass-task-icon">👣</div><div class="glass-task-name">10,000 steps</div></div><div class="glass-task-check"></div></div>
+          <div class="glass-task"><div class="glass-task-left"><div class="glass-task-icon">💧</div><div class="glass-task-name">2L water</div></div><div class="glass-task-check"></div></div>
+        </div>
+      </div>
+      <div class="phone-label">Dark</div>
+      <div class="option-title">C — Full Liquid Glass</div>
+    </div>
+
+    <!-- C Light -->
+    <div class="phone-wrap" data-choice="c-light" onclick="select(this)">
+      <div class="selected-indicator">✓</div>
+      <div class="phone phone-light">
+        <div class="phone-screen c-light">
+          <div class="status-bar"><span class="status-time">9:41</span><span style="font-size:12px;color:rgba(30,30,60,0.5)">●●●</span></div>
+          <div class="page-title">Good morning 🌅</div>
+          <div class="glass-hero">
+            <div class="pill">▶ UP NEXT</div>
+            <div class="workout-name">Upper Strength A</div>
+            <div class="workout-detail">Week 2 of 8 · Bench · OHP · Row · Curl</div>
+            <div class="prog-bar"><div class="prog-fill"></div></div>
+            <div class="go-btn">▶ &nbsp; Start Workout</div>
+          </div>
+          <div class="glass-row">
+            <div class="glass-mini"><div class="glass-mini-val">🔥 7</div><div class="glass-mini-lbl">Streak</div></div>
+            <div class="glass-mini"><div class="glass-mini-val">24</div><div class="glass-mini-lbl">Sessions</div></div>
+            <div class="glass-mini"><div class="glass-mini-val">Wk 2</div><div class="glass-mini-lbl">Progress</div></div>
+          </div>
+          <div class="glass-task"><div class="glass-task-left"><div class="glass-task-icon">👣</div><div class="glass-task-name">10,000 steps</div></div><div class="glass-task-check"></div></div>
+          <div class="glass-task"><div class="glass-task-left"><div class="glass-task-icon">💧</div><div class="glass-task-name">2L water</div></div><div class="glass-task-check"></div></div>
+        </div>
+      </div>
+      <div class="phone-label phone-label-light">Light</div>
+      <div class="option-title">C — Full Liquid Glass</div>
+    </div>
+  </div>
+</div>
+
+<p class="footer">Click any phone to select · You can pick multiple</p>
+
+<script>
+function select(el) {
+  el.classList.toggle('selected');
+  const choice = el.dataset.choice;
+  const text = el.querySelector('.option-title').textContent;
+  const selected = el.classList.contains('selected');
+  if (window.recordEvent) window.recordEvent({ type: 'click', choice, text, selected });
+}
+</script>
+</body>
+</html>

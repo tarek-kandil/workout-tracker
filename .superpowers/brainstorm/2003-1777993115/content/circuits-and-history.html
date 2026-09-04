@@ -1,0 +1,409 @@
+<style>
+  * { box-sizing: border-box; }
+  body { background: #0d0d1a; color: #fff; font-family: -apple-system, sans-serif; }
+
+  .mockup-phone {
+    background: #0f0f1a;
+    border-radius: 28px;
+    border: 2px solid #2a2a3e;
+    overflow: hidden;
+    color: #fff;
+    width: 300px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    font-size: 11px;
+  }
+  .phone-bar {
+    background: #1a1a2e;
+    padding: 8px 12px 6px;
+    border-bottom: 1px solid #2a2a40;
+  }
+  .phone-bar .title { font-size: 13px; font-weight: 700; }
+  .phone-bar .subtitle { font-size: 10px; color: #888; }
+  .phone-bar .progress { height: 2px; background: #2a2a40; margin-top: 6px; }
+  .phone-bar .progress-fill { height: 2px; background: #6c63ff; width: 55%; }
+
+  /* Circuit card */
+  .circuit-card {
+    margin: 8px;
+    border-radius: 14px;
+    border: 1.5px solid rgba(20,184,166,0.45);
+    background: rgba(20,184,166,0.07);
+    overflow: hidden;
+  }
+  .circuit-card.active { box-shadow: 0 0 14px rgba(20,184,166,0.2); }
+  .circuit-header {
+    background: rgba(20,184,166,0.12);
+    padding: 7px 12px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    border-bottom: 1px solid rgba(20,184,166,0.2);
+  }
+  .circuit-icon { font-size: 12px; color: #2dd4bf; }
+  .circuit-title { font-size: 11px; font-weight: 800; color: #2dd4bf; flex: 1; }
+  .circuit-round { font-size: 9px; color: rgba(45,212,191,0.6); font-weight: 700; }
+  .menu-dots { color: #444; font-size: 13px; }
+
+  /* Exercise within circuit */
+  .circ-ex {
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .circ-ex:last-child { border-bottom: none; }
+  .circ-ex.active-ex { background: rgba(108,99,255,0.08); }
+  .circ-ex-header { display: flex; justify-content: space-between; align-items: center; }
+  .circ-ex-name { font-weight: 700; font-size: 12px; }
+  .circ-ex-meta { font-size: 9px; color: #888; margin-top: 1px; }
+  .now-pill { background:#6c63ff; color:#fff; font-size:8px; font-weight:800; padding:1px 5px; border-radius:4px; }
+
+  /* Round rows */
+  .round-rows { margin-top: 6px; }
+  .round-row { display: flex; align-items: center; gap: 5px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .round-row:last-child { border-bottom: none; }
+  .round-num { width: 36px; font-size: 9px; color: #555; font-weight: 600; }
+  .r-check { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid #555; display: flex; align-items: center; justify-content: center; font-size: 8px; flex-shrink: 0; }
+  .r-check.done { background: #2dd4bf; border-color: #2dd4bf; color: #000; font-weight: 800; }
+  .r-check.active { border-color: #6c63ff; color: #6c63ff; }
+  .r-field { flex: 1; background: rgba(255,255,255,0.06); border-radius: 5px; padding: 3px 5px; text-align: center; }
+  .r-field.r-active { background: rgba(108,99,255,0.18); }
+  .r-field.r-dim { background: rgba(255,255,255,0.03); opacity: 0.5; }
+  .r-field .rf-lbl { font-size: 7px; color: #555; letter-spacing: 0.3px; }
+  .r-field .rf-val { font-size: 12px; font-weight: 700; }
+
+  /* Standalone card (for history section) */
+  .ex-card {
+    margin: 8px;
+    border-radius: 14px;
+    padding: 10px 12px;
+    border: 1.5px solid rgba(108,99,255,0.6);
+    background: rgba(108,99,255,0.12);
+    box-shadow: 0 0 14px rgba(108,99,255,0.2);
+  }
+  .current-badge { display:inline-block; background:#6c63ff; color:#fff; font-size:8px; font-weight:800; padding:1px 6px; border-radius:4px; letter-spacing:0.5px; margin-bottom:4px; }
+  .set-rows { margin-top: 8px; }
+  .set-row { display: flex; align-items: center; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05); gap: 5px; }
+  .set-row:last-child { border-bottom: none; }
+  .set-num { width: 30px; font-size: 9px; color: #555; font-weight: 600; }
+  .set-check { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid #555; display:flex;align-items:center;justify-content:center;font-size:8px;flex-shrink:0; }
+  .set-check.filled { background: #4ade80; border-color: #4ade80; color: #000; font-weight: 800; }
+  .set-check.act { border-color: #6c63ff; color: #6c63ff; }
+  .set-field { flex: 1; background: rgba(255,255,255,0.07); border-radius: 5px; padding: 3px 6px; text-align: center; }
+  .set-field.af { background: rgba(108,99,255,0.18); }
+  .set-field.dim { background: rgba(255,255,255,0.03); opacity:0.45; }
+  .sf-lbl { font-size: 7px; color: #555; letter-spacing: 0.3px; }
+  .sf-val { font-size: 12px; font-weight: 700; }
+
+  /* History options */
+  .hist-row {
+    display: flex; align-items: center; gap: 6px;
+    margin-top: 6px; padding-top: 6px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  .hist-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 8px; padding: 3px 8px;
+    font-size: 9px; color: #aaa; font-weight: 600;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .hist-chip.tappable { cursor: pointer; }
+  .hist-chip.tappable:hover { background: rgba(255,255,255,0.12); }
+
+  /* History expanded inline */
+  .hist-inline { margin-top: 6px; padding: 6px 8px; background: rgba(255,255,255,0.04); border-radius: 8px; }
+  .hist-inline-row { display:flex; align-items:center; gap:6px; padding: 3px 0; font-size: 9px; }
+  .hist-inline-row .hn { width: 30px; color: #555; }
+  .hist-inline-row .hw { flex: 1; color: #aaa; font-weight: 600; }
+  .hist-inline-row .hr { flex: 1; color: #aaa; font-weight: 600; }
+  .pr-tag { font-size:7px; background:rgba(250,204,21,0.15); color:#fbbf24; border-radius:3px; padding:1px 4px; font-weight:800; }
+
+  /* Bottom sheet */
+  .sheet-overlay { background: rgba(0,0,0,0.6); height: 60px; }
+  .sheet {
+    background: #1a1a2e;
+    border-radius: 16px 16px 0 0;
+    border-top: 1px solid #2a2a40;
+    padding: 12px;
+  }
+  .sheet-handle { width: 32px; height: 3px; background: #333; border-radius: 2px; margin: 0 auto 10px; }
+  .sheet-title { font-size: 11px; font-weight: 800; margin-bottom: 8px; color: #ccc; }
+  .sheet-set-row { display:flex; gap:6px; align-items:center; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size:10px; }
+  .sheet-set-row:last-child { border-bottom:none; }
+  .ssn { width:32px; color:#555; font-size:9px; }
+  .ssw { flex:1; font-weight:700; color:#ddd; }
+  .ssr { flex:1; color:#aaa; }
+
+  /* Layout helpers */
+  .section-title { font-size: 13px; font-weight: 800; color: #ccc; margin: 24px 0 8px; }
+  .option-row { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
+  .opt-label { font-size: 10px; font-weight: 800; color: #888; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; text-align: center; }
+
+  .options { display: flex; flex-direction: column; gap: 16px; }
+  .option { border-radius: 16px; border: 1.5px solid #2a2a3e; padding: 16px; cursor: pointer; background: rgba(255,255,255,0.02); }
+  .option:hover { border-color: #6c63ff; }
+  .option h3 { margin: 0 0 4px; font-size: 13px; }
+  .option p { margin: 0; font-size: 11px; color: #888; }
+  .opt-tag { display:inline-block; padding:1px 7px; border-radius:4px; font-size:9px; font-weight:800; margin-bottom:6px; }
+  .tag-rec { background:rgba(108,99,255,0.2); color:#a5b4fc; }
+  .tag-alt { background:rgba(255,255,255,0.06); color:#666; }
+
+  .split { display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
+  .col { display:flex; flex-direction:column; align-items:center; gap:8px; }
+</style>
+
+<h2>Circuits + History options</h2>
+<p class="subtitle">How circuits look in the new layout, and three ways to access full set history.</p>
+
+<!-- ═══ PART 1: Circuit layout ═══ -->
+<h3 style="text-align:center;color:#888;font-size:12px;letter-spacing:1px;font-weight:700;text-transform:uppercase;margin-bottom:12px;">Circuit layout</h3>
+
+<div style="display:flex;justify-content:center;margin-bottom:32px;">
+<div class="mockup-phone">
+  <div class="phone-bar">
+    <div class="title">Workout A · <span style="color:#888;font-size:10px;font-weight:400">Week 3</span></div>
+    <div class="subtitle">Push Circuit · Round 2 of 3</div>
+    <div class="progress"><div class="progress-fill" style="width:55%;"></div></div>
+  </div>
+
+  <div style="height:6px;"></div>
+
+  <!-- Active circuit -->
+  <div class="circuit-card active">
+    <div class="circuit-header">
+      <span class="circuit-icon">↻</span>
+      <span class="circuit-title">Push Circuit</span>
+      <span class="circuit-round">Round 2 / 3 · 90s rest between rounds</span>
+      <span class="menu-dots">···</span>
+    </div>
+
+    <!-- Exercise 1 — done this round -->
+    <div class="circ-ex">
+      <div class="circ-ex-header">
+        <div>
+          <div class="circ-ex-name">Push-up</div>
+          <div class="circ-ex-meta">Timed · 45s · Last: 45s, 47s</div>
+        </div>
+      </div>
+      <div class="round-rows">
+        <div class="round-row">
+          <div class="round-num">Round 1</div>
+          <div class="r-check done">✓</div>
+          <div class="r-field"><div class="rf-lbl">DURATION</div><div class="rf-val">47s</div></div>
+        </div>
+        <div class="round-row">
+          <div class="round-num">Round 2</div>
+          <div class="r-check done">✓</div>
+          <div class="r-field"><div class="rf-lbl">DURATION</div><div class="rf-val">45s</div></div>
+        </div>
+        <div class="round-row" style="opacity:0.35;">
+          <div class="round-num">Round 3</div>
+          <div class="r-check"></div>
+          <div class="r-field r-dim"><div class="rf-lbl">DURATION</div><div class="rf-val">—</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Exercise 2 — ACTIVE NOW -->
+    <div class="circ-ex active-ex">
+      <div class="circ-ex-header">
+        <div>
+          <span class="now-pill">▶ NOW</span>
+          <div class="circ-ex-name" style="font-size:13px;">Dumbbell Press</div>
+          <div class="circ-ex-meta">8–10 reps · Last: 22kg×9, 22kg×8 · PR 25kg</div>
+        </div>
+        <div class="menu-dots">···</div>
+      </div>
+      <div class="round-rows">
+        <div class="round-row">
+          <div class="round-num">Round 1</div>
+          <div class="r-check done" style="background:#4ade80;border-color:#4ade80;color:#000;">✓</div>
+          <div class="r-field"><div class="rf-lbl">WEIGHT</div><div class="rf-val">22 kg</div></div>
+          <div class="r-field"><div class="rf-lbl">REPS</div><div class="rf-val">9</div></div>
+        </div>
+        <div class="round-row">
+          <div class="round-num">Round 2</div>
+          <div class="r-check active">○</div>
+          <div class="r-field r-active"><div class="rf-lbl">WEIGHT</div><div class="rf-val">22 kg</div></div>
+          <div class="r-field r-active"><div class="rf-lbl">REPS</div><div class="rf-val">9</div></div>
+        </div>
+        <div class="round-row" style="opacity:0.35;">
+          <div class="round-num">Round 3</div>
+          <div class="r-check"></div>
+          <div class="r-field r-dim"><div class="rf-lbl">WEIGHT</div><div class="rf-val">22 kg</div></div>
+          <div class="r-field r-dim"><div class="rf-lbl">REPS</div><div class="rf-val">—</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Exercise 3 — upcoming in circuit -->
+    <div class="circ-ex" style="opacity:0.6;">
+      <div class="circ-ex-header">
+        <div>
+          <div class="circ-ex-name">Lateral Raise</div>
+          <div class="circ-ex-meta">12–15 reps · Last: 10kg×14, 10kg×12</div>
+        </div>
+        <div class="menu-dots">···</div>
+      </div>
+      <div class="round-rows">
+        <div class="round-row">
+          <div class="round-num">Round 1</div>
+          <div class="r-check done" style="background:#4ade80;border-color:#4ade80;color:#000;">✓</div>
+          <div class="r-field"><div class="rf-lbl">WEIGHT</div><div class="rf-val">10 kg</div></div>
+          <div class="r-field"><div class="rf-lbl">REPS</div><div class="rf-val">14</div></div>
+        </div>
+        <div class="round-row" style="opacity:0.4;">
+          <div class="round-num">Round 2</div>
+          <div class="r-check"></div>
+          <div class="r-field r-dim"><div class="rf-lbl">WEIGHT</div><div class="rf-val">10 kg</div></div>
+          <div class="r-field r-dim"><div class="rf-lbl">REPS</div><div class="rf-val">—</div></div>
+        </div>
+        <div class="round-row" style="opacity:0.25;">
+          <div class="round-num">Round 3</div>
+          <div class="r-check"></div>
+          <div class="r-field r-dim"><div class="rf-lbl">WEIGHT</div><div class="rf-val">10 kg</div></div>
+          <div class="r-field r-dim"><div class="rf-lbl">REPS</div><div class="rf-val">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:8px;"></div>
+</div>
+</div>
+
+<div style="height:1px;background:#2a2a40;margin:8px 0 28px;"></div>
+
+<!-- ═══ PART 2: History options ═══ -->
+<h3 style="text-align:center;color:#888;font-size:12px;letter-spacing:1px;font-weight:700;text-transform:uppercase;margin-bottom:6px;">Full history — 3 options</h3>
+<p class="subtitle" style="text-align:center;margin-bottom:20px;">How to view all sets from last session without cluttering the card.</p>
+
+<div class="options">
+
+  <!-- Option A: Tap chip to expand inline -->
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <span class="opt-tag tag-rec">Recommended</span>
+    <h3>A — Tap chip to expand inline</h3>
+    <p>A small "Last: 80×9 ▾" chip sits under the exercise name. Tap it to expand a mini table of all sets directly on the card. Tap again to collapse. No navigation required.</p>
+    <div style="display:flex;justify-content:center;margin-top:12px;">
+      <div class="mockup-phone" style="width:280px;">
+        <div style="padding:10px 12px;">
+          <span class="current-badge">▶ NOW</span>
+          <div style="font-size:14px;font-weight:800;margin:2px 0;">Bench Press</div>
+          <div style="font-size:9px;color:#888;">4 sets · 8–10 reps</div>
+          <!-- Chip expanded state -->
+          <div class="hist-row">
+            <div class="hist-chip tappable" style="background:rgba(108,99,255,0.15);border-color:rgba(108,99,255,0.3);color:#a5b4fc;">
+              Last ▾
+            </div>
+            <div class="hist-chip" style="background:rgba(250,204,21,0.08);border-color:rgba(250,204,21,0.2);color:#fbbf24;">
+              PR 90 kg
+            </div>
+          </div>
+          <!-- Expanded history -->
+          <div class="hist-inline">
+            <div class="hist-inline-row"><div class="hn">Set 1</div><div class="hw">80 kg</div><div class="hr">× 9</div></div>
+            <div class="hist-inline-row"><div class="hn">Set 2</div><div class="hw">82.5 kg</div><div class="hr">× 8</div></div>
+            <div class="hist-inline-row"><div class="hn">Set 3</div><div class="hw">82.5 kg</div><div class="hr">× 7</div></div>
+            <div class="hist-inline-row"><div class="hn">Set 4</div><div class="hw">80 kg</div><div class="hr">× 8 <span class="pr-tag">PR</span></div></div>
+          </div>
+          <!-- Current sets -->
+          <div class="set-rows" style="margin-top:8px;">
+            <div class="set-row" style="display:flex;align-items:center;gap:5px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+              <div class="set-num" style="width:30px;font-size:9px;color:#555;">Set 1</div>
+              <div class="set-check filled" style="width:14px;height:14px;border-radius:50%;background:#4ade80;border-color:#4ade80;color:#000;font-size:8px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✓</div>
+              <div class="set-field" style="flex:1;background:rgba(255,255,255,0.07);border-radius:5px;padding:3px 6px;text-align:center;"><div class="sf-lbl" style="font-size:7px;color:#555;">WEIGHT</div><div class="sf-val" style="font-size:12px;font-weight:700;">80 kg</div></div>
+              <div class="set-field" style="flex:1;background:rgba(255,255,255,0.07);border-radius:5px;padding:3px 6px;text-align:center;"><div class="sf-lbl" style="font-size:7px;color:#555;">REPS</div><div class="sf-val" style="font-size:12px;font-weight:700;">9</div></div>
+            </div>
+            <div class="set-row" style="display:flex;align-items:center;gap:5px;padding:4px 0;">
+              <div class="set-num" style="width:30px;font-size:9px;color:#a5b4fc;font-weight:800;">Set 2</div>
+              <div class="set-check act" style="width:14px;height:14px;border-radius:50%;border:1.5px solid #6c63ff;color:#6c63ff;font-size:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">○</div>
+              <div class="set-field af" style="flex:1;background:rgba(108,99,255,0.18);border-radius:5px;padding:3px 6px;text-align:center;"><div class="sf-lbl" style="font-size:7px;color:#555;">WEIGHT</div><div class="sf-val" style="font-size:12px;font-weight:700;">80 kg</div></div>
+              <div class="set-field af" style="flex:1;background:rgba(108,99,255,0.18);border-radius:5px;padding:3px 6px;text-align:center;"><div class="sf-lbl" style="font-size:7px;color:#555;">REPS</div><div class="sf-val" style="font-size:12px;font-weight:700;">9</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option B: Bottom sheet -->
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <span class="opt-tag tag-alt">Alternative</span>
+    <h3>B — Tap chip → bottom sheet</h3>
+    <p>Chip stays small. Tap it to open a full bottom sheet with the exercise's complete history — last session sets, and optionally sessions before that. Doesn't expand the card at all.</p>
+    <div style="display:flex;justify-content:center;margin-top:12px;">
+      <div class="mockup-phone" style="width:280px;">
+        <div style="padding:10px 12px 6px;">
+          <span class="current-badge">▶ NOW</span>
+          <div style="font-size:14px;font-weight:800;margin:2px 0;">Bench Press</div>
+          <div style="font-size:9px;color:#888;">4 sets · 8–10 reps</div>
+          <div class="hist-row">
+            <div class="hist-chip tappable">Last: 80×9 →</div>
+            <div class="hist-chip" style="background:rgba(250,204,21,0.08);border-color:rgba(250,204,21,0.2);color:#fbbf24;">PR 90 kg</div>
+          </div>
+        </div>
+        <div class="sheet-overlay"></div>
+        <div class="sheet">
+          <div class="sheet-handle"></div>
+          <div class="sheet-title">Bench Press — Last session</div>
+          <div class="sheet-set-row"><div class="ssn">Set 1</div><div class="ssw">80 kg</div><div class="ssr">× 9 reps</div></div>
+          <div class="sheet-set-row"><div class="ssn">Set 2</div><div class="ssw">82.5 kg</div><div class="ssr">× 8 reps</div></div>
+          <div class="sheet-set-row"><div class="ssn">Set 3</div><div class="ssw">82.5 kg</div><div class="ssr">× 7 reps</div></div>
+          <div class="sheet-set-row"><div class="ssn">Set 4</div><div class="ssw">80 kg</div><div class="ssr">× 8 reps <span class="pr-tag">PR</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option C: Column alongside current sets -->
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <span class="opt-tag tag-alt">Alternative</span>
+    <h3>C — Last session column alongside current sets</h3>
+    <p>Each set row shows a faint "last time" column next to the current input. Reference is always visible per set without any tapping — but the row gets wider.</p>
+    <div style="display:flex;justify-content:center;margin-top:12px;">
+      <div class="mockup-phone" style="width:280px;">
+        <div style="padding:10px 12px;">
+          <span class="current-badge">▶ NOW</span>
+          <div style="font-size:14px;font-weight:800;margin:2px 0;">Bench Press</div>
+          <div style="font-size:9px;color:#888;margin-bottom:8px;">4 sets · 8–10 reps · PR 90 kg</div>
+          <!-- Header row -->
+          <div style="display:flex;gap:5px;padding:0 0 4px;border-bottom:1px solid rgba(255,255,255,0.08);">
+            <div style="width:30px;"></div>
+            <div style="flex:1;font-size:7px;color:#555;text-align:center;letter-spacing:0.3px;">LAST</div>
+            <div style="flex:1;font-size:7px;color:#888;text-align:center;letter-spacing:0.3px;">WEIGHT</div>
+            <div style="flex:1;font-size:7px;color:#888;text-align:center;letter-spacing:0.3px;">REPS</div>
+          </div>
+          <!-- Set 1 done -->
+          <div style="display:flex;align-items:center;gap:5px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05);opacity:0.6;">
+            <div style="width:30px;font-size:9px;color:#555;">Set 1</div>
+            <div style="flex:1;font-size:9px;color:#555;text-align:center;">80×9</div>
+            <div style="flex:1;background:rgba(255,255,255,0.07);border-radius:5px;padding:3px;text-align:center;font-size:11px;font-weight:700;">80 kg</div>
+            <div style="flex:1;background:rgba(255,255,255,0.07);border-radius:5px;padding:3px;text-align:center;font-size:11px;font-weight:700;">9</div>
+          </div>
+          <!-- Set 2 active -->
+          <div style="display:flex;align-items:center;gap:5px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+            <div style="width:30px;font-size:9px;color:#a5b4fc;font-weight:800;">Set 2</div>
+            <div style="flex:1;font-size:9px;color:#666;text-align:center;">82.5×8</div>
+            <div style="flex:1;background:rgba(108,99,255,0.18);border-radius:5px;padding:3px;text-align:center;font-size:11px;font-weight:700;">80 kg</div>
+            <div style="flex:1;background:rgba(108,99,255,0.18);border-radius:5px;padding:3px;text-align:center;font-size:11px;font-weight:700;">9</div>
+          </div>
+          <!-- Set 3 upcoming -->
+          <div style="display:flex;align-items:center;gap:5px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05);opacity:0.4;">
+            <div style="width:30px;font-size:9px;color:#555;">Set 3</div>
+            <div style="flex:1;font-size:9px;color:#555;text-align:center;">82.5×7</div>
+            <div style="flex:1;background:rgba(255,255,255,0.04);border-radius:5px;padding:3px;text-align:center;font-size:11px;font-weight:700;">—</div>
+            <div style="flex:1;background:rgba(255,255,255,0.04);border-radius:5px;padding:3px;text-align:center;font-size:11px;font-weight:700;">—</div>
+          </div>
+          <!-- Set 4 upcoming -->
+          <div style="display:flex;align-items:center;gap:5px;padding:4px 0;opacity:0.3;">
+            <div style="width:30px;font-size:9px;color:#555;">Set 4</div>
+            <div style="flex:1;font-size:9px;color:#555;text-align:center;">80×8</div>
+            <div style="flex:1;background:rgba(255,255,255,0.04);border-radius:5px;padding:3px;text-align:center;font-size:11px;font-weight:700;">—</div>
+            <div style="flex:1;background:rgba(255,255,255,0.04);border-radius:5px;padding:3px;text-align:center;font-size:11px;font-weight:700;">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

@@ -1,0 +1,200 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0a0a0f; color: #f0f0f5; font-family: 'Space Grotesk', sans-serif; padding: 20px 16px 80px; }
+h2 { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+.subtitle { font-size: 12px; color: rgba(255,255,255,0.4); margin-bottom: 20px; line-height: 1.6; }
+
+/* Phone shell */
+.phone { background: #0d0d12; border-radius: 20px; border: 1px solid rgba(255,255,255,0.08); overflow: hidden; max-width: 390px; margin: 0 auto; }
+.app-bar { padding: 16px 16px 10px; font-size: 22px; font-weight: 800; }
+.home-body { padding: 0 14px 20px; display: flex; flex-direction: column; gap: 10px; }
+
+/* Existing home widgets */
+.stats-row { display: flex; gap: 8px; }
+.stat-chip { flex: 1; background: rgba(255,255,255,0.04); border-radius: 12px; border: 1px solid rgba(255,255,255,0.07); padding: 8px 10px; text-align: center; }
+.stat-v { font-size: 16px; font-weight: 800; }
+.stat-l { font-size: 9px; color: rgba(255,255,255,0.35); margin-top: 2px; letter-spacing: 0.5px; }
+
+.next-wod { background: linear-gradient(135deg, rgba(99,102,241,0.18), rgba(99,102,241,0.06)); border-radius: 18px; border: 1px solid rgba(99,102,241,0.25); padding: 13px 14px; }
+.wod-label { font-size: 9px; font-weight: 700; color: rgba(99,102,241,0.7); letter-spacing: 1.2px; text-transform: uppercase; }
+.wod-title { font-size: 17px; font-weight: 800; margin-top: 3px; }
+.wod-sub { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+.wod-btn { margin-top: 10px; background: #6366f1; border-radius: 30px; padding: 10px; text-align: center; font-size: 13px; font-weight: 700; }
+
+/* Glass card */
+.gc { background: rgba(255,255,255,0.05); border-radius: 18px; border: 1px solid rgba(255,255,255,0.08); padding: 14px; }
+.gc-label { font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.3); letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 11px; }
+
+/* ── VOLUME HERO ── */
+.vol-hero { display: flex; align-items: flex-end; justify-content: space-between; }
+.vol-left {}
+.vol-num { font-size: 40px; font-weight: 800; line-height: 1; letter-spacing: -1px; }
+.vol-unit { font-size: 14px; color: rgba(255,255,255,0.4); margin-left: 3px; }
+.vol-trend { display: inline-flex; align-items: center; gap: 4px; background: rgba(52,199,89,0.15); border: 1px solid rgba(52,199,89,0.3); border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 700; color: #34c759; }
+.vol-vs { font-size: 10px; color: rgba(255,255,255,0.3); margin-top: 4px; }
+
+/* Sparkline */
+.sparkline { display: flex; align-items: flex-end; gap: 5px; height: 32px; margin: 12px 0 14px; }
+.spark-bar { flex: 1; border-radius: 3px 3px 0 0; }
+.spark-label-row { display: flex; justify-content: space-between; margin-top: -10px; margin-bottom: 14px; }
+.spark-label { font-size: 8px; color: rgba(255,255,255,0.2); }
+
+/* Quick stats strip (sessions, RPE, sets) */
+.stats-strip { display: flex; gap: 6px; margin-bottom: 14px; }
+.strip-tile { flex: 1; background: rgba(255,255,255,0.04); border-radius: 11px; border: 1px solid rgba(255,255,255,0.06); padding: 8px 10px; }
+.strip-val { font-size: 18px; font-weight: 800; line-height: 1; }
+.strip-lbl { font-size: 8.5px; color: rgba(255,255,255,0.3); letter-spacing: 0.4px; margin-top: 3px; }
+.strip-delta { font-size: 9px; font-weight: 700; margin-top: 3px; }
+
+/* Muscle balance */
+.muscle-section-label { font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.25); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+.muscle-row { display: flex; flex-direction: column; gap: 6px; }
+.muscle-item { display: flex; align-items: center; gap: 10px; }
+.muscle-name { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.5); width: 32px; flex-shrink: 0; }
+.muscle-bar-bg { flex: 1; height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+.muscle-bar-fill { height: 100%; border-radius: 3px; }
+.muscle-kg { font-size: 11px; font-weight: 700; width: 54px; text-align: right; flex-shrink: 0; }
+.muscle-sets { font-size: 9px; color: rgba(255,255,255,0.3); width: 32px; text-align: right; flex-shrink: 0; }
+
+/* Divider */
+.divider { height: 1px; background: rgba(255,255,255,0.06); margin: 14px 0; }
+
+/* PR strip */
+.pr-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.pr-badge { display: inline-flex; align-items: center; gap: 5px; background: rgba(255,159,10,0.15); border: 1px solid rgba(255,159,10,0.3); border-radius: 20px; padding: 4px 11px; font-size: 11px; font-weight: 700; color: #ff9f0a; }
+.pr-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.pr-row:last-child { border: none; padding-bottom: 0; }
+.pr-dot { width: 6px; height: 6px; border-radius: 50%; background: #ff9f0a; flex-shrink: 0; }
+.pr-name { font-size: 12.5px; font-weight: 600; flex: 1; }
+.pr-val { font-size: 12px; color: rgba(255,255,255,0.45); }
+.pr-new { font-size: 9.5px; font-weight: 700; color: #ff9f0a; background: rgba(255,159,10,0.12); border-radius: 6px; padding: 2px 7px; margin-left: 4px; }
+
+/* annotation callouts */
+.callout { margin-top: 14px; padding: 12px 14px; background: rgba(99,102,241,0.07); border-radius: 12px; border: 1px solid rgba(99,102,241,0.15); font-size: 11px; color: rgba(255,255,255,0.45); line-height: 1.7; }
+.callout strong { color: rgba(99,102,241,0.9); }
+</style>
+
+<h2>A + C Combined</h2>
+<p class="subtitle">One card combines the volume pulse, sparkline, quick stats strip (sessions · RPE · sets), and muscle balance bars — followed by a separate PR card that only appears when you break one that week.</p>
+
+<div class="phone">
+  <div class="app-bar">Today</div>
+  <div class="home-body">
+
+    <!-- Existing: stats row -->
+    <div class="stats-row">
+      <div class="stat-chip"><div class="stat-v">12</div><div class="stat-l">STREAK</div></div>
+      <div class="stat-chip"><div class="stat-v">47</div><div class="stat-l">SESSIONS</div></div>
+      <div class="stat-chip"><div class="stat-v">W6</div><div class="stat-l">WEEK</div></div>
+    </div>
+
+    <!-- Existing: next workout -->
+    <div class="next-wod">
+      <div class="wod-label">Next Up</div>
+      <div class="wod-title">Upper A</div>
+      <div class="wod-sub">6 exercises · Week 6</div>
+      <div class="wod-btn">Start Workout</div>
+    </div>
+
+    <!-- NEW: Weekly Progress card (A+C merged) -->
+    <div class="gc">
+      <div class="gc-label">Weekly Progress</div>
+
+      <!-- Volume hero -->
+      <div class="vol-hero">
+        <div class="vol-left">
+          <div>
+            <span class="vol-num">14,280</span>
+            <span class="vol-unit">kg</span>
+          </div>
+          <div class="vol-vs">vs 12,870 kg last week</div>
+        </div>
+        <div class="vol-trend">↑ 11%</div>
+      </div>
+
+      <!-- Sparkline: 8 weeks -->
+      <div class="sparkline">
+        <div class="spark-bar" style="height:38%;background:rgba(99,102,241,0.2);"></div>
+        <div class="spark-bar" style="height:52%;background:rgba(99,102,241,0.25);"></div>
+        <div class="spark-bar" style="height:44%;background:rgba(99,102,241,0.25);"></div>
+        <div class="spark-bar" style="height:63%;background:rgba(99,102,241,0.3);"></div>
+        <div class="spark-bar" style="height:56%;background:rgba(99,102,241,0.3);"></div>
+        <div class="spark-bar" style="height:70%;background:rgba(99,102,241,0.35);"></div>
+        <div class="spark-bar" style="height:82%;background:rgba(99,102,241,0.4);"></div>
+        <div class="spark-bar" style="height:100%;background:#6366f1;border-radius:3px;"></div>
+      </div>
+
+      <!-- Quick stats strip: sessions, RPE, sets -->
+      <div class="stats-strip">
+        <div class="strip-tile">
+          <div class="strip-val">3</div>
+          <div class="strip-lbl">Sessions</div>
+          <div class="strip-delta" style="color:rgba(255,255,255,0.25);">of 4 planned</div>
+        </div>
+        <div class="strip-tile">
+          <div class="strip-val">7.4</div>
+          <div class="strip-lbl">Avg RPE</div>
+          <div class="strip-delta" style="color:#ff9f0a;">↑ from 7.1</div>
+        </div>
+        <div class="strip-tile">
+          <div class="strip-val">46</div>
+          <div class="strip-lbl">Total Sets</div>
+          <div class="strip-delta" style="color:#34c759;">↑ 4 sets</div>
+        </div>
+      </div>
+
+      <!-- Muscle balance bars -->
+      <div class="divider"></div>
+      <div class="muscle-section-label">Muscle Balance</div>
+      <div class="muscle-row">
+        <div class="muscle-item">
+          <div class="muscle-name">Push</div>
+          <div class="muscle-bar-bg"><div class="muscle-bar-fill" style="width:59%;background:#6366f1;"></div></div>
+          <div class="muscle-kg" style="color:#818cf8;">5,840 kg</div>
+          <div class="muscle-sets">18 sets</div>
+        </div>
+        <div class="muscle-item">
+          <div class="muscle-name">Pull</div>
+          <div class="muscle-bar-bg"><div class="muscle-bar-fill" style="width:52%;background:#32ADE6;"></div></div>
+          <div class="muscle-kg" style="color:#32ADE6;">5,120 kg</div>
+          <div class="muscle-sets">16 sets</div>
+        </div>
+        <div class="muscle-item">
+          <div class="muscle-name">Legs</div>
+          <div class="muscle-bar-bg"><div class="muscle-bar-fill" style="width:34%;background:#34C759;"></div></div>
+          <div class="muscle-kg" style="color:#34C759;">3,320 kg</div>
+          <div class="muscle-sets">12 sets</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NEW: PR card — only shows when PRs exist that week -->
+    <div class="gc">
+      <div class="pr-header">
+        <div class="pr-badge">🏆 2 PRs this week</div>
+      </div>
+      <div class="pr-row">
+        <div class="pr-dot"></div>
+        <div class="pr-name">Bench Press</div>
+        <div class="pr-val">100 kg × 4</div>
+        <div class="pr-new">PR</div>
+      </div>
+      <div class="pr-row">
+        <div class="pr-dot"></div>
+        <div class="pr-name">Overhead Press</div>
+        <div class="pr-val">65 kg × 6</div>
+        <div class="pr-new">PR</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="callout">
+  <strong>Weekly Progress card</strong> — tonnage hero + 8-week sparkline + sessions/RPE/sets strip + muscle balance bars (horizontal, showing relative volume per category).<br><br>
+  <strong>PR card</strong> — only renders when you break a PR that calendar week. Hidden when there are none, so it feels like a celebration when it appears.<br><br>
+  <strong>Volume formula:</strong> Tonnage = Σ(sets × reps × weight_kg). Muscle balance bars = each group's tonnage as % of total. RPE = mean of all logged set RPEs for the week.
+</div>
