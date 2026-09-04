@@ -16,4 +16,11 @@ class Exercises extends Table {
   // Human-readable note explaining what the migration guessed/excluded for
   // this exercise, surfaced in the exercise editor and library.
   TextColumn get muscleReviewNote => text().nullable()();
+  // Schema v21 (non-destructive exercise deletion): true when the athlete
+  // "deleted" this exercise from the library but it has logged workout
+  // history (workout_sets rows) that must be preserved. Archived exercises
+  // are hidden from the library and pickers, but their row (and therefore
+  // their history/foreign keys) is kept intact. See
+  // ExercisesDao.deleteOrArchiveExercise.
+  BoolColumn get archived => boolean().withDefault(const Constant(false))();
 }

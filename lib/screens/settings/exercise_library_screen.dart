@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' show Value;
 import '../../database/app_database.dart';
+import '../../database/daos/exercises_dao.dart' show ExerciseDeleteOutcome;
 import '../../models/exercise_muscle_seed.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/exercise_providers.dart';
@@ -292,7 +293,11 @@ class _ExerciseLibraryScreenState
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Exercise'),
-        content: Text('Remove "${exercise.name}" from the library?'),
+        content: Text(
+          'Remove "${exercise.name}" from the library? '
+          'If it has logged workout history, it will be archived instead '
+          'and your logs will be kept.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -308,11 +313,24 @@ class _ExerciseLibraryScreenState
         ],
       ),
     );
-    if (confirmed == true) {
-      await ref
+    if (confirmed != true) return;
+    if (!mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final outcome = await ref
           .read(databaseProvider)
           .exercisesDao
-          .deleteExercise(exercise.id);
+          .deleteOrArchiveExercise(exercise.id);
+      final message = outcome == ExerciseDeleteOutcome.hardDeleted
+          ? 'Deleted "${exercise.name}"'
+          : '"${exercise.name}" archived — it has workout history, so '
+              'your logs are kept.';
+      messenger.showSnackBar(SnackBar(content: Text(message)));
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not delete "${exercise.name}": $e')),
+      );
     }
   }
 

@@ -1213,6 +1213,7 @@ class _WorkoutBuilder {
         isTimed: isTimed,
         muscleNeedsReview: false,
         muscleReviewNote: null,
+        archived: false,
       ),
       suggestion: WeightSuggestion.noHistory,
     );
@@ -1241,6 +1242,7 @@ class _WorkoutBuilder {
       isTimed: isTimed,
       muscleNeedsReview: false,
       muscleReviewNote: null,
+      archived: false,
     );
   }
 

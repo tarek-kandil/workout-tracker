@@ -55,6 +55,7 @@ class _ExerciseLibrarySheetState extends ConsumerState<ExerciseLibrarySheet> {
       notes: null,
       muscleNeedsReview: false,
       muscleReviewNote: null,
+      archived: false,
     );
     if (mounted) widget.onSelected(created);
   }

@@ -35,7 +35,10 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
 
   Future<void> _loadExercises() async {
     final db = ref.read(databaseProvider);
-    final exercises = await db.exercisesDao.getAllExercises();
+    // Past sets may reference an archived exercise (soft-deleted but its
+    // history preserved) — use the unfiltered query so its name still
+    // resolves here instead of showing blank/unknown.
+    final exercises = await db.exercisesDao.getAllExercisesIncludingArchived();
     final prior = await db.setsDao.getVolumeForPriorSession(
       widget.session.workoutName,
       widget.session.date,

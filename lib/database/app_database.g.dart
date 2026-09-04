@@ -97,6 +97,21 @@ class $ExercisesTable extends Exercises
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _archivedMeta = const VerificationMeta(
+    'archived',
+  );
+  @override
+  late final GeneratedColumn<bool> archived = GeneratedColumn<bool>(
+    'archived',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("archived" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -106,6 +121,7 @@ class $ExercisesTable extends Exercises
     isTimed,
     muscleNeedsReview,
     muscleReviewNote,
+    archived,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -166,6 +182,12 @@ class $ExercisesTable extends Exercises
         ),
       );
     }
+    if (data.containsKey('archived')) {
+      context.handle(
+        _archivedMeta,
+        archived.isAcceptableOrUnknown(data['archived']!, _archivedMeta),
+      );
+    }
     return context;
   }
 
@@ -203,6 +225,10 @@ class $ExercisesTable extends Exercises
         DriftSqlType.string,
         data['${effectivePrefix}muscle_review_note'],
       ),
+      archived: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}archived'],
+      )!,
     );
   }
 
@@ -220,6 +246,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
   final bool isTimed;
   final bool muscleNeedsReview;
   final String? muscleReviewNote;
+  final bool archived;
   const Exercise({
     required this.id,
     required this.name,
@@ -228,6 +255,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     required this.isTimed,
     required this.muscleNeedsReview,
     this.muscleReviewNote,
+    required this.archived,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -243,6 +271,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     if (!nullToAbsent || muscleReviewNote != null) {
       map['muscle_review_note'] = Variable<String>(muscleReviewNote);
     }
+    map['archived'] = Variable<bool>(archived);
     return map;
   }
 
@@ -259,6 +288,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       muscleReviewNote: muscleReviewNote == null && nullToAbsent
           ? const Value.absent()
           : Value(muscleReviewNote),
+      archived: Value(archived),
     );
   }
 
@@ -275,6 +305,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       isTimed: serializer.fromJson<bool>(json['isTimed']),
       muscleNeedsReview: serializer.fromJson<bool>(json['muscleNeedsReview']),
       muscleReviewNote: serializer.fromJson<String?>(json['muscleReviewNote']),
+      archived: serializer.fromJson<bool>(json['archived']),
     );
   }
   @override
@@ -288,6 +319,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       'isTimed': serializer.toJson<bool>(isTimed),
       'muscleNeedsReview': serializer.toJson<bool>(muscleNeedsReview),
       'muscleReviewNote': serializer.toJson<String?>(muscleReviewNote),
+      'archived': serializer.toJson<bool>(archived),
     };
   }
 
@@ -299,6 +331,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     bool? isTimed,
     bool? muscleNeedsReview,
     Value<String?> muscleReviewNote = const Value.absent(),
+    bool? archived,
   }) => Exercise(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -309,6 +342,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     muscleReviewNote: muscleReviewNote.present
         ? muscleReviewNote.value
         : this.muscleReviewNote,
+    archived: archived ?? this.archived,
   );
   Exercise copyWithCompanion(ExercisesCompanion data) {
     return Exercise(
@@ -323,6 +357,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       muscleReviewNote: data.muscleReviewNote.present
           ? data.muscleReviewNote.value
           : this.muscleReviewNote,
+      archived: data.archived.present ? data.archived.value : this.archived,
     );
   }
 
@@ -335,7 +370,8 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           ..write('notes: $notes, ')
           ..write('isTimed: $isTimed, ')
           ..write('muscleNeedsReview: $muscleNeedsReview, ')
-          ..write('muscleReviewNote: $muscleReviewNote')
+          ..write('muscleReviewNote: $muscleReviewNote, ')
+          ..write('archived: $archived')
           ..write(')'))
         .toString();
   }
@@ -349,6 +385,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     isTimed,
     muscleNeedsReview,
     muscleReviewNote,
+    archived,
   );
   @override
   bool operator ==(Object other) =>
@@ -360,7 +397,8 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           other.notes == this.notes &&
           other.isTimed == this.isTimed &&
           other.muscleNeedsReview == this.muscleNeedsReview &&
-          other.muscleReviewNote == this.muscleReviewNote);
+          other.muscleReviewNote == this.muscleReviewNote &&
+          other.archived == this.archived);
 }
 
 class ExercisesCompanion extends UpdateCompanion<Exercise> {
@@ -371,6 +409,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
   final Value<bool> isTimed;
   final Value<bool> muscleNeedsReview;
   final Value<String?> muscleReviewNote;
+  final Value<bool> archived;
   const ExercisesCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -379,6 +418,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     this.isTimed = const Value.absent(),
     this.muscleNeedsReview = const Value.absent(),
     this.muscleReviewNote = const Value.absent(),
+    this.archived = const Value.absent(),
   });
   ExercisesCompanion.insert({
     this.id = const Value.absent(),
@@ -388,6 +428,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     this.isTimed = const Value.absent(),
     this.muscleNeedsReview = const Value.absent(),
     this.muscleReviewNote = const Value.absent(),
+    this.archived = const Value.absent(),
   }) : name = Value(name);
   static Insertable<Exercise> custom({
     Expression<int>? id,
@@ -397,6 +438,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     Expression<bool>? isTimed,
     Expression<bool>? muscleNeedsReview,
     Expression<String>? muscleReviewNote,
+    Expression<bool>? archived,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -406,6 +448,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
       if (isTimed != null) 'is_timed': isTimed,
       if (muscleNeedsReview != null) 'muscle_needs_review': muscleNeedsReview,
       if (muscleReviewNote != null) 'muscle_review_note': muscleReviewNote,
+      if (archived != null) 'archived': archived,
     });
   }
 
@@ -417,6 +460,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     Value<bool>? isTimed,
     Value<bool>? muscleNeedsReview,
     Value<String?>? muscleReviewNote,
+    Value<bool>? archived,
   }) {
     return ExercisesCompanion(
       id: id ?? this.id,
@@ -426,6 +470,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
       isTimed: isTimed ?? this.isTimed,
       muscleNeedsReview: muscleNeedsReview ?? this.muscleNeedsReview,
       muscleReviewNote: muscleReviewNote ?? this.muscleReviewNote,
+      archived: archived ?? this.archived,
     );
   }
 
@@ -453,6 +498,9 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     if (muscleReviewNote.present) {
       map['muscle_review_note'] = Variable<String>(muscleReviewNote.value);
     }
+    if (archived.present) {
+      map['archived'] = Variable<bool>(archived.value);
+    }
     return map;
   }
 
@@ -465,7 +513,8 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
           ..write('notes: $notes, ')
           ..write('isTimed: $isTimed, ')
           ..write('muscleNeedsReview: $muscleNeedsReview, ')
-          ..write('muscleReviewNote: $muscleReviewNote')
+          ..write('muscleReviewNote: $muscleReviewNote, ')
+          ..write('archived: $archived')
           ..write(')'))
         .toString();
   }
@@ -6961,6 +7010,7 @@ typedef $$ExercisesTableCreateCompanionBuilder =
       Value<bool> isTimed,
       Value<bool> muscleNeedsReview,
       Value<String?> muscleReviewNote,
+      Value<bool> archived,
     });
 typedef $$ExercisesTableUpdateCompanionBuilder =
     ExercisesCompanion Function({
@@ -6971,6 +7021,7 @@ typedef $$ExercisesTableUpdateCompanionBuilder =
       Value<bool> isTimed,
       Value<bool> muscleNeedsReview,
       Value<String?> muscleReviewNote,
+      Value<bool> archived,
     });
 
 final class $$ExercisesTableReferences
@@ -7161,6 +7212,11 @@ class $$ExercisesTableFilterComposer
 
   ColumnFilters<String> get muscleReviewNote => $composableBuilder(
     column: $table.muscleReviewNote,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get archived => $composableBuilder(
+    column: $table.archived,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7358,6 +7414,11 @@ class $$ExercisesTableOrderingComposer
     column: $table.muscleReviewNote,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get archived => $composableBuilder(
+    column: $table.archived,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ExercisesTableAnnotationComposer
@@ -7393,6 +7454,9 @@ class $$ExercisesTableAnnotationComposer
     column: $table.muscleReviewNote,
     builder: (column) => column,
   );
+
+  GeneratedColumn<bool> get archived =>
+      $composableBuilder(column: $table.archived, builder: (column) => column);
 
   Expression<T> workoutSetsRefs<T extends Object>(
     Expression<T> Function($$WorkoutSetsTableAnnotationComposer a) f,
@@ -7590,6 +7654,7 @@ class $$ExercisesTableTableManager
                 Value<bool> isTimed = const Value.absent(),
                 Value<bool> muscleNeedsReview = const Value.absent(),
                 Value<String?> muscleReviewNote = const Value.absent(),
+                Value<bool> archived = const Value.absent(),
               }) => ExercisesCompanion(
                 id: id,
                 name: name,
@@ -7598,6 +7663,7 @@ class $$ExercisesTableTableManager
                 isTimed: isTimed,
                 muscleNeedsReview: muscleNeedsReview,
                 muscleReviewNote: muscleReviewNote,
+                archived: archived,
               ),
           createCompanionCallback:
               ({
@@ -7608,6 +7674,7 @@ class $$ExercisesTableTableManager
                 Value<bool> isTimed = const Value.absent(),
                 Value<bool> muscleNeedsReview = const Value.absent(),
                 Value<String?> muscleReviewNote = const Value.absent(),
+                Value<bool> archived = const Value.absent(),
               }) => ExercisesCompanion.insert(
                 id: id,
                 name: name,
@@ -7616,6 +7683,7 @@ class $$ExercisesTableTableManager
                 isTimed: isTimed,
                 muscleNeedsReview: muscleNeedsReview,
                 muscleReviewNote: muscleReviewNote,
+                archived: archived,
               ),
           withReferenceMapper: (p0) => p0
               .map(

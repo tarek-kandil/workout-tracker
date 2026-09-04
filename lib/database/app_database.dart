@@ -70,7 +70,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 20;
+  int get schemaVersion => 21;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -428,6 +428,27 @@ class AppDatabase extends _$AppDatabase {
                   "AND name NOT IN ('Treadmill Run','Rowing Machine','Jump Rope',"
                   "'Assault Bike','Stairmaster','Cycling');",
                 );
+              }
+            }
+          }
+          if (from < 21) {
+            // Non-destructive exercise deletion: additive `archived` column
+            // on exercises. Guarded on table/column existence (see the
+            // from<14 step above for the same rationale — devices may have
+            // reached v20 via different upgrade paths, and tests seed
+            // minimal schemas that don't always include every table).
+            final tables = await customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table'",
+            ).get();
+            final tableNames = tables.map((r) => r.read<String>('name')).toSet();
+
+            if (tableNames.contains('exercises')) {
+              final exCols =
+                  await customSelect('PRAGMA table_info(exercises)').get();
+              final exColNames =
+                  exCols.map((r) => r.read<String>('name')).toSet();
+              if (!exColNames.contains('archived')) {
+                await m.addColumn(exercises, exercises.archived);
               }
             }
           }
