@@ -46,6 +46,7 @@ dev_dependencies:
 
   # Used directly in migration tests to seed a pre-migration schema
   sqlite3: ^2.9.4
+  flutter_local_notifications_platform_interface: ^8.0.0
 
   # Code generation
   build_runner: ^2.4.13

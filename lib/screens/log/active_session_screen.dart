@@ -56,6 +56,38 @@ class _ProgramOrderItem {
 
 // ─── Screen ────────────────────────────────────────────────────────────────────
 
+/// Snapshot of session progress used by the Review & Finish flow and the
+/// incomplete-finish warning. Derived from the actual planned item structure
+/// (standalone exercises + circuit exercises/rounds), current cursors, and
+/// skip state — not from a single overall completion flag.
+class _SessionCompletionSummary {
+  /// Total planned exercises (each circuit exercise counts individually).
+  final int totalExercises;
+
+  /// Exercises whose planned sets are all logged or skipped (resolved).
+  final int resolvedExercises;
+
+  /// Exercises resolved solely because the whole item was skipped.
+  final int skippedExercises;
+
+  /// Count of sets that hold real logged data (non-skipped, non-zero).
+  final int setsLogged;
+
+  /// Names of exercises that still have at least one unresolved planned set.
+  final List<String> unfinishedExercises;
+
+  const _SessionCompletionSummary({
+    required this.totalExercises,
+    required this.resolvedExercises,
+    required this.skippedExercises,
+    required this.setsLogged,
+    required this.unfinishedExercises,
+  });
+
+  /// True when no planned set remains neither logged nor skipped.
+  bool get isComplete => unfinishedExercises.isEmpty;
+}
+
 class ActiveSessionScreen extends ConsumerStatefulWidget {
   final NextWodResult result;
   final bool autoResume;
@@ -133,6 +165,22 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     }
     return next;
   }
+
+  /// Whether a standalone exercise's set has been passed by the progress cursor
+  /// (i.e. logged/done). Mirrors the completion model used across the screen.
+  bool _standaloneSetLogged(int itemIdx, int setIdx) =>
+      itemIdx < _currentItemIdx ||
+      (_allExercisesDone && itemIdx == _currentItemIdx) ||
+      (itemIdx == _currentItemIdx && setIdx < _currentSetIdx);
+
+  /// Whether a circuit slot (a given exercise in a given round) has been passed
+  /// by the progress cursor. Handles the multi-exercise / multi-round structure.
+  bool _circuitSlotLogged(int itemIdx, int round, int exIdx) =>
+      itemIdx < _currentItemIdx ||
+      (_allExercisesDone && itemIdx == _currentItemIdx) ||
+      (itemIdx == _currentItemIdx &&
+          (round < _currentSetIdx ||
+              (round == _currentSetIdx && exIdx < _circuitExerciseIdx)));
 
   WodExerciseEntry get _currentEntry {
     final item = _sessionItems[_currentItemIdx].wodItem;
@@ -348,9 +396,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
           final sets = _setData[exerciseId] ?? [];
           for (int setIdx = 0; setIdx < sets.length; setIdx++) {
             if (item.skippedSets.contains(setIdx)) continue;
-            final isLogged = itemIdx < _currentItemIdx ||
-                (_allExercisesDone && itemIdx == _currentItemIdx) ||
-                (itemIdx == _currentItemIdx && setIdx < _currentSetIdx);
+            final isLogged = _standaloneSetLogged(itemIdx, setIdx);
             if (isLogged) yield sets[setIdx];
           }
         case WodCircuit(:final rounds, :final exercises):
@@ -359,11 +405,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
             if (entry.templateExercise.exerciseId != exerciseId) continue;
             final sets = _setData[exerciseId] ?? [];
             for (int round = 0; round < rounds && round < sets.length; round++) {
-              final isLogged = itemIdx < _currentItemIdx ||
-                  (_allExercisesDone && itemIdx == _currentItemIdx) ||
-                  (itemIdx == _currentItemIdx &&
-                      (round < _currentSetIdx ||
-                          (round == _currentSetIdx && exIdx < _circuitExerciseIdx)));
+              final isLogged = _circuitSlotLogged(itemIdx, round, exIdx);
               if (isLogged) yield sets[round];
             }
           }
@@ -506,6 +548,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
         final circuitDone = isLastInRound && isLastRound;
         if (circuitDone && isLastItem) {
           startRestAfter = false;
+          _allExercisesDone = true;
         } else if (!isLastInRound) {
           restDuration = circuit.restBetweenExercisesSeconds;
           if (restDuration == 0) startRestAfter = false;
@@ -819,9 +862,269 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     }
   }
 
+  // ── Review & Finish ─────────────────────────────────────────────────────────────
+
+  /// Computes a completion snapshot from the actual planned item structure
+  /// (standalone exercises + circuit exercises across rounds), the progress
+  /// cursors, and skip state. Skipped items/sets count as resolved (FR-006/FR-007).
+  _SessionCompletionSummary _computeCompletionSummary() {
+    int total = 0;
+    int resolved = 0;
+    int skipped = 0;
+    int setsLogged = 0;
+    final unfinished = <String>[];
+
+    for (int itemIdx = 0; itemIdx < _sessionItems.length; itemIdx++) {
+      final si = _sessionItems[itemIdx];
+      final itemSkipped = si.skipped;
+      switch (si.wodItem) {
+        case StandaloneWodExercise(:final entry):
+          total++;
+          final exerciseId = entry.templateExercise.exerciseId;
+          final targetSets = entry.templateExercise.targetSets;
+          final isTimed = entry.exercise.isTimed;
+          final sets = _setData[exerciseId] ?? const <SetData>[];
+          if (itemSkipped) {
+            skipped++;
+            resolved++;
+          } else {
+            bool anyUnfinished = false;
+            for (int setIdx = 0; setIdx < targetSets; setIdx++) {
+              if (si.skippedSets.contains(setIdx)) continue;
+              if (_standaloneSetLogged(itemIdx, setIdx)) {
+                if (setIdx < sets.length) {
+                  final s = sets[setIdx];
+                  if (isTimed ? s.durationSeconds > 0 : s.reps > 0) setsLogged++;
+                }
+              } else {
+                anyUnfinished = true;
+              }
+            }
+            if (anyUnfinished) {
+              unfinished.add(entry.exercise.name);
+            } else {
+              resolved++;
+            }
+          }
+        case WodCircuit(:final rounds, :final exercises):
+          for (int exIdx = 0; exIdx < exercises.length; exIdx++) {
+            total++;
+            final entry = exercises[exIdx];
+            final exerciseId = entry.templateExercise.exerciseId;
+            final isTimed = entry.exercise.isTimed;
+            final sets = _setData[exerciseId] ?? const <SetData>[];
+            if (itemSkipped) {
+              skipped++;
+              resolved++;
+              continue;
+            }
+            bool anyUnfinished = false;
+            for (int round = 0; round < rounds; round++) {
+              if (_circuitSlotLogged(itemIdx, round, exIdx)) {
+                if (round < sets.length) {
+                  final s = sets[round];
+                  if (isTimed ? s.durationSeconds > 0 : s.reps > 0) setsLogged++;
+                }
+              } else {
+                anyUnfinished = true;
+              }
+            }
+            if (anyUnfinished) {
+              unfinished.add(entry.exercise.name);
+            } else {
+              resolved++;
+            }
+          }
+      }
+    }
+
+    return _SessionCompletionSummary(
+      totalExercises: total,
+      resolvedExercises: resolved,
+      skippedExercises: skipped,
+      setsLogged: setsLogged,
+      unfinishedExercises: unfinished,
+    );
+  }
+
+  /// Entry point for the deliberate finish path (FR-002). Opens the review
+  /// summary; only completes after an explicit confirmation (FR-003/FR-013).
+  Future<void> _reviewAndFinish() async {
+    if (_saving || _loading || _sessionItems.isEmpty) return;
+    final summary = _computeCompletionSummary();
+    final wantsFinish = await _showReviewSheet(summary);
+    if (wantsFinish != true || !mounted) return;
+    if (!summary.isComplete) {
+      final finishAnyway = await _showIncompleteWarning(summary);
+      if (finishAnyway != true || !mounted) return;
+    }
+    if (_saving) return;
+    await _finish();
+  }
+
+  Future<bool?> _showReviewSheet(_SessionCompletionSummary summary) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: cs.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 3,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text('Review & Finish', style: theme.textTheme.titleLarge),
+              const SizedBox(height: 4),
+              Text(
+                '${summary.resolvedExercises} of ${summary.totalExercises} exercises done',
+                style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+              ),
+              const SizedBox(height: 16),
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _reviewStatRow(Icons.fitness_center, 'Exercises',
+                          '${summary.totalExercises}'),
+                      _reviewStatRow(Icons.check_circle_outline, 'Completed / resolved',
+                          '${summary.resolvedExercises}'),
+                      _reviewStatRow(Icons.playlist_add_check, 'Sets logged',
+                          '${summary.setsLogged}'),
+                      if (summary.skippedExercises > 0)
+                        _reviewStatRow(Icons.skip_next, 'Skipped',
+                            '${summary.skippedExercises}'),
+                      if (summary.unfinishedExercises.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Row(children: [
+                          Icon(Icons.error_outline, size: 18, color: cs.error),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Unfinished (${summary.unfinishedExercises.length})',
+                            style: theme.textTheme.labelLarge?.copyWith(color: cs.error),
+                          ),
+                        ]),
+                        const SizedBox(height: 6),
+                        for (final name in summary.unfinishedExercises)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 26, top: 2),
+                            child: Text('• $name', style: theme.textTheme.bodyMedium),
+                          ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Keep logging'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    icon: const Icon(Icons.check, size: 18),
+                    label: const Text('Finish'),
+                  ),
+                ),
+              ]),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _reviewStatRow(IconData icon, String label, String value) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(children: [
+        Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant),
+        const SizedBox(width: 12),
+        Expanded(child: Text(label, style: theme.textTheme.bodyLarge)),
+        Text(value,
+            style: theme.textTheme.titleMedium
+                ?.copyWith(fontWeight: FontWeight.w600)),
+      ]),
+    );
+  }
+
+  Future<bool?> _showIncompleteWarning(_SessionCompletionSummary summary) {
+    final unfinished = summary.unfinishedExercises;
+    const maxNamed = 6;
+    final named = unfinished.take(maxNamed).toList();
+    final remaining = unfinished.length - named.length;
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        return AlertDialog(
+          title: const Text('Finish with unfinished work?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'You\'ve completed ${summary.resolvedExercises} of '
+                '${summary.totalExercises} exercises. '
+                'These still have unfinished sets:',
+              ),
+              const SizedBox(height: 10),
+              for (final name in named)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text('• $name', style: theme.textTheme.bodyMedium),
+                ),
+              if (remaining > 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text('• +$remaining more',
+                      style: theme.textTheme.bodyMedium
+                          ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Keep going'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Finish anyway'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   // ── Finish ────────────────────────────────────────────────────────────────────
 
   Future<void> _finish() async {
+    if (_saving) return;
     setState(() => _saving = true);
     _countdownTimer?.cancel();
     _exerciseTicker?.cancel();
@@ -1762,18 +2065,19 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
             backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
           ),
         ),
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: FilledButton.icon(
-            onPressed: _saving || _loading ? null : _finish,
+        actions: [
+          TextButton.icon(
+            onPressed: _saving || _loading ? null : _reviewAndFinish,
             icon: _saving
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : const Icon(Icons.check),
-            label: const Text('Finish Workout'),
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.flag_outlined, size: 20),
+            label: const Text('Finish'),
           ),
-        ),
+          const SizedBox(width: 4),
+        ],
       ),
       body: Stack(
         children: [
