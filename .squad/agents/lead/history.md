@@ -14,3 +14,4 @@
 ## Log
 
 - 2026-09-04 — Team assembled. Ready to drive specs and feature/bug work.
+- 2026-09-04T19:41:59+02:00 — Specified weight-goal plan storage on UserProfiles (schema v19) and authored Spec Kit spec 002 for the coaching loop.

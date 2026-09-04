@@ -18,3 +18,4 @@
 
 - 2026-09-04 — Team assembled. Ready to shape training features.
 - 2026-09-04T19:00:37+02:00 — Defined RPE→RIR semantics: RIR = 10−RPE, lower is harder, 0–5 practical range, logged and target effort remain distinct.
+- 2026-09-04T19:41:59+02:00 — Defined weight-goal coaching loop defaults: trend-weight checks, pace guardrails, two-check-in confirmation, and ±150/±100 kcal nudges.

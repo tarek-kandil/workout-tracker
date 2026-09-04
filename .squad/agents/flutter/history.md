@@ -17,3 +17,4 @@
 - 2026-09-04 — Spec `001-finish-workout-confirmation` is ready; likely next work is implementing the relocated Finish action, Review & Finish summary, and incomplete-only confirmation after `/speckit-plan`.
 - 2026-09-04T18:00:26+02:00 — Fixed active-session circuit parity: logged-round editing, richer swaps, Remove-from-Circuit, circuit-level Add/Skip/Remove, whole-circuit swap, and edit-sheet controller disposal. Validation reported: analyze clean except 4 pre-existing infos; tests 27/27 passed.
 - 2026-09-04T19:00:37+02:00 — Implemented additive lossless RPE→RIR migration (schema v18), dual-write/read-fallback, RIR UI, migration test; validation 30/30 tests passed.
+- 2026-09-04T19:41:59+02:00 — Implemented weight-goal coaching feature, schema v19 migration, providers/UI/reminders, and verified build_runner plus 56/56 tests.

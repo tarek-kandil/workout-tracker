@@ -14,3 +14,4 @@
 
 - 2026-09-04 — Joined the team as UI/UX Designer.
 - 2026-09-04T19:00:37+02:00 — Specified RIR effort UI with hardest-left→easiest-right chips, explicit labels, inverted colors, transition hint, and accessibility guidance.
+- 2026-09-04T19:41:59+02:00 — Designed Weight Hub workflow with home tile, live goal setup feedback, weigh-in coaching card, and trend-vs-projected chart.

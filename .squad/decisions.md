@@ -27,6 +27,26 @@
 **What:** Adopted RIR over RPE via additive lossless migration (schema v18): new rir/targetRir columns backfilled 10−rpe, RPE columns retained one release, dual-write + read-fallback; RIR is inverted (lower=harder).
 **Why:** RIR communicates reps-in-reserve directly while preserving existing RPE data losslessly during the transition and keeping old builds/data paths compatible for one release.
 
+### 2026-09-04: Body-weight coaching loop defaults
+**By:** Coach
+**What:** Body-weight coaching should use a 14-day default check-in cadence, convert target date into signed weekly pace with existing paceWarning guardrails, judge progress against trend-weight deltas with a ±0.25 kg/week tolerance, and nudge calories in 100–150 kcal/day steps rather than overreacting to one weigh-in.
+**Why:** A two-week cadence balances adherence with scale-noise reduction, while small calorie nudges are practical and safer than aggressive recalculation. These defaults give Lead concrete model/spec values and Designer clear states for on-track, eat more, and eat less/tighten up guidance.
+
+### 2026-09-04: Store one active weight goal plan on UserProfiles
+**By:** Lead
+**What:** Model the goal-driven body-weight loop as one active plan on the singleton `user_profiles` row via nullable additive columns, with bodyweight history remaining in `bodyweight_entries`.
+**Why:** The app currently has one local user profile and no goal-history requirement. Extending `UserProfiles` keeps schema v19 non-destructive and lets Flutter wire profile calculations, providers, reminders, setup UI, and the home tile without introducing unnecessary table/DAO complexity.
+
+### 2026-09-04: Weight goal workflow becomes a Weight Hub
+**By:** Designer
+**What:** Weight goal setup, weigh-in logging, trend/history, and on-track guidance should be consolidated into a GlassCard-based Weight Hub reached from a Home weight tile, instead of remaining as a basic settings-only Body Weight list.
+**Why:** The feature needs one cohesive loop: glance on Home, act in the hub, adjust from weigh-ins, and review progress against the projected line. Keeping this workflow together improves discoverability and makes Coach guidance and Lead data requirements easier for Flutter to implement consistently.
+
+### 2026-09-04T19:41:59+02:00: Weight Goal Coaching Loop (spec 002)
+**By:** Coach, Lead, Designer, Flutter
+**What:** Weight Goal Coaching Loop (spec 002): goal setup (desired weight + duration → calories/macros), weekly-default weigh-in reminders, on-track coaching (±150/±100 kcal, 2-check-in confirm), Weight Hub + home tile. Schema v19 additive on UserProfiles.
+**Why:** Captures the cross-agent implementation direction for the new body-weight goal coaching loop so future Coach, Lead, Designer, and Flutter work share the same product, UX, and persistence contract.
+
 ## Governance
 - All meaningful changes require team consensus
 - Document architectural decisions here
