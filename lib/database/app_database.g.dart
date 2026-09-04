@@ -4902,6 +4902,78 @@ class $UserProfilesTable extends UserProfiles
     type: DriftSqlType.double,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _planStartDateMeta = const VerificationMeta(
+    'planStartDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> planStartDate =
+      GeneratedColumn<DateTime>(
+        'plan_start_date',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _planStartWeightKgMeta = const VerificationMeta(
+    'planStartWeightKg',
+  );
+  @override
+  late final GeneratedColumn<double> planStartWeightKg =
+      GeneratedColumn<double>(
+        'plan_start_weight_kg',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _planTargetDateMeta = const VerificationMeta(
+    'planTargetDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> planTargetDate =
+      GeneratedColumn<DateTime>(
+        'plan_target_date',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _weighInIntervalDaysMeta =
+      const VerificationMeta('weighInIntervalDays');
+  @override
+  late final GeneratedColumn<int> weighInIntervalDays = GeneratedColumn<int>(
+    'weigh_in_interval_days',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _weighInRemindersEnabledMeta =
+      const VerificationMeta('weighInRemindersEnabled');
+  @override
+  late final GeneratedColumn<bool> weighInRemindersEnabled =
+      GeneratedColumn<bool>(
+        'weigh_in_reminders_enabled',
+        aliasedName,
+        true,
+        type: DriftSqlType.bool,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("weigh_in_reminders_enabled" IN (0, 1))',
+        ),
+        defaultValue: const Constant(true),
+      );
+  static const VerificationMeta _weighInLastReminderAtMeta =
+      const VerificationMeta('weighInLastReminderAt');
+  @override
+  late final GeneratedColumn<DateTime> weighInLastReminderAt =
+      GeneratedColumn<DateTime>(
+        'weigh_in_last_reminder_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -4914,6 +4986,12 @@ class $UserProfilesTable extends UserProfiles
     fitnessGoal,
     activityLevel,
     weeklyRateKg,
+    planStartDate,
+    planStartWeightKg,
+    planTargetDate,
+    weighInIntervalDays,
+    weighInRemindersEnabled,
+    weighInLastReminderAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -4996,6 +5074,60 @@ class $UserProfilesTable extends UserProfiles
         ),
       );
     }
+    if (data.containsKey('plan_start_date')) {
+      context.handle(
+        _planStartDateMeta,
+        planStartDate.isAcceptableOrUnknown(
+          data['plan_start_date']!,
+          _planStartDateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('plan_start_weight_kg')) {
+      context.handle(
+        _planStartWeightKgMeta,
+        planStartWeightKg.isAcceptableOrUnknown(
+          data['plan_start_weight_kg']!,
+          _planStartWeightKgMeta,
+        ),
+      );
+    }
+    if (data.containsKey('plan_target_date')) {
+      context.handle(
+        _planTargetDateMeta,
+        planTargetDate.isAcceptableOrUnknown(
+          data['plan_target_date']!,
+          _planTargetDateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('weigh_in_interval_days')) {
+      context.handle(
+        _weighInIntervalDaysMeta,
+        weighInIntervalDays.isAcceptableOrUnknown(
+          data['weigh_in_interval_days']!,
+          _weighInIntervalDaysMeta,
+        ),
+      );
+    }
+    if (data.containsKey('weigh_in_reminders_enabled')) {
+      context.handle(
+        _weighInRemindersEnabledMeta,
+        weighInRemindersEnabled.isAcceptableOrUnknown(
+          data['weigh_in_reminders_enabled']!,
+          _weighInRemindersEnabledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('weigh_in_last_reminder_at')) {
+      context.handle(
+        _weighInLastReminderAtMeta,
+        weighInLastReminderAt.isAcceptableOrUnknown(
+          data['weigh_in_last_reminder_at']!,
+          _weighInLastReminderAtMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -5045,6 +5177,30 @@ class $UserProfilesTable extends UserProfiles
         DriftSqlType.double,
         data['${effectivePrefix}weekly_rate_kg'],
       ),
+      planStartDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}plan_start_date'],
+      ),
+      planStartWeightKg: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}plan_start_weight_kg'],
+      ),
+      planTargetDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}plan_target_date'],
+      ),
+      weighInIntervalDays: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}weigh_in_interval_days'],
+      ),
+      weighInRemindersEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}weigh_in_reminders_enabled'],
+      ),
+      weighInLastReminderAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}weigh_in_last_reminder_at'],
+      ),
     );
   }
 
@@ -5065,6 +5221,12 @@ class UserProfile extends DataClass implements Insertable<UserProfile> {
   final String fitnessGoal;
   final String activityLevel;
   final double? weeklyRateKg;
+  final DateTime? planStartDate;
+  final double? planStartWeightKg;
+  final DateTime? planTargetDate;
+  final int? weighInIntervalDays;
+  final bool? weighInRemindersEnabled;
+  final DateTime? weighInLastReminderAt;
   const UserProfile({
     required this.id,
     required this.name,
@@ -5076,6 +5238,12 @@ class UserProfile extends DataClass implements Insertable<UserProfile> {
     required this.fitnessGoal,
     required this.activityLevel,
     this.weeklyRateKg,
+    this.planStartDate,
+    this.planStartWeightKg,
+    this.planTargetDate,
+    this.weighInIntervalDays,
+    this.weighInRemindersEnabled,
+    this.weighInLastReminderAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -5100,6 +5268,28 @@ class UserProfile extends DataClass implements Insertable<UserProfile> {
     if (!nullToAbsent || weeklyRateKg != null) {
       map['weekly_rate_kg'] = Variable<double>(weeklyRateKg);
     }
+    if (!nullToAbsent || planStartDate != null) {
+      map['plan_start_date'] = Variable<DateTime>(planStartDate);
+    }
+    if (!nullToAbsent || planStartWeightKg != null) {
+      map['plan_start_weight_kg'] = Variable<double>(planStartWeightKg);
+    }
+    if (!nullToAbsent || planTargetDate != null) {
+      map['plan_target_date'] = Variable<DateTime>(planTargetDate);
+    }
+    if (!nullToAbsent || weighInIntervalDays != null) {
+      map['weigh_in_interval_days'] = Variable<int>(weighInIntervalDays);
+    }
+    if (!nullToAbsent || weighInRemindersEnabled != null) {
+      map['weigh_in_reminders_enabled'] = Variable<bool>(
+        weighInRemindersEnabled,
+      );
+    }
+    if (!nullToAbsent || weighInLastReminderAt != null) {
+      map['weigh_in_last_reminder_at'] = Variable<DateTime>(
+        weighInLastReminderAt,
+      );
+    }
     return map;
   }
 
@@ -5123,6 +5313,24 @@ class UserProfile extends DataClass implements Insertable<UserProfile> {
       weeklyRateKg: weeklyRateKg == null && nullToAbsent
           ? const Value.absent()
           : Value(weeklyRateKg),
+      planStartDate: planStartDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(planStartDate),
+      planStartWeightKg: planStartWeightKg == null && nullToAbsent
+          ? const Value.absent()
+          : Value(planStartWeightKg),
+      planTargetDate: planTargetDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(planTargetDate),
+      weighInIntervalDays: weighInIntervalDays == null && nullToAbsent
+          ? const Value.absent()
+          : Value(weighInIntervalDays),
+      weighInRemindersEnabled: weighInRemindersEnabled == null && nullToAbsent
+          ? const Value.absent()
+          : Value(weighInRemindersEnabled),
+      weighInLastReminderAt: weighInLastReminderAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(weighInLastReminderAt),
     );
   }
 
@@ -5142,6 +5350,20 @@ class UserProfile extends DataClass implements Insertable<UserProfile> {
       fitnessGoal: serializer.fromJson<String>(json['fitnessGoal']),
       activityLevel: serializer.fromJson<String>(json['activityLevel']),
       weeklyRateKg: serializer.fromJson<double?>(json['weeklyRateKg']),
+      planStartDate: serializer.fromJson<DateTime?>(json['planStartDate']),
+      planStartWeightKg: serializer.fromJson<double?>(
+        json['planStartWeightKg'],
+      ),
+      planTargetDate: serializer.fromJson<DateTime?>(json['planTargetDate']),
+      weighInIntervalDays: serializer.fromJson<int?>(
+        json['weighInIntervalDays'],
+      ),
+      weighInRemindersEnabled: serializer.fromJson<bool?>(
+        json['weighInRemindersEnabled'],
+      ),
+      weighInLastReminderAt: serializer.fromJson<DateTime?>(
+        json['weighInLastReminderAt'],
+      ),
     );
   }
   @override
@@ -5158,6 +5380,16 @@ class UserProfile extends DataClass implements Insertable<UserProfile> {
       'fitnessGoal': serializer.toJson<String>(fitnessGoal),
       'activityLevel': serializer.toJson<String>(activityLevel),
       'weeklyRateKg': serializer.toJson<double?>(weeklyRateKg),
+      'planStartDate': serializer.toJson<DateTime?>(planStartDate),
+      'planStartWeightKg': serializer.toJson<double?>(planStartWeightKg),
+      'planTargetDate': serializer.toJson<DateTime?>(planTargetDate),
+      'weighInIntervalDays': serializer.toJson<int?>(weighInIntervalDays),
+      'weighInRemindersEnabled': serializer.toJson<bool?>(
+        weighInRemindersEnabled,
+      ),
+      'weighInLastReminderAt': serializer.toJson<DateTime?>(
+        weighInLastReminderAt,
+      ),
     };
   }
 
@@ -5172,6 +5404,12 @@ class UserProfile extends DataClass implements Insertable<UserProfile> {
     String? fitnessGoal,
     String? activityLevel,
     Value<double?> weeklyRateKg = const Value.absent(),
+    Value<DateTime?> planStartDate = const Value.absent(),
+    Value<double?> planStartWeightKg = const Value.absent(),
+    Value<DateTime?> planTargetDate = const Value.absent(),
+    Value<int?> weighInIntervalDays = const Value.absent(),
+    Value<bool?> weighInRemindersEnabled = const Value.absent(),
+    Value<DateTime?> weighInLastReminderAt = const Value.absent(),
   }) => UserProfile(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -5185,6 +5423,24 @@ class UserProfile extends DataClass implements Insertable<UserProfile> {
     fitnessGoal: fitnessGoal ?? this.fitnessGoal,
     activityLevel: activityLevel ?? this.activityLevel,
     weeklyRateKg: weeklyRateKg.present ? weeklyRateKg.value : this.weeklyRateKg,
+    planStartDate: planStartDate.present
+        ? planStartDate.value
+        : this.planStartDate,
+    planStartWeightKg: planStartWeightKg.present
+        ? planStartWeightKg.value
+        : this.planStartWeightKg,
+    planTargetDate: planTargetDate.present
+        ? planTargetDate.value
+        : this.planTargetDate,
+    weighInIntervalDays: weighInIntervalDays.present
+        ? weighInIntervalDays.value
+        : this.weighInIntervalDays,
+    weighInRemindersEnabled: weighInRemindersEnabled.present
+        ? weighInRemindersEnabled.value
+        : this.weighInRemindersEnabled,
+    weighInLastReminderAt: weighInLastReminderAt.present
+        ? weighInLastReminderAt.value
+        : this.weighInLastReminderAt,
   );
   UserProfile copyWithCompanion(UserProfilesCompanion data) {
     return UserProfile(
@@ -5206,6 +5462,24 @@ class UserProfile extends DataClass implements Insertable<UserProfile> {
       weeklyRateKg: data.weeklyRateKg.present
           ? data.weeklyRateKg.value
           : this.weeklyRateKg,
+      planStartDate: data.planStartDate.present
+          ? data.planStartDate.value
+          : this.planStartDate,
+      planStartWeightKg: data.planStartWeightKg.present
+          ? data.planStartWeightKg.value
+          : this.planStartWeightKg,
+      planTargetDate: data.planTargetDate.present
+          ? data.planTargetDate.value
+          : this.planTargetDate,
+      weighInIntervalDays: data.weighInIntervalDays.present
+          ? data.weighInIntervalDays.value
+          : this.weighInIntervalDays,
+      weighInRemindersEnabled: data.weighInRemindersEnabled.present
+          ? data.weighInRemindersEnabled.value
+          : this.weighInRemindersEnabled,
+      weighInLastReminderAt: data.weighInLastReminderAt.present
+          ? data.weighInLastReminderAt.value
+          : this.weighInLastReminderAt,
     );
   }
 
@@ -5221,7 +5495,13 @@ class UserProfile extends DataClass implements Insertable<UserProfile> {
           ..write('targetWeightKg: $targetWeightKg, ')
           ..write('fitnessGoal: $fitnessGoal, ')
           ..write('activityLevel: $activityLevel, ')
-          ..write('weeklyRateKg: $weeklyRateKg')
+          ..write('weeklyRateKg: $weeklyRateKg, ')
+          ..write('planStartDate: $planStartDate, ')
+          ..write('planStartWeightKg: $planStartWeightKg, ')
+          ..write('planTargetDate: $planTargetDate, ')
+          ..write('weighInIntervalDays: $weighInIntervalDays, ')
+          ..write('weighInRemindersEnabled: $weighInRemindersEnabled, ')
+          ..write('weighInLastReminderAt: $weighInLastReminderAt')
           ..write(')'))
         .toString();
   }
@@ -5238,6 +5518,12 @@ class UserProfile extends DataClass implements Insertable<UserProfile> {
     fitnessGoal,
     activityLevel,
     weeklyRateKg,
+    planStartDate,
+    planStartWeightKg,
+    planTargetDate,
+    weighInIntervalDays,
+    weighInRemindersEnabled,
+    weighInLastReminderAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -5252,7 +5538,13 @@ class UserProfile extends DataClass implements Insertable<UserProfile> {
           other.targetWeightKg == this.targetWeightKg &&
           other.fitnessGoal == this.fitnessGoal &&
           other.activityLevel == this.activityLevel &&
-          other.weeklyRateKg == this.weeklyRateKg);
+          other.weeklyRateKg == this.weeklyRateKg &&
+          other.planStartDate == this.planStartDate &&
+          other.planStartWeightKg == this.planStartWeightKg &&
+          other.planTargetDate == this.planTargetDate &&
+          other.weighInIntervalDays == this.weighInIntervalDays &&
+          other.weighInRemindersEnabled == this.weighInRemindersEnabled &&
+          other.weighInLastReminderAt == this.weighInLastReminderAt);
 }
 
 class UserProfilesCompanion extends UpdateCompanion<UserProfile> {
@@ -5266,6 +5558,12 @@ class UserProfilesCompanion extends UpdateCompanion<UserProfile> {
   final Value<String> fitnessGoal;
   final Value<String> activityLevel;
   final Value<double?> weeklyRateKg;
+  final Value<DateTime?> planStartDate;
+  final Value<double?> planStartWeightKg;
+  final Value<DateTime?> planTargetDate;
+  final Value<int?> weighInIntervalDays;
+  final Value<bool?> weighInRemindersEnabled;
+  final Value<DateTime?> weighInLastReminderAt;
   const UserProfilesCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -5277,6 +5575,12 @@ class UserProfilesCompanion extends UpdateCompanion<UserProfile> {
     this.fitnessGoal = const Value.absent(),
     this.activityLevel = const Value.absent(),
     this.weeklyRateKg = const Value.absent(),
+    this.planStartDate = const Value.absent(),
+    this.planStartWeightKg = const Value.absent(),
+    this.planTargetDate = const Value.absent(),
+    this.weighInIntervalDays = const Value.absent(),
+    this.weighInRemindersEnabled = const Value.absent(),
+    this.weighInLastReminderAt = const Value.absent(),
   });
   UserProfilesCompanion.insert({
     this.id = const Value.absent(),
@@ -5289,6 +5593,12 @@ class UserProfilesCompanion extends UpdateCompanion<UserProfile> {
     this.fitnessGoal = const Value.absent(),
     this.activityLevel = const Value.absent(),
     this.weeklyRateKg = const Value.absent(),
+    this.planStartDate = const Value.absent(),
+    this.planStartWeightKg = const Value.absent(),
+    this.planTargetDate = const Value.absent(),
+    this.weighInIntervalDays = const Value.absent(),
+    this.weighInRemindersEnabled = const Value.absent(),
+    this.weighInLastReminderAt = const Value.absent(),
   });
   static Insertable<UserProfile> custom({
     Expression<int>? id,
@@ -5301,6 +5611,12 @@ class UserProfilesCompanion extends UpdateCompanion<UserProfile> {
     Expression<String>? fitnessGoal,
     Expression<String>? activityLevel,
     Expression<double>? weeklyRateKg,
+    Expression<DateTime>? planStartDate,
+    Expression<double>? planStartWeightKg,
+    Expression<DateTime>? planTargetDate,
+    Expression<int>? weighInIntervalDays,
+    Expression<bool>? weighInRemindersEnabled,
+    Expression<DateTime>? weighInLastReminderAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -5313,6 +5629,15 @@ class UserProfilesCompanion extends UpdateCompanion<UserProfile> {
       if (fitnessGoal != null) 'fitness_goal': fitnessGoal,
       if (activityLevel != null) 'activity_level': activityLevel,
       if (weeklyRateKg != null) 'weekly_rate_kg': weeklyRateKg,
+      if (planStartDate != null) 'plan_start_date': planStartDate,
+      if (planStartWeightKg != null) 'plan_start_weight_kg': planStartWeightKg,
+      if (planTargetDate != null) 'plan_target_date': planTargetDate,
+      if (weighInIntervalDays != null)
+        'weigh_in_interval_days': weighInIntervalDays,
+      if (weighInRemindersEnabled != null)
+        'weigh_in_reminders_enabled': weighInRemindersEnabled,
+      if (weighInLastReminderAt != null)
+        'weigh_in_last_reminder_at': weighInLastReminderAt,
     });
   }
 
@@ -5327,6 +5652,12 @@ class UserProfilesCompanion extends UpdateCompanion<UserProfile> {
     Value<String>? fitnessGoal,
     Value<String>? activityLevel,
     Value<double?>? weeklyRateKg,
+    Value<DateTime?>? planStartDate,
+    Value<double?>? planStartWeightKg,
+    Value<DateTime?>? planTargetDate,
+    Value<int?>? weighInIntervalDays,
+    Value<bool?>? weighInRemindersEnabled,
+    Value<DateTime?>? weighInLastReminderAt,
   }) {
     return UserProfilesCompanion(
       id: id ?? this.id,
@@ -5339,6 +5670,14 @@ class UserProfilesCompanion extends UpdateCompanion<UserProfile> {
       fitnessGoal: fitnessGoal ?? this.fitnessGoal,
       activityLevel: activityLevel ?? this.activityLevel,
       weeklyRateKg: weeklyRateKg ?? this.weeklyRateKg,
+      planStartDate: planStartDate ?? this.planStartDate,
+      planStartWeightKg: planStartWeightKg ?? this.planStartWeightKg,
+      planTargetDate: planTargetDate ?? this.planTargetDate,
+      weighInIntervalDays: weighInIntervalDays ?? this.weighInIntervalDays,
+      weighInRemindersEnabled:
+          weighInRemindersEnabled ?? this.weighInRemindersEnabled,
+      weighInLastReminderAt:
+          weighInLastReminderAt ?? this.weighInLastReminderAt,
     );
   }
 
@@ -5375,6 +5714,28 @@ class UserProfilesCompanion extends UpdateCompanion<UserProfile> {
     if (weeklyRateKg.present) {
       map['weekly_rate_kg'] = Variable<double>(weeklyRateKg.value);
     }
+    if (planStartDate.present) {
+      map['plan_start_date'] = Variable<DateTime>(planStartDate.value);
+    }
+    if (planStartWeightKg.present) {
+      map['plan_start_weight_kg'] = Variable<double>(planStartWeightKg.value);
+    }
+    if (planTargetDate.present) {
+      map['plan_target_date'] = Variable<DateTime>(planTargetDate.value);
+    }
+    if (weighInIntervalDays.present) {
+      map['weigh_in_interval_days'] = Variable<int>(weighInIntervalDays.value);
+    }
+    if (weighInRemindersEnabled.present) {
+      map['weigh_in_reminders_enabled'] = Variable<bool>(
+        weighInRemindersEnabled.value,
+      );
+    }
+    if (weighInLastReminderAt.present) {
+      map['weigh_in_last_reminder_at'] = Variable<DateTime>(
+        weighInLastReminderAt.value,
+      );
+    }
     return map;
   }
 
@@ -5390,7 +5751,13 @@ class UserProfilesCompanion extends UpdateCompanion<UserProfile> {
           ..write('targetWeightKg: $targetWeightKg, ')
           ..write('fitnessGoal: $fitnessGoal, ')
           ..write('activityLevel: $activityLevel, ')
-          ..write('weeklyRateKg: $weeklyRateKg')
+          ..write('weeklyRateKg: $weeklyRateKg, ')
+          ..write('planStartDate: $planStartDate, ')
+          ..write('planStartWeightKg: $planStartWeightKg, ')
+          ..write('planTargetDate: $planTargetDate, ')
+          ..write('weighInIntervalDays: $weighInIntervalDays, ')
+          ..write('weighInRemindersEnabled: $weighInRemindersEnabled, ')
+          ..write('weighInLastReminderAt: $weighInLastReminderAt')
           ..write(')'))
         .toString();
   }
@@ -11255,6 +11622,12 @@ typedef $$UserProfilesTableCreateCompanionBuilder =
       Value<String> fitnessGoal,
       Value<String> activityLevel,
       Value<double?> weeklyRateKg,
+      Value<DateTime?> planStartDate,
+      Value<double?> planStartWeightKg,
+      Value<DateTime?> planTargetDate,
+      Value<int?> weighInIntervalDays,
+      Value<bool?> weighInRemindersEnabled,
+      Value<DateTime?> weighInLastReminderAt,
     });
 typedef $$UserProfilesTableUpdateCompanionBuilder =
     UserProfilesCompanion Function({
@@ -11268,6 +11641,12 @@ typedef $$UserProfilesTableUpdateCompanionBuilder =
       Value<String> fitnessGoal,
       Value<String> activityLevel,
       Value<double?> weeklyRateKg,
+      Value<DateTime?> planStartDate,
+      Value<double?> planStartWeightKg,
+      Value<DateTime?> planTargetDate,
+      Value<int?> weighInIntervalDays,
+      Value<bool?> weighInRemindersEnabled,
+      Value<DateTime?> weighInLastReminderAt,
     });
 
 class $$UserProfilesTableFilterComposer
@@ -11326,6 +11705,36 @@ class $$UserProfilesTableFilterComposer
 
   ColumnFilters<double> get weeklyRateKg => $composableBuilder(
     column: $table.weeklyRateKg,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get planStartDate => $composableBuilder(
+    column: $table.planStartDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get planStartWeightKg => $composableBuilder(
+    column: $table.planStartWeightKg,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get planTargetDate => $composableBuilder(
+    column: $table.planTargetDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get weighInIntervalDays => $composableBuilder(
+    column: $table.weighInIntervalDays,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get weighInRemindersEnabled => $composableBuilder(
+    column: $table.weighInRemindersEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get weighInLastReminderAt => $composableBuilder(
+    column: $table.weighInLastReminderAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -11388,6 +11797,36 @@ class $$UserProfilesTableOrderingComposer
     column: $table.weeklyRateKg,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<DateTime> get planStartDate => $composableBuilder(
+    column: $table.planStartDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get planStartWeightKg => $composableBuilder(
+    column: $table.planStartWeightKg,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get planTargetDate => $composableBuilder(
+    column: $table.planTargetDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get weighInIntervalDays => $composableBuilder(
+    column: $table.weighInIntervalDays,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get weighInRemindersEnabled => $composableBuilder(
+    column: $table.weighInRemindersEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get weighInLastReminderAt => $composableBuilder(
+    column: $table.weighInLastReminderAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$UserProfilesTableAnnotationComposer
@@ -11436,6 +11875,36 @@ class $$UserProfilesTableAnnotationComposer
     column: $table.weeklyRateKg,
     builder: (column) => column,
   );
+
+  GeneratedColumn<DateTime> get planStartDate => $composableBuilder(
+    column: $table.planStartDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get planStartWeightKg => $composableBuilder(
+    column: $table.planStartWeightKg,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get planTargetDate => $composableBuilder(
+    column: $table.planTargetDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get weighInIntervalDays => $composableBuilder(
+    column: $table.weighInIntervalDays,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get weighInRemindersEnabled => $composableBuilder(
+    column: $table.weighInRemindersEnabled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get weighInLastReminderAt => $composableBuilder(
+    column: $table.weighInLastReminderAt,
+    builder: (column) => column,
+  );
 }
 
 class $$UserProfilesTableTableManager
@@ -11479,6 +11948,12 @@ class $$UserProfilesTableTableManager
                 Value<String> fitnessGoal = const Value.absent(),
                 Value<String> activityLevel = const Value.absent(),
                 Value<double?> weeklyRateKg = const Value.absent(),
+                Value<DateTime?> planStartDate = const Value.absent(),
+                Value<double?> planStartWeightKg = const Value.absent(),
+                Value<DateTime?> planTargetDate = const Value.absent(),
+                Value<int?> weighInIntervalDays = const Value.absent(),
+                Value<bool?> weighInRemindersEnabled = const Value.absent(),
+                Value<DateTime?> weighInLastReminderAt = const Value.absent(),
               }) => UserProfilesCompanion(
                 id: id,
                 name: name,
@@ -11490,6 +11965,12 @@ class $$UserProfilesTableTableManager
                 fitnessGoal: fitnessGoal,
                 activityLevel: activityLevel,
                 weeklyRateKg: weeklyRateKg,
+                planStartDate: planStartDate,
+                planStartWeightKg: planStartWeightKg,
+                planTargetDate: planTargetDate,
+                weighInIntervalDays: weighInIntervalDays,
+                weighInRemindersEnabled: weighInRemindersEnabled,
+                weighInLastReminderAt: weighInLastReminderAt,
               ),
           createCompanionCallback:
               ({
@@ -11503,6 +11984,12 @@ class $$UserProfilesTableTableManager
                 Value<String> fitnessGoal = const Value.absent(),
                 Value<String> activityLevel = const Value.absent(),
                 Value<double?> weeklyRateKg = const Value.absent(),
+                Value<DateTime?> planStartDate = const Value.absent(),
+                Value<double?> planStartWeightKg = const Value.absent(),
+                Value<DateTime?> planTargetDate = const Value.absent(),
+                Value<int?> weighInIntervalDays = const Value.absent(),
+                Value<bool?> weighInRemindersEnabled = const Value.absent(),
+                Value<DateTime?> weighInLastReminderAt = const Value.absent(),
               }) => UserProfilesCompanion.insert(
                 id: id,
                 name: name,
@@ -11514,6 +12001,12 @@ class $$UserProfilesTableTableManager
                 fitnessGoal: fitnessGoal,
                 activityLevel: activityLevel,
                 weeklyRateKg: weeklyRateKg,
+                planStartDate: planStartDate,
+                planStartWeightKg: planStartWeightKg,
+                planTargetDate: planTargetDate,
+                weighInIntervalDays: weighInIntervalDays,
+                weighInRemindersEnabled: weighInRemindersEnabled,
+                weighInLastReminderAt: weighInLastReminderAt,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

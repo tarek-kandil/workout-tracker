@@ -25,6 +25,22 @@ class NotificationService {
   static const _workoutChannelName = 'Active Workout';
   static const _workoutNotifId = 2001;
 
+  // Weigh-in reminders channel
+  static const _weighInChannelId = 'weigh_in_reminders';
+  static const _weighInChannelName = 'Weigh-in Reminders';
+  static const _weighInChannelDesc =
+      'Reminders to log a new body weight for your weight goal plan';
+  static const weighInReminderId = 3001;
+
+  static const _weighInAndroidDetails = AndroidNotificationDetails(
+    _weighInChannelId,
+    _weighInChannelName,
+    channelDescription: _weighInChannelDesc,
+    importance: Importance.high,
+    priority: Priority.high,
+    icon: '@mipmap/ic_launcher',
+  );
+
   static Future<void> init() async {
     if (_initialized) return;
     tz.initializeTimeZones();
@@ -82,6 +98,53 @@ class NotificationService {
   }
 
   static Future<void> cancelReminder(int id) => _plugin.cancel(id);
+
+  /// Schedules the next weigh-in reminder as a rolling **one-shot**
+  /// notification (not a repeating schedule) anchored at
+  /// `anchorDate + intervalDays`. Call this again after every weigh-in log
+  /// or plan save/edit to roll the reminder forward — this file never
+  /// re-derives the anchor itself.
+  ///
+  /// If the computed due date has already passed (the user is overdue),
+  /// the reminder is scheduled a short time from now instead of in the
+  /// past, so the user still gets nudged soon.
+  ///
+  /// Uses [AndroidScheduleMode.inexactAllowWhileIdle] — Android's exact-alarm
+  /// APIs require special permission grants and battery-optimization
+  /// exemptions we don't request for a "log your weight" nudge, so delivery
+  /// may drift by up to ~15 minutes (acceptable for a daily/weekly cadence
+  /// reminder like this one).
+  static Future<String?> scheduleNextWeighInReminder({
+    required DateTime anchorDate,
+    required int intervalDays,
+    String title = 'Time for a quick weigh-in',
+    String body =
+        "Log today's weight to keep your plan accurate.",
+  }) async {
+    try {
+      final due = anchorDate.add(Duration(days: intervalDays));
+      final now = DateTime.now();
+      // Overdue — nudge soon (1 hour) rather than scheduling in the past.
+      final fireAt = due.isAfter(now) ? due : now.add(const Duration(hours: 1));
+
+      await _plugin.zonedSchedule(
+        weighInReminderId,
+        title,
+        body,
+        tz.TZDateTime.from(fireAt.toUtc(), tz.UTC),
+        const NotificationDetails(android: _weighInAndroidDetails),
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      );
+      return null;
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+  static Future<void> cancelWeighInReminder() =>
+      _plugin.cancel(weighInReminderId);
 
   /// Shows (or updates) a persistent workout-status notification.
   /// [chronoMs] — epoch-ms from which the chronometer counts.

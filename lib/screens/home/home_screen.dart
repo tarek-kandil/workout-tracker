@@ -10,6 +10,7 @@ import 'widgets/daily_task_home_card.dart';
 import 'widgets/next_workout_card.dart';
 import 'widgets/weekly_progress_card.dart';
 import 'widgets/weekly_pr_card.dart';
+import 'widgets/weight_goal_card.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -130,6 +131,8 @@ class HomeScreen extends ConsumerWidget {
             Expanded(child: _StatChip(label: 'Week', value: '$week', icon: Icons.trending_up_rounded, iconColor: const Color(0xFF34C759))),
           ],
         ),
+        const SizedBox(height: 10),
+        const WeightGoalCard(),
         const SizedBox(height: 10),
         const WeeklyProgressCard(),
         const SizedBox(height: 10),

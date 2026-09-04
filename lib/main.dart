@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'providers/database_provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/weight_goal_providers.dart';
 import 'screens/shell_screen.dart';
 import 'screens/settings/program_setup_screen.dart';
 import 'services/notification_service.dart';
@@ -85,6 +86,10 @@ class _AppStartupState extends ConsumerState<_AppStartup> {
     ));
 
     await NotificationService.init();
+
+    // Roll the weigh-in reminder forward on every app start when a plan
+    // exists — cheap no-op (cancels) when there's no active plan.
+    await ref.read(weightGoalActionsProvider).rescheduleReminder();
 
     final prefs = await SharedPreferences.getInstance();
     final seeded = prefs.getBool('exercises_seeded') ?? false;

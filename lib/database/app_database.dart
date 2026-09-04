@@ -68,7 +68,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 18;
+  int get schemaVersion => 19;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -234,6 +234,47 @@ class AppDatabase extends _$AppDatabase {
                   'UPDATE wod_template_exercises SET target_rir = 10.0 - target_rpe '
                   'WHERE target_rpe IS NOT NULL;',
                 );
+              }
+            }
+          }
+          if (from < 19) {
+            // Weight Goal Coaching Loop: additive nullable columns on
+            // user_profiles. Guard on column existence (see the from<10
+            // step above for the same rationale — devices may have reached
+            // v18 via different upgrade paths, and tests seed minimal
+            // schemas).
+            final tables = await customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table'",
+            ).get();
+            final tableNames = tables.map((r) => r.read<String>('name')).toSet();
+
+            if (tableNames.contains('user_profiles')) {
+              final cols = await customSelect(
+                'PRAGMA table_info(user_profiles)',
+              ).get();
+              final colNames = cols.map((r) => r.read<String>('name')).toSet();
+
+              if (!colNames.contains('plan_start_date')) {
+                await m.addColumn(userProfiles, userProfiles.planStartDate);
+              }
+              if (!colNames.contains('plan_start_weight_kg')) {
+                await m.addColumn(
+                    userProfiles, userProfiles.planStartWeightKg);
+              }
+              if (!colNames.contains('plan_target_date')) {
+                await m.addColumn(userProfiles, userProfiles.planTargetDate);
+              }
+              if (!colNames.contains('weigh_in_interval_days')) {
+                await m.addColumn(
+                    userProfiles, userProfiles.weighInIntervalDays);
+              }
+              if (!colNames.contains('weigh_in_reminders_enabled')) {
+                await m.addColumn(
+                    userProfiles, userProfiles.weighInRemindersEnabled);
+              }
+              if (!colNames.contains('weigh_in_last_reminder_at')) {
+                await m.addColumn(
+                    userProfiles, userProfiles.weighInLastReminderAt);
               }
             }
           }

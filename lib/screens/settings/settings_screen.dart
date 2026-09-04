@@ -16,6 +16,7 @@ import 'profile_screen.dart';
 import 'program_list_screen.dart';
 import '../tasks/daily_tasks_screen.dart';
 import '../history/session_history_screen.dart';
+import '../weight/weight_hub_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -104,6 +105,15 @@ class SettingsScreen extends ConsumerWidget {
                     subtitle: 'Library',
                     onTap: () => Navigator.of(context).push(
                       glassRoute(const ExerciseLibraryScreen()),
+                    ),
+                  ),
+                  _NavItem(
+                    icon: Icons.monitor_weight_outlined,
+                    color: const Color(0xFF38BDF8),
+                    title: 'Weight',
+                    subtitle: 'Goal & log',
+                    onTap: () => Navigator.of(context).push(
+                      glassRoute(const WeightHubScreen()),
                     ),
                   ),
                 ],
@@ -363,32 +373,28 @@ class _NavGrid extends StatelessWidget {
           ),
         );
 
-    final top = items.take(2).toList();
-    final bottom = items.skip(2).take(2).toList();
+    final rows = <List<_NavItem>>[];
+    for (var i = 0; i < items.length; i += 2) {
+      rows.add(items.sublist(i, i + 2 > items.length ? items.length : i + 2));
+    }
 
     return Column(
       children: [
-        IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(child: tile(top[0])),
-              const SizedBox(width: 10),
-              Expanded(child: tile(top[1])),
-            ],
+        for (var i = 0; i < rows.length; i++) ...[
+          if (i > 0) const SizedBox(height: 10),
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: rows[i].length == 2
+                  ? [
+                      Expanded(child: tile(rows[i][0])),
+                      const SizedBox(width: 10),
+                      Expanded(child: tile(rows[i][1])),
+                    ]
+                  : [Expanded(child: tile(rows[i][0]))],
+            ),
           ),
-        ),
-        const SizedBox(height: 10),
-        IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(child: tile(bottom[0])),
-              const SizedBox(width: 10),
-              Expanded(child: tile(bottom[1])),
-            ],
-          ),
-        ),
+        ],
       ],
     );
   }
