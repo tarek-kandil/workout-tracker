@@ -623,6 +623,12 @@ class WeightGoalCalculations {
   /// Builds the actual-vs-projected series for the trend chart: the
   /// projected goal line spans plan start → target date; actual points are
   /// the logged weigh-ins on/after the plan start.
+  ///
+  /// Points that fall on the same calendar day are collapsed to one (see
+  /// [_collapseSameDay]) — this matters most right after goal setup, when
+  /// the user's "current weight" is stored both as [WeightGoalPlan.startWeightKg]
+  /// and as a bodyweight entry dated today, which would otherwise render as
+  /// two points on the same day.
   static List<WeightChartPoint> _chartPoints(
       WeightGoalPlan plan, List<BodyweightEntry> weighIns, DateTime today) {
     final actual = weighIns
@@ -630,20 +636,29 @@ class WeightGoalCalculations {
         .toList()
       ..sort((a, b) => a.date.compareTo(b.date));
 
-    final points = <WeightChartPoint>[
-      WeightChartPoint(
-        date: plan.startDate,
-        actualKg: plan.startWeightKg,
-        projectedKg: plan.startWeightKg,
+    final raw = <_RawChartPoint>[
+      _RawChartPoint(
+        point: WeightChartPoint(
+          date: plan.startDate,
+          actualKg: plan.startWeightKg,
+          projectedKg: plan.startWeightKg,
+        ),
+        isSynthetic: true,
       ),
     ];
     for (final entry in actual) {
-      points.add(WeightChartPoint(
-        date: entry.date,
-        actualKg: entry.weightKg,
-        projectedKg: _expectedWeightAt(plan, entry.date),
+      raw.add(_RawChartPoint(
+        point: WeightChartPoint(
+          date: entry.date,
+          actualKg: entry.weightKg,
+          projectedKg: _expectedWeightAt(plan, entry.date),
+        ),
+        isSynthetic: false,
       ));
     }
+
+    final points = _collapseSameDay(raw);
+
     // Extend the projected line to the target date even without a weigh-in
     // logged there yet.
     if (plan.targetDate.isAfter(points.last.date)) {
@@ -655,4 +670,37 @@ class WeightGoalCalculations {
     }
     return points;
   }
+
+  /// Collapses chart points that share a calendar day (ignoring time-of-day)
+  /// into a single point. A logged weigh-in always wins over the synthetic
+  /// plan-start point; when several real weigh-ins land on the same day,
+  /// the last one (chronologically) wins.
+  static List<WeightChartPoint> _collapseSameDay(List<_RawChartPoint> raw) {
+    final collapsed = <_RawChartPoint>[];
+    for (final entry in raw) {
+      final idx =
+          collapsed.indexWhere((c) => _isSameDay(c.point.date, entry.point.date));
+      if (idx == -1) {
+        collapsed.add(entry);
+        continue;
+      }
+      final existing = collapsed[idx];
+      if (!(existing.isSynthetic == false && entry.isSynthetic == true)) {
+        collapsed[idx] = entry;
+      }
+    }
+    return collapsed.map((c) => c.point).toList();
+  }
+
+  static bool _isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+}
+
+/// Internal helper pairing a [WeightChartPoint] with whether it was the
+/// synthetic plan-start point (as opposed to a real logged weigh-in), used
+/// only while collapsing same-day points in [_chartPoints].
+class _RawChartPoint {
+  final WeightChartPoint point;
+  final bool isSynthetic;
+  const _RawChartPoint({required this.point, required this.isSynthetic});
 }

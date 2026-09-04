@@ -239,20 +239,48 @@ class _TrendChartCard extends StatelessWidget {
       );
     }
 
+    // Plot on a date-proportional x-axis (days since the plan's start date)
+    // rather than by list index, so points on the same calendar day sit at
+    // the same x position and time spacing between weigh-ins is accurate.
+    final chartStartDate = points.first.date;
+    DateTime dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+    double dayOffset(DateTime d) =>
+        dateOnly(d).difference(dateOnly(chartStartDate)).inDays.toDouble();
+
     final actualSpots = <FlSpot>[];
     final projectedSpots = <FlSpot>[];
-    for (var i = 0; i < points.length; i++) {
-      final p = points[i];
-      if (p.actualKg != null) actualSpots.add(FlSpot(i.toDouble(), p.actualKg!));
-      projectedSpots.add(FlSpot(i.toDouble(), p.projectedKg));
+    for (final p in points) {
+      final x = dayOffset(p.date);
+      if (p.actualKg != null) actualSpots.add(FlSpot(x, p.actualKg!));
+      projectedSpots.add(FlSpot(x, p.projectedKg));
     }
+
+    final maxDayOffset =
+        projectedSpots.map((s) => s.x).reduce((a, b) => a > b ? a : b);
+    // Guard against a zero-width span (e.g. start date == target date) so
+    // the chart always has a visible horizontal range.
+    final chartMaxX = maxDayOffset <= 0 ? 1.0 : maxDayOffset;
 
     final allY = [
       ...actualSpots.map((s) => s.y),
       ...projectedSpots.map((s) => s.y),
     ];
-    final minY = allY.reduce((a, b) => a < b ? a : b) - 1.5;
-    final maxY = allY.reduce((a, b) => a > b ? a : b) + 1.5;
+    final rawMinY = allY.reduce((a, b) => a < b ? a : b);
+    final rawMaxY = allY.reduce((a, b) => a > b ? a : b);
+    var minY = rawMinY.floorToDouble() - 1;
+    var maxY = rawMaxY.ceilToDouble() + 1;
+    // Degenerate case: all weights equal (e.g. start weight == first
+    // weigh-in) collapses the range to almost nothing — widen it to a
+    // fixed span so the axis isn't crammed with repeated labels.
+    if (maxY - minY < 4) {
+      final mid = ((minY + maxY) / 2).roundToDouble();
+      minY = mid - 2;
+      maxY = mid + 2;
+    }
+    // Pick an integer gridline interval that yields ~3-5 distinct labels;
+    // both bounds are already whole numbers, so labels never repeat.
+    var yInterval = ((maxY - minY) / 4).ceil();
+    if (yInterval < 1) yInterval = 1;
     final style = WeightGoalStatusStyle.of(progress.verdict);
 
     return LiquidGlassContainer(
@@ -278,6 +306,8 @@ class _TrendChartCard extends StatelessWidget {
             height: 160,
             child: LineChart(
               LineChartData(
+                minX: 0,
+                maxX: chartMaxX,
                 minY: minY,
                 maxY: maxY,
                 gridData: FlGridData(
@@ -293,6 +323,7 @@ class _TrendChartCard extends StatelessWidget {
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 36,
+                      interval: yInterval.toDouble(),
                       getTitlesWidget: (value, meta) => Text(
                         value.toStringAsFixed(0),
                         style: const TextStyle(fontSize: 10),
@@ -302,14 +333,18 @@ class _TrendChartCard extends StatelessWidget {
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      interval: (points.length / 4).ceilToDouble().clamp(1, double.infinity),
+                      // ~4 labels spread evenly across the span, so the
+                      // first (day 0) and last (chartMaxX) dates line up
+                      // exactly with generated ticks.
+                      interval: (chartMaxX / 3).clamp(1.0, double.infinity),
                       getTitlesWidget: (value, meta) {
-                        final idx = value.toInt();
-                        if (idx < 0 || idx >= points.length) {
+                        if (value < -0.001 || value > chartMaxX + 0.001) {
                           return const SizedBox.shrink();
                         }
+                        final date = dateOnly(chartStartDate)
+                            .add(Duration(days: value.round()));
                         return Text(
-                          DateFormat('MMM d').format(points[idx].date),
+                          DateFormat('MMM d').format(date),
                           style: const TextStyle(fontSize: 9),
                         );
                       },

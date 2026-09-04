@@ -361,4 +361,72 @@ void main() {
       expect(total, closeTo(macros.dailyCalories, 1.0));
     });
   });
+
+  group('chart points (same-day dedupe)', () {
+    test(
+        'weigh-in logged on plan.startDate collapses into ONE point with '
+        'the weigh-in\'s actual value (goal-setup double-point bug)', () {
+      final plan = _lossPlan(
+          start: start, startWeightKg: 80, targetWeightKg: 76, durationWeeks: 8);
+      final result = WeightGoalCalculations.evaluate(
+        plan: plan,
+        weighIns: [_entry(1, start, 79.8)],
+        now: start,
+      );
+      final startDayPoints =
+          result.chartPoints.where((p) => _isSameDay(p.date, start)).toList();
+      expect(startDayPoints, hasLength(1));
+      expect(startDayPoints.single.actualKg, closeTo(79.8, 1e-9));
+    });
+
+    test('multiple weigh-ins on the same later day collapse to one (last wins)', () {
+      final plan = _lossPlan(
+          start: start, startWeightKg: 80, targetWeightKg: 76, durationWeeks: 8);
+      final laterDay = start.add(const Duration(days: 5));
+      final result = WeightGoalCalculations.evaluate(
+        plan: plan,
+        weighIns: [
+          _entry(1, laterDay.add(const Duration(hours: 7)), 79.0),
+          _entry(2, laterDay.add(const Duration(hours: 20)), 78.5),
+        ],
+        now: laterDay,
+      );
+      final dayPoints =
+          result.chartPoints.where((p) => _isSameDay(p.date, laterDay)).toList();
+      expect(dayPoints, hasLength(1));
+      expect(dayPoints.single.actualKg, closeTo(78.5, 1e-9));
+    });
+
+    test('weigh-ins on distinct days are preserved in order, target point appended', () {
+      final plan = _lossPlan(
+          start: start, startWeightKg: 80, targetWeightKg: 76, durationWeeks: 8);
+      final day3 = start.add(const Duration(days: 3));
+      final day7 = start.add(const Duration(days: 7));
+      final result = WeightGoalCalculations.evaluate(
+        plan: plan,
+        weighIns: [_entry(1, day3, 79.5), _entry(2, day7, 79.0)],
+        now: day7,
+      );
+      final dates = result.chartPoints.map((p) => p.date).toList();
+      expect(dates.length, 4); // start, day3, day7, target
+      expect(_isSameDay(dates[0], start), isTrue);
+      expect(_isSameDay(dates[1], day3), isTrue);
+      expect(_isSameDay(dates[2], day7), isTrue);
+      expect(_isSameDay(dates[3], plan.targetDate), isTrue);
+    });
+
+    test('zero weigh-ins yields just [start, target]', () {
+      final plan = _lossPlan(
+          start: start, startWeightKg: 80, targetWeightKg: 76, durationWeeks: 8);
+      final result =
+          WeightGoalCalculations.evaluate(plan: plan, weighIns: [], now: start);
+      expect(result.chartPoints, hasLength(2));
+      expect(_isSameDay(result.chartPoints.first.date, start), isTrue);
+      expect(
+          _isSameDay(result.chartPoints.last.date, plan.targetDate), isTrue);
+    });
+  });
 }
+
+bool _isSameDay(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month && a.day == b.day;
