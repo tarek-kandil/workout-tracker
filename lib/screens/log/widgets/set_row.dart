@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/session_models.dart';
 import '../session_formatters.dart';
+import 'numeric_keypad.dart';
 import 'session_common.dart';
 
 class SetRowItem extends StatelessWidget {
@@ -97,24 +98,12 @@ class SetRow extends StatefulWidget {
 }
 
 class _SetRowState extends State<SetRow> {
-  bool _editingWeight = false;
-  bool _editingSecondary = false;
-  late final TextEditingController _weightCtrl;
-  late final TextEditingController _secondaryCtrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _weightCtrl = TextEditingController();
-    _secondaryCtrl = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _weightCtrl.dispose();
-    _secondaryCtrl.dispose();
-    super.dispose();
-  }
+  // Quick-adjust deltas surfaced as chips inside the keypad sheet, matching
+  // the outer StepBtn side-button increments (kept for one-tap nudges
+  // without opening the sheet at all).
+  static const _weightQuickAdjusts = [-5.0, -2.5, -1.25, 1.25, 2.5, 5.0];
+  static const _repsQuickAdjusts = [-1.0, 1.0];
+  static const _durationQuickAdjusts = [-15.0, -5.0, 5.0, 15.0];
 
   void _handleWeight(double delta) {
     widget.onChanged(SetData(
@@ -133,28 +122,60 @@ class _SetRowState extends State<SetRow> {
     widget.onChanged(SetData(weightKg: widget.data.weightKg, reps: 0, durationSeconds: (widget.data.durationSeconds + delta).clamp(5, 3600), rir: widget.data.rir));
   }
 
-  void _commitWeight() {
-    final v = double.tryParse(_weightCtrl.text.replaceAll(',', '.'));
-    if (v != null && v >= 0) {
-      widget.onChanged(SetData(weightKg: v, reps: widget.data.reps, durationSeconds: widget.data.durationSeconds, rir: widget.data.rir));
+  Future<void> _editWeight() async {
+    final result = await showNumericKeypadSheet(
+      context,
+      title: 'Weight',
+      subtitle: 'Set ${widget.setNumber}',
+      initialValue: widget.data.weightKg,
+      allowDecimal: true,
+      unit: 'kg',
+      quickAdjusts: _weightQuickAdjusts,
+      min: 0,
+      showNextButton: true,
+    );
+    if (result == null || !mounted) return;
+    widget.onChanged(SetData(weightKg: result.value, reps: widget.data.reps, durationSeconds: widget.data.durationSeconds, rir: widget.data.rir));
+    if (result.moveNext && mounted) {
+      await Future.delayed(const Duration(milliseconds: 150));
+      if (mounted) _editSecondary();
     }
-    if (mounted) setState(() => _editingWeight = false);
   }
 
-  void _commitReps() {
-    final v = int.tryParse(_secondaryCtrl.text);
-    if (v != null && v >= 1) {
-      widget.onChanged(SetData(weightKg: widget.data.weightKg, reps: v, rir: widget.data.rir));
-    }
-    if (mounted) setState(() => _editingSecondary = false);
+  Future<void> _editSecondary() {
+    return widget.isTimed ? _editDuration() : _editReps();
   }
 
-  void _commitDuration() {
-    final v = int.tryParse(_secondaryCtrl.text);
-    if (v != null && v >= 1) {
-      widget.onChanged(SetData(weightKg: widget.data.weightKg, reps: 0, durationSeconds: v.clamp(5, 3600), rir: widget.data.rir));
-    }
-    if (mounted) setState(() => _editingSecondary = false);
+  Future<void> _editReps() async {
+    final result = await showNumericKeypadSheet(
+      context,
+      title: 'Reps',
+      subtitle: 'Set ${widget.setNumber}',
+      initialValue: widget.data.reps.toDouble(),
+      allowDecimal: false,
+      unit: 'reps',
+      quickAdjusts: _repsQuickAdjusts,
+      min: 1,
+      max: 999,
+    );
+    if (result == null || !mounted) return;
+    widget.onChanged(SetData(weightKg: widget.data.weightKg, reps: result.value.round(), rir: widget.data.rir));
+  }
+
+  Future<void> _editDuration() async {
+    final result = await showNumericKeypadSheet(
+      context,
+      title: 'Duration',
+      subtitle: 'Set ${widget.setNumber}',
+      initialValue: widget.data.durationSeconds.toDouble(),
+      allowDecimal: false,
+      unit: 'sec',
+      quickAdjusts: _durationQuickAdjusts,
+      min: 5,
+      max: 3600,
+    );
+    if (result == null || !mounted) return;
+    widget.onChanged(SetData(weightKg: widget.data.weightKg, reps: 0, durationSeconds: result.value.round(), rir: widget.data.rir));
   }
 
   @override
@@ -165,46 +186,26 @@ class _SetRowState extends State<SetRow> {
     return Row(children: [
       if (!isTimed) ...[
         Expanded(child: StepperField(
-          label: _editingWeight ? null : '${fmtW(widget.data.weightKg)} kg',
-          editingController: _editingWeight ? _weightCtrl : null,
+          label: '${fmtW(widget.data.weightKg)} kg',
           onDecrement: () => _handleWeight(-2.5),
           onIncrement: () => _handleWeight(2.5),
-          onTapValue: () => setState(() {
-            _weightCtrl.text = fmtW(widget.data.weightKg);
-            _weightCtrl.selection = TextSelection(baseOffset: 0, extentOffset: _weightCtrl.text.length);
-            _editingWeight = true; _editingSecondary = false;
-          }),
-          onCommit: _commitWeight,
+          onTapValue: _editWeight,
         )),
         const SizedBox(width: 8),
       ],
       Expanded(
         child: isTimed
             ? StepperField(
-                label: _editingSecondary ? null : fmtSec(dur),
-                editingController: _editingSecondary ? _secondaryCtrl : null,
-                isInteger: true,
+                label: fmtSec(dur),
                 onDecrement: () => _handleDuration(-5),
                 onIncrement: () => _handleDuration(5),
-                onTapValue: () => setState(() {
-                  _secondaryCtrl.text = dur.toString();
-                  _secondaryCtrl.selection = TextSelection(baseOffset: 0, extentOffset: _secondaryCtrl.text.length);
-                  _editingSecondary = true; _editingWeight = false;
-                }),
-                onCommit: _commitDuration,
+                onTapValue: _editDuration,
               )
             : StepperField(
-                label: _editingSecondary ? null : '${widget.data.reps}',
-                editingController: _editingSecondary ? _secondaryCtrl : null,
-                isInteger: true,
+                label: '${widget.data.reps}',
                 onDecrement: () => _handleReps(-1),
                 onIncrement: () => _handleReps(1),
-                onTapValue: () => setState(() {
-                  _secondaryCtrl.text = widget.data.reps.toString();
-                  _secondaryCtrl.selection = TextSelection(baseOffset: 0, extentOffset: _secondaryCtrl.text.length);
-                  _editingSecondary = true; _editingWeight = false;
-                }),
-                onCommit: _commitReps,
+                onTapValue: _editReps,
               ),
       ),
     ]);
@@ -212,18 +213,15 @@ class _SetRowState extends State<SetRow> {
 }
 
 class StepperField extends StatelessWidget {
-  final String? label;
-  final TextEditingController? editingController;
-  final bool isInteger;
+  final String label;
   final VoidCallback onDecrement;
   final VoidCallback onIncrement;
   final VoidCallback onTapValue;
-  final VoidCallback onCommit;
 
-  const StepperField({super.key, 
-    this.label, this.editingController, this.isInteger = false,
+  const StepperField({super.key,
+    required this.label,
     required this.onDecrement, required this.onIncrement,
-    required this.onTapValue, required this.onCommit,
+    required this.onTapValue,
   });
 
   @override
@@ -231,21 +229,11 @@ class StepperField extends StatelessWidget {
     return Row(children: [
       StepBtn(icon: Icons.remove, onTap: onDecrement),
       Expanded(
-        child: editingController != null
-            ? TextField(
-                controller: editingController,
-                autofocus: true,
-                textAlign: TextAlign.center,
-                keyboardType: TextInputType.numberWithOptions(decimal: !isInteger),
-                decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 6)),
-                onSubmitted: (_) => onCommit(),
-                onTapOutside: (_) => onCommit(),
-              )
-            : GestureDetector(
-                onTap: onTapValue,
-                child: Text(label ?? '', textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-              ),
+        child: GestureDetector(
+          onTap: onTapValue,
+          child: Text(label, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+        ),
       ),
       StepBtn(icon: Icons.add, onTap: onIncrement),
     ]);
