@@ -1228,82 +1228,41 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     final si = _sessionItems[itemIdx];
     if (si.wodItem is! StandaloneWodExercise) return;
     final entry = (si.wodItem as StandaloneWodExercise).entry;
+    await _editLoggedSet(parentContext, entry, setIdx);
+  }
+
+  Future<void> _editCircuitRound(
+      BuildContext parentContext, int itemIdx, int exIdx, int round) async {
+    final si = _sessionItems[itemIdx];
+    if (si.wodItem is! WodCircuit) return;
+    final circuit = si.wodItem as WodCircuit;
+    if (exIdx < 0 || exIdx >= circuit.exercises.length) return;
+    final entry = circuit.exercises[exIdx];
+    await _editLoggedSet(parentContext, entry, round, unitLabel: 'Round');
+  }
+
+  Future<void> _editLoggedSet(
+    BuildContext parentContext,
+    WodExerciseEntry entry,
+    int setIdx, {
+    String unitLabel = 'Set',
+  }) async {
     final exerciseId = entry.templateExercise.exerciseId;
     final isTimed = entry.exercise.isTimed;
     final sets = _setData[exerciseId] ?? [];
     final current = setIdx < sets.length ? sets[setIdx] : SetData(weightKg: 0, reps: 0);
 
-    final weightCtrl = TextEditingController(text: current.weightKg > 0 ? fmtW(current.weightKg) : '');
-    final secondaryCtrl = TextEditingController(
-        text: isTimed
-            ? (current.durationSeconds > 0 ? '${current.durationSeconds}' : '')
-            : (current.reps > 0 ? '${current.reps}' : ''));
-
     final saved = await showModalBottomSheet<SetData>(
       context: parentContext,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-        child: Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFF1e2030),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Edit Set ${setIdx + 1}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
-            const SizedBox(height: 4),
-            Text(entry.exercise.name, style: const TextStyle(fontSize: 12, color: Colors.white54)),
-            const SizedBox(height: 20),
-            if (!isTimed) ...[
-              TextField(
-                controller: weightCtrl,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                autofocus: true,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(labelText: 'Weight (kg)', labelStyle: TextStyle(color: Colors.white54)),
-              ),
-              const SizedBox(height: 12),
-            ],
-            TextField(
-              controller: secondaryCtrl,
-              keyboardType: TextInputType.number,
-              autofocus: isTimed,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                labelText: isTimed ? 'Duration (seconds)' : 'Reps',
-                labelStyle: const TextStyle(color: Colors.white54),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Row(children: [
-              Expanded(child: TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel'),
-              )),
-              const SizedBox(width: 12),
-              Expanded(child: FilledButton(
-                onPressed: () {
-                  final w = double.tryParse(weightCtrl.text.replaceAll(',', '.')) ?? current.weightKg;
-                  final s = int.tryParse(secondaryCtrl.text);
-                  Navigator.pop(ctx, SetData(
-                    weightKg: isTimed ? 0 : w,
-                    reps: isTimed ? 0 : (s ?? current.reps),
-                    durationSeconds: isTimed ? (s ?? current.durationSeconds) : 0,
-                    rpe: current.rpe,
-                  ));
-                },
-                child: const Text('Save'),
-              )),
-            ]),
-          ]),
-        ),
+      builder: (ctx) => _EditSetSheet(
+        title: 'Edit $unitLabel ${setIdx + 1}',
+        exerciseName: entry.exercise.name,
+        isTimed: isTimed,
+        current: current,
       ),
     );
-
-    weightCtrl.dispose();
-    secondaryCtrl.dispose();
 
     if (saved != null && mounted) {
       final changed = !isTimed &&
@@ -1408,6 +1367,46 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     }
   }
 
+  /// Removes a single exercise from a circuit (session-only). Removing the last
+  /// remaining exercise removes the whole circuit item. Keeps the circuit cursor
+  /// (`_circuitExerciseIdx`) consistent when the active circuit is edited.
+  void _removeCircuitExercise(int itemIdx, int exIdx) {
+    if (itemIdx < 0 || itemIdx >= _sessionItems.length) return;
+    final si = _sessionItems[itemIdx];
+    final circuit = si.wodItem;
+    if (circuit is! WodCircuit) return;
+    if (exIdx < 0 || exIdx >= circuit.exercises.length) return;
+
+    // Removing the last remaining exercise removes the whole circuit item.
+    if (circuit.exercises.length <= 1) {
+      _removeSessionItem(itemIdx);
+      return;
+    }
+
+    final newExercises = List<WodExerciseEntry>.from(circuit.exercises)..removeAt(exIdx);
+    final newCircuit = WodCircuit(
+      groupId: circuit.groupId, name: circuit.name, rounds: circuit.rounds,
+      restBetweenExercisesSeconds: circuit.restBetweenExercisesSeconds,
+      restBetweenRoundsSeconds: circuit.restBetweenRoundsSeconds,
+      exercises: newExercises,
+    );
+    setState(() {
+      si.wodItem = newCircuit;
+      if (itemIdx == _currentItemIdx) {
+        if (exIdx < _circuitExerciseIdx) _circuitExerciseIdx--;
+        _circuitExerciseIdx = _circuitExerciseIdx.clamp(0, newExercises.length - 1);
+      }
+    });
+    _saveProgress();
+  }
+
+  /// Removes an entire circuit item from this session (session-only).
+  void _removeCircuit(int itemIdx) {
+    if (itemIdx < 0 || itemIdx >= _sessionItems.length) return;
+    if (_sessionItems[itemIdx].wodItem is! WodCircuit) return;
+    _removeSessionItem(itemIdx);
+  }
+
   // ── Action sheets ─────────────────────────────────────────────────────────────
 
   void _showExerciseActions(BuildContext context, int itemIdx) {
@@ -1446,6 +1445,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   void _showCircuitExerciseActions(BuildContext context, int itemIdx, int exIdx) {
     final circuit = _sessionItems[itemIdx].wodItem as WodCircuit;
     final entry = circuit.exercises[exIdx];
+    final isLastInCircuit = circuit.exercises.length <= 1;
     showModalBottomSheet(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -1460,6 +1460,35 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                 onTap: () { Navigator.pop(ctx); _showExerciseNotesSheet(entry); }),
             ActionTile(icon: Icons.swap_horiz, label: 'Swap Exercise',
                 onTap: () { Navigator.pop(ctx); _showSwapCircuitExerciseSheet(itemIdx, exIdx); }),
+            ActionTile(
+                icon: Icons.delete_outline,
+                label: isLastInCircuit ? 'Remove (last · removes circuit)' : 'Remove from Circuit',
+                color: Colors.red.shade300,
+                onTap: () { Navigator.pop(ctx); _removeCircuitExercise(itemIdx, exIdx); }),
+            const SizedBox(height: 4),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  void _showCircuitActions(BuildContext context, int itemIdx) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Container(width: 36, height: 3, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 14),
+            ActionTile(icon: Icons.add, label: 'Add Exercise',
+                onTap: () { Navigator.pop(ctx); _showAddExerciseSheet(itemIdx + 1); }),
+            ActionTile(icon: Icons.skip_next, label: 'Skip Circuit',
+                onTap: () { Navigator.pop(ctx); _skipExercise(itemIdx); }),
+            ActionTile(icon: Icons.delete_outline, label: 'Remove Circuit', color: Colors.red.shade300,
+                onTap: () { Navigator.pop(ctx); _removeCircuit(itemIdx); }),
             const SizedBox(height: 4),
           ]),
         ),
@@ -1484,7 +1513,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   void _showSwapExerciseSheet(int itemIdx) {
     final original = _sessionItems[itemIdx].wodItem;
     if (original is! StandaloneWodExercise) {
-      _showSwapExercisePicker(itemIdx, null, null);
+      _showSwapExercisePicker(null, null, onSwap: (e) => _swapExercise(itemIdx, e));
       return;
     }
     final entry = original.entry;
@@ -1500,9 +1529,9 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
         onOtherExercise: () {
           Navigator.pop(context);
           _showSwapExercisePicker(
-            itemIdx,
             entry.templateExercise.exerciseId,
             entry.exercise.name,
+            onSwap: (e) => _swapExercise(itemIdx, e),
           );
         },
       ),
@@ -1510,10 +1539,10 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   }
 
   void _showSwapExercisePicker(
-    int itemIdx,
     int? originalExerciseId,
-    String? originalExerciseName,
-  ) {
+    String? originalExerciseName, {
+    required void Function(Exercise) onSwap,
+  }) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1525,14 +1554,14 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
           if (originalExerciseId == null ||
               originalExerciseName == null ||
               exercise.id == originalExerciseId) {
-            _swapExercise(itemIdx, exercise);
+            onSwap(exercise);
             return;
           }
           _showAddVariationPrompt(
-            itemIdx,
             originalExerciseId,
             originalExerciseName,
             exercise,
+            onSwap: onSwap,
           );
         },
       ),
@@ -1540,11 +1569,11 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   }
 
   void _showAddVariationPrompt(
-    int itemIdx,
     int originalExerciseId,
     String originalExerciseName,
-    Exercise exercise,
-  ) {
+    Exercise exercise, {
+    required void Function(Exercise) onSwap,
+  }) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -1585,7 +1614,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                     return;
                   }
                   navigator.pop();
-                  _swapExercise(itemIdx, exercise);
+                  onSwap(exercise);
                   messenger.showSnackBar(
                     SnackBar(
                       content: Text(
@@ -1604,7 +1633,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                 child: const Text('Swap once'),
                 onPressed: () {
                   Navigator.pop(ctx);
-                  _swapExercise(itemIdx, exercise);
+                  onSwap(exercise);
                 },
               ),
             ),
@@ -1647,11 +1676,25 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   }
 
   void _showSwapCircuitExerciseSheet(int itemIdx, int exIdx) {
+    final circuit = _sessionItems[itemIdx].wodItem as WodCircuit;
+    final entry = circuit.exercises[exIdx];
     showModalBottomSheet(
       context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
-      builder: (_) => ExerciseLibrarySheet(
-        title: 'Swap Exercise',
-        onSelected: (exercise) { Navigator.pop(context); _swapCircuitExercise(itemIdx, exIdx, exercise); },
+      builder: (_) => ExerciseSwapSheet(
+        exerciseId: entry.templateExercise.exerciseId,
+        exerciseName: entry.exercise.name,
+        onVariationSelected: (exercise) {
+          Navigator.pop(context);
+          _swapCircuitExercise(itemIdx, exIdx, exercise);
+        },
+        onOtherExercise: () {
+          Navigator.pop(context);
+          _showSwapExercisePicker(
+            entry.templateExercise.exerciseId,
+            entry.exercise.name,
+            onSwap: (e) => _swapCircuitExercise(itemIdx, exIdx, e),
+          );
+        },
       ),
     );
   }
@@ -2145,8 +2188,9 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                         onDoneSet: itemIdx == _currentItemIdx ? _onDoneSet : null,
                         onStartTimer: itemIdx == _currentItemIdx ? _startExerciseTimer : null,
                         onStopTimer: itemIdx == _currentItemIdx ? _stopExerciseTimer : null,
-                        onShowCircuitActions: () => _showExerciseActions(context, itemIdx),
+                        onShowCircuitActions: () => _showCircuitActions(context, itemIdx),
                         onShowExerciseActions: (exIdx) => _showCircuitExerciseActions(context, itemIdx, exIdx),
+                        onEditRound: (exIdx, round) => _editCircuitRound(context, itemIdx, exIdx, round),
                         timedRunning: itemIdx == _currentItemIdx ? _timedRunning : false,
                         timedElapsed: itemIdx == _currentItemIdx ? _timedElapsed : 0,
                         timedStopped: itemIdx == _currentItemIdx ? _timedStopped : false,
@@ -2189,6 +2233,109 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
               circuitNextLabel: _circuitNextLabel,
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _EditSetSheet extends StatefulWidget {
+  final String title;
+  final String exerciseName;
+  final bool isTimed;
+  final SetData current;
+
+  const _EditSetSheet({
+    required this.title,
+    required this.exerciseName,
+    required this.isTimed,
+    required this.current,
+  });
+
+  @override
+  State<_EditSetSheet> createState() => _EditSetSheetState();
+}
+
+class _EditSetSheetState extends State<_EditSetSheet> {
+  late final TextEditingController weightCtrl;
+  late final TextEditingController secondaryCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    final current = widget.current;
+    weightCtrl = TextEditingController(text: current.weightKg > 0 ? fmtW(current.weightKg) : '');
+    secondaryCtrl = TextEditingController(
+        text: widget.isTimed
+            ? (current.durationSeconds > 0 ? '${current.durationSeconds}' : '')
+            : (current.reps > 0 ? '${current.reps}' : ''));
+  }
+
+  @override
+  void dispose() {
+    weightCtrl.dispose();
+    secondaryCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext ctx) {
+    final isTimed = widget.isTimed;
+    final current = widget.current;
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF1e2030),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(widget.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
+          const SizedBox(height: 4),
+          Text(widget.exerciseName, style: const TextStyle(fontSize: 12, color: Colors.white54)),
+          const SizedBox(height: 20),
+          if (!isTimed) ...[
+            TextField(
+              controller: weightCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              autofocus: true,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(labelText: 'Weight (kg)', labelStyle: TextStyle(color: Colors.white54)),
+            ),
+            const SizedBox(height: 12),
+          ],
+          TextField(
+            controller: secondaryCtrl,
+            keyboardType: TextInputType.number,
+            autofocus: isTimed,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              labelText: isTimed ? 'Duration (seconds)' : 'Reps',
+              labelStyle: const TextStyle(color: Colors.white54),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Row(children: [
+            Expanded(child: TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            )),
+            const SizedBox(width: 12),
+            Expanded(child: FilledButton(
+              onPressed: () {
+                final w = double.tryParse(weightCtrl.text.replaceAll(',', '.')) ?? current.weightKg;
+                final s = int.tryParse(secondaryCtrl.text);
+                Navigator.pop(ctx, SetData(
+                  weightKg: isTimed ? 0 : w,
+                  reps: isTimed ? 0 : (s ?? current.reps),
+                  durationSeconds: isTimed ? (s ?? current.durationSeconds) : 0,
+                  rpe: current.rpe,
+                ));
+              },
+              child: const Text('Save'),
+            )),
+          ]),
+        ]),
       ),
     );
   }

@@ -16,48 +16,57 @@ class RoundRowItem extends StatelessWidget {
   final bool isDone;
   final SetData data;
   final void Function(SetData)? onChanged;
+  final VoidCallback? onEdit;
 
   const RoundRowItem({super.key, 
     required this.roundIndex, required this.isTimed,
     required this.isActive, required this.isDone,
-    required this.data, required this.onChanged,
+    required this.data, required this.onChanged, this.onEdit,
   });
 
   @override
   Widget build(BuildContext context) {
     final teal = Theme.of(context).colorScheme.secondary;
     final accent = Theme.of(context).colorScheme.primary;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(children: [
-        SizedBox(width: 54, child: Text('Round ${roundIndex + 1}', style: TextStyle(
-          fontSize: 10,
-          fontWeight: isActive ? FontWeight.w800 : FontWeight.w500,
-          color: isActive ? teal : Colors.white.withValues(alpha: isDone ? 0.4 : 0.2),
-        ))),
-        Icon(isDone ? Icons.check_circle : Icons.radio_button_unchecked,
-            size: 13, color: isDone ? teal : isActive ? accent : Colors.white24),
-        const SizedBox(width: 8),
-        if (isActive && onChanged != null)
-          Expanded(child: SetRow(
-            key: ValueKey('round-input-$roundIndex'),
-            setNumber: roundIndex + 1, isTimed: isTimed,
-            data: data, onChanged: onChanged!,
-          ))
-        else ...[
-          if (!isTimed) ...[
-            Expanded(child: ReadOnlyField(label: 'WEIGHT',
-                value: data.weightKg > 0 ? '${fmtW(data.weightKg)} kg' : '—', dim: !isDone)),
-            const SizedBox(width: 6),
+    return GestureDetector(
+      onTap: onEdit,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3),
+        child: Row(children: [
+          SizedBox(width: 54, child: Text('Round ${roundIndex + 1}', style: TextStyle(
+            fontSize: 10,
+            fontWeight: isActive ? FontWeight.w800 : FontWeight.w500,
+            color: isActive ? teal : Colors.white.withValues(alpha: isDone ? 0.4 : 0.2),
+          ))),
+          Icon(isDone ? Icons.check_circle : Icons.radio_button_unchecked,
+              size: 13, color: isDone ? teal : isActive ? accent : Colors.white24),
+          const SizedBox(width: 8),
+          if (isActive && onChanged != null)
+            Expanded(child: SetRow(
+              key: ValueKey('round-input-$roundIndex'),
+              setNumber: roundIndex + 1, isTimed: isTimed,
+              data: data, onChanged: onChanged!,
+            ))
+          else ...[
+            if (!isTimed) ...[
+              Expanded(child: ReadOnlyField(label: 'WEIGHT',
+                  value: data.weightKg > 0 ? '${fmtW(data.weightKg)} kg' : '—', dim: !isDone)),
+              const SizedBox(width: 6),
+            ],
+            Expanded(child: ReadOnlyField(
+              label: isTimed ? 'DURATION' : 'REPS',
+              value: isTimed ? (data.durationSeconds > 0 ? fmtSec(data.durationSeconds) : '—')
+                             : (data.reps > 0 ? '${data.reps}' : '—'),
+              dim: !isDone,
+            )),
+            if (onEdit != null)
+              const Padding(
+                padding: EdgeInsets.only(left: 6),
+                child: Icon(Icons.edit, size: 12, color: Colors.white24),
+              ),
           ],
-          Expanded(child: ReadOnlyField(
-            label: isTimed ? 'DURATION' : 'REPS',
-            value: isTimed ? (data.durationSeconds > 0 ? fmtSec(data.durationSeconds) : '—')
-                           : (data.reps > 0 ? '${data.reps}' : '—'),
-            dim: !isDone,
-          )),
-        ],
-      ]),
+        ]),
+      ),
     );
   }
 }
@@ -78,6 +87,7 @@ class CircuitExerciseSection extends StatelessWidget {
   final VoidCallback? onStartTimer;
   final VoidCallback? onStopTimer;
   final VoidCallback onShowActions;
+  final void Function(int round)? onEditRound;
   final bool timedRunning;
   final int timedElapsed;
   final bool timedStopped;
@@ -90,7 +100,7 @@ class CircuitExerciseSection extends StatelessWidget {
     required this.historyExpanded, required this.onToggleHistory,
     required this.onSetDataChanged, required this.onDoneSet,
     required this.onStartTimer, required this.onStopTimer,
-    required this.onShowActions,
+    required this.onShowActions, this.onEditRound,
     required this.timedRunning, required this.timedElapsed, required this.timedStopped,
   });
 
@@ -128,14 +138,21 @@ class CircuitExerciseSection extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         for (int r = 0; r < rounds; r++)
-          RoundRowItem(
-            roundIndex: r, isTimed: isTimed,
-            isActive: isCurrentExercise && r == currentRound,
-            isDone: r < currentRound || (!isCurrentExercise && r < setData.length &&
-                (isTimed ? setData[r].durationSeconds > 0 : setData[r].reps > 0)),
-            data: r < setData.length ? setData[r] : SetData(weightKg: 0, reps: 0),
-            onChanged: isCurrentExercise && r == currentRound ? (d) => onSetDataChanged(r, d) : null,
-          ),
+          Builder(builder: (context) {
+            final isRoundActive = isCurrentExercise && r == currentRound;
+            final isRoundDone = r < currentRound || (!isCurrentExercise && r < setData.length &&
+                (isTimed ? setData[r].durationSeconds > 0 : setData[r].reps > 0));
+            return RoundRowItem(
+              roundIndex: r, isTimed: isTimed,
+              isActive: isRoundActive,
+              isDone: isRoundDone,
+              data: r < setData.length ? setData[r] : SetData(weightKg: 0, reps: 0),
+              onChanged: isRoundActive ? (d) => onSetDataChanged(r, d) : null,
+              onEdit: (isRoundDone && !isRoundActive && onEditRound != null)
+                  ? () => onEditRound!(r)
+                  : null,
+            );
+          }),
         if (isCurrentExercise && onDoneSet != null) ...[
           const SizedBox(height: 10),
           if (isTimed)
@@ -174,6 +191,7 @@ class CircuitCard extends StatelessWidget {
   final VoidCallback? onStopTimer;
   final VoidCallback onShowCircuitActions;
   final void Function(int) onShowExerciseActions;
+  final void Function(int exIdx, int round)? onEditRound;
   final bool timedRunning;
   final int timedElapsed;
   final bool timedStopped;
@@ -187,6 +205,7 @@ class CircuitCard extends StatelessWidget {
     required this.onToggleHistory, required this.onSetDataChanged,
     required this.onDoneSet, required this.onStartTimer, required this.onStopTimer,
     required this.onShowCircuitActions, required this.onShowExerciseActions,
+    this.onEditRound,
     required this.timedRunning, required this.timedElapsed, required this.timedStopped,
     this.dragIndex,
   });
@@ -260,6 +279,9 @@ class CircuitCard extends StatelessWidget {
             onStartTimer: isActive && exIdx == currentCircuitExIdx ? onStartTimer : null,
             onStopTimer: isActive && exIdx == currentCircuitExIdx ? onStopTimer : null,
             onShowActions: () => onShowExerciseActions(exIdx),
+            onEditRound: onEditRound == null
+                ? null
+                : (round) => onEditRound!(exIdx, round),
             timedRunning: isActive && exIdx == currentCircuitExIdx ? timedRunning : false,
             timedElapsed: isActive && exIdx == currentCircuitExIdx ? timedElapsed : 0,
             timedStopped: isActive && exIdx == currentCircuitExIdx ? timedStopped : false,
