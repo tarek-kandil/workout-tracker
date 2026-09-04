@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' show Value;
 import '../../database/app_database.dart';
+import '../../models/exercise_muscle_seed.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/exercise_providers.dart';
 import '../../utils/constants.dart';
 import '../../widgets/glass_background.dart';
+import 'widgets/muscle_assignment_sheet.dart';
 
 class ExerciseLibraryScreen extends ConsumerStatefulWidget {
   const ExerciseLibraryScreen({super.key});
@@ -19,6 +21,9 @@ class _ExerciseLibraryScreenState
     extends ConsumerState<ExerciseLibraryScreen> {
   final _searchController = TextEditingController();
   String _query = '';
+
+  static const _needsReviewGroup = 'Needs review';
+  static const _untrackedGroup = 'Cardio / Untracked';
 
   @override
   void initState() {
@@ -34,11 +39,12 @@ class _ExerciseLibraryScreenState
     super.dispose();
   }
 
-  // Groups exercises by primary muscle (first entry in muscleMap).
-  // Exercises with no muscles go into 'Other'.
+  // Groups exercises: "Needs review" first (design.md §5.4), then by
+  // primary muscle (region order, per kMusclesByRegion), then exercises
+  // with no active primary assignment ("Cardio / Untracked") last.
   Map<String, List<Exercise>> _group(
     List<Exercise> exercises,
-    Map<int, List<String>> muscleMap,
+    Map<int, List<ExerciseMuscle>> muscleMap,
   ) {
     final filtered = _query.isEmpty
         ? exercises
@@ -48,10 +54,18 @@ class _ExerciseLibraryScreenState
 
     final Map<String, List<Exercise>> grouped = {};
     for (final e in filtered) {
-      final primary = muscleMap[e.id]?.isNotEmpty == true
-          ? muscleMap[e.id]!.first
-          : 'Other';
-      (grouped[primary] ??= []).add(e);
+      String key;
+      if (e.muscleNeedsReview) {
+        key = _needsReviewGroup;
+      } else {
+        final rows = muscleMap[e.id] ?? const <ExerciseMuscle>[];
+        final primary = rows
+            .where((m) => m.role == kMuscleRolePrimary)
+            .map((m) => m.muscle)
+            .firstOrNull;
+        key = primary ?? _untrackedGroup;
+      }
+      (grouped[key] ??= []).add(e);
     }
     return grouped;
   }
@@ -59,16 +73,24 @@ class _ExerciseLibraryScreenState
   Future<void> _showExerciseDialog({
     Exercise? existing,
     required List<Exercise> all,
-    required Map<int, List<String>> muscleMap,
+    required Map<int, List<ExerciseMuscle>> muscleMap,
   }) async {
-    final initialMuscles =
-        existing != null ? (muscleMap[existing.id] ?? []) : <String>[];
+    final initialAssignments = existing != null
+        ? (muscleMap[existing.id] ?? const <ExerciseMuscle>[])
+            .map((m) => ExerciseMuscleSeed(
+                  m.muscle,
+                  m.role == kMuscleRolePrimary
+                      ? ExerciseMuscleRole.primary
+                      : ExerciseMuscleRole.secondary,
+                ))
+            .toList()
+        : <ExerciseMuscleSeed>[];
 
     final nameController = TextEditingController(text: existing?.name ?? '')
       ..selection =
           TextSelection.collapsed(offset: existing?.name.length ?? 0);
     bool isTimed = existing?.isTimed ?? false;
-    List<String> selectedMuscles = List.from(initialMuscles);
+    List<ExerciseMuscleSeed> assignments = List.from(initialAssignments);
 
     await showModalBottomSheet<void>(
       context: context,
@@ -79,9 +101,16 @@ class _ExerciseLibraryScreenState
       ),
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheetState) {
+          final primarySeed = assignments
+              .where((a) => a.role == ExerciseMuscleRole.primary)
+              .firstOrNull;
+          final secondarySeeds = assignments
+              .where((a) => a.role == ExerciseMuscleRole.secondary)
+              .toList();
+
           return Padding(
-            padding: EdgeInsets.only(
-                bottom: MediaQuery.viewInsetsOf(ctx).bottom),
+            padding:
+                EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -122,16 +151,15 @@ class _ExerciseLibraryScreenState
                       TextFormField(
                         controller: nameController,
                         autofocus: existing == null,
-                        decoration:
-                            const InputDecoration(labelText: 'Name'),
+                        decoration: const InputDecoration(labelText: 'Name'),
                         textCapitalization: TextCapitalization.words,
                         onChanged: (_) => setSheetState(() {}),
                       ),
                       const SizedBox(height: 24),
 
-                      // Muscle groups label
+                      // Muscles label
                       Text(
-                        'MUSCLE GROUPS',
+                        'MUSCLES WORKED',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
@@ -141,127 +169,69 @@ class _ExerciseLibraryScreenState
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Tap to add. First = primary. Tap again to remove.',
+                        existing != null && existing.muscleNeedsReview
+                            ? 'This exercise needs review — confirm the muscles it works.'
+                            : 'Pick 1 primary muscle and any secondary muscles.',
                         style: TextStyle(
                           fontSize: 11,
-                          color: Colors.white.withValues(alpha: 0.25),
+                          color: existing != null && existing.muscleNeedsReview
+                              ? const Color(0xFFFBBF24)
+                              : Colors.white.withValues(alpha: 0.25),
                         ),
                       ),
                       const SizedBox(height: 12),
 
-                      // Muscle chip grid
+                      // Selection summary + edit button
                       Wrap(
                         spacing: 6,
                         runSpacing: 6,
-                        children: kMuscleGroups.map((muscle) {
-                          final idx = selectedMuscles.indexOf(muscle);
-                          final isPrimary = idx == 0;
-                          final isSelected = idx >= 0;
-                          return GestureDetector(
-                            onTap: () => setSheetState(() {
-                              if (isSelected) {
-                                selectedMuscles.remove(muscle);
-                              } else {
-                                selectedMuscles.add(muscle);
-                              }
-                            }),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 11, vertical: 7),
-                              decoration: BoxDecoration(
-                                color: isPrimary
-                                    ? const Color(0xFF6366F1)
-                                        .withValues(alpha: 0.2)
-                                    : isSelected
-                                        ? Colors.white
-                                            .withValues(alpha: 0.08)
-                                        : Colors.white
-                                            .withValues(alpha: 0.04),
-                                borderRadius: BorderRadius.circular(9),
-                                border: Border.all(
-                                  color: isPrimary
-                                      ? const Color(0xFF6366F1)
-                                          .withValues(alpha: 0.5)
-                                      : isSelected
-                                          ? Colors.white
-                                              .withValues(alpha: 0.2)
-                                          : Colors.white
-                                              .withValues(alpha: 0.1),
-                                ),
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          if (primarySeed == null)
+                            Text(
+                              'No muscles assigned yet',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.white.withValues(alpha: 0.4),
                               ),
-                              child: Text(
-                                muscle,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: isPrimary
-                                      ? const Color(0xFFA5B4FC)
-                                      : isSelected
-                                          ? Colors.white
-                                              .withValues(alpha: 0.75)
-                                          : Colors.white
-                                              .withValues(alpha: 0.4),
-                                ),
-                              ),
+                            )
+                          else ...[
+                            _AssignmentPill(
+                              label: primarySeed.muscle,
+                              isPrimary: true,
                             ),
-                          );
-                        }).toList(),
-                      ),
-
-                      // Selection summary
-                      if (selectedMuscles.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 5,
-                          runSpacing: 5,
-                          children: [
-                            for (int i = 0;
-                                i < selectedMuscles.length;
-                                i++)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: i == 0
-                                      ? const Color(0xFF6366F1)
-                                          .withValues(alpha: 0.15)
-                                      : Colors.white
-                                          .withValues(alpha: 0.05),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(
-                                    color: i == 0
-                                        ? const Color(0xFF6366F1)
-                                            .withValues(alpha: 0.35)
-                                        : Colors.white
-                                            .withValues(alpha: 0.09),
-                                  ),
-                                ),
-                                child: Text(
-                                  i == 0
-                                      ? '● ${selectedMuscles[i]}'
-                                      : selectedMuscles[i],
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: i == 0
-                                        ? const Color(0xFF818CF8)
-                                        : Colors.white
-                                            .withValues(alpha: 0.45),
-                                  ),
-                                ),
+                            for (final s in secondarySeeds)
+                              _AssignmentPill(
+                                label: s.muscle,
+                                isPrimary: false,
                               ),
                           ],
-                        ),
-                      ],
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          final result = await showMuscleAssignmentSheet(
+                            ctx,
+                            initial: assignments,
+                          );
+                          if (result != null) {
+                            setSheetState(() => assignments = result);
+                          }
+                        },
+                        icon: const Icon(Icons.tune, size: 16),
+                        label: Text(assignments.isEmpty
+                            ? 'Assign muscles'
+                            : 'Edit muscles'),
+                      ),
 
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 16),
                       // Timed toggle
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
                         title: const Text('Timed exercise'),
                         value: isTimed,
-                        onChanged: (v) =>
-                            setSheetState(() => isTimed = v),
+                        onChanged: (v) => setSheetState(() => isTimed = v),
                       ),
                     ],
                   ),
@@ -281,8 +251,8 @@ class _ExerciseLibraryScreenState
                                   ref.read(databaseProvider).exercisesDao;
                               int exerciseId;
                               if (existing == null) {
-                                exerciseId = await dao
-                                    .insertExercise(ExercisesCompanion(
+                                exerciseId =
+                                    await dao.insertExercise(ExercisesCompanion(
                                   name: Value(name),
                                   isTimed: Value(isTimed),
                                 ));
@@ -295,7 +265,7 @@ class _ExerciseLibraryScreenState
                                 exerciseId = existing.id;
                               }
                               await dao.setMusclesForExercise(
-                                  exerciseId, selectedMuscles);
+                                  exerciseId, assignments);
                               if (ctx.mounted) Navigator.pop(ctx);
                             },
                       style: FilledButton.styleFrom(
@@ -380,8 +350,7 @@ class _ExerciseLibraryScreenState
                       const Center(child: CircularProgressIndicator()),
                   error: (e, _) => Center(child: Text('Error: $e')),
                   data: (exercises) {
-                    final muscleMap =
-                        muscleMapAsync.valueOrNull ?? {};
+                    final muscleMap = muscleMapAsync.valueOrNull ?? {};
                     final grouped = _group(exercises, muscleMap);
                     if (grouped.isEmpty) {
                       return Center(
@@ -389,20 +358,23 @@ class _ExerciseLibraryScreenState
                           _query.isEmpty
                               ? 'No exercises yet. Tap + to add one.'
                               : 'No results for "$_query"',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
-                              ?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withValues(alpha: 0.5),
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.5),
+                                  ),
                         ),
                       );
                     }
-                    // Sort groups: kMuscleGroups order first, then 'Other'
-                    final groupOrder = [...kMuscleGroups, 'Other'];
+                    // Sort groups: Needs review first, then region/muscle
+                    // order (kMuscleGroups), then Cardio / Untracked last.
+                    final groupOrder = [
+                      _needsReviewGroup,
+                      ...kMuscleGroups,
+                      _untrackedGroup,
+                    ];
                     final categories = grouped.keys.toList()
                       ..sort((a, b) {
                         final ai = groupOrder.indexOf(a);
@@ -413,8 +385,7 @@ class _ExerciseLibraryScreenState
                       });
 
                     return ListView.builder(
-                      padding:
-                          const EdgeInsets.fromLTRB(16, 4, 16, 88),
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 88),
                       itemCount: categories.fold<int>(
                         0,
                         (sum, cat) => sum + 1 + grouped[cat]!.length,
@@ -426,166 +397,24 @@ class _ExerciseLibraryScreenState
                             return _MuscleGroupHeader(
                               label: cat,
                               count: grouped[cat]!.length,
+                              isNeedsReview: cat == _needsReviewGroup,
                             );
                           }
                           remaining--;
                           final items = grouped[cat]!;
                           if (remaining < items.length) {
                             final exercise = items[remaining];
-                            final muscles = muscleMap[exercise.id] ?? [];
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  onTap: () => _showExerciseDialog(
-                                    existing: exercise,
-                                    all: exercises,
-                                    muscleMap: muscleMap,
-                                  ),
-                                  onLongPress: () =>
-                                      _confirmDelete(exercise),
-                                  borderRadius:
-                                      BorderRadius.circular(16),
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.white
-                                          .withValues(alpha: 0.05),
-                                      borderRadius:
-                                          BorderRadius.circular(16),
-                                      border: Border.all(
-                                        color: Colors.white
-                                            .withValues(alpha: 0.09),
-                                        width: 1.5,
-                                      ),
-                                    ),
-                                    padding:
-                                        const EdgeInsets.fromLTRB(
-                                            14, 13, 14, 11),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        // Name row
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                exercise.name,
-                                                style: const TextStyle(
-                                                  fontSize: 15,
-                                                  fontWeight:
-                                                      FontWeight.w700,
-                                                  letterSpacing: -0.2,
-                                                ),
-                                              ),
-                                            ),
-                                            if (exercise.isTimed) ...[
-                                              const SizedBox(width: 8),
-                                              Container(
-                                                padding:
-                                                    const EdgeInsets
-                                                        .symmetric(
-                                                        horizontal: 6,
-                                                        vertical: 2),
-                                                decoration: BoxDecoration(
-                                                  color: const Color(
-                                                          0xFF6366F1)
-                                                      .withValues(
-                                                          alpha: 0.12),
-                                                  borderRadius:
-                                                      BorderRadius
-                                                          .circular(6),
-                                                  border: Border.all(
-                                                    color: const Color(
-                                                            0xFF6366F1)
-                                                        .withValues(
-                                                            alpha: 0.2),
-                                                  ),
-                                                ),
-                                                child: const Text(
-                                                  'TIMED',
-                                                  style: TextStyle(
-                                                    fontSize: 10,
-                                                    fontWeight:
-                                                        FontWeight.w700,
-                                                    color:
-                                                        Color(0xFF818CF8),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ],
-                                        ),
-                                        // Muscle chips
-                                        if (muscles.isNotEmpty) ...[
-                                          const SizedBox(height: 7),
-                                          Wrap(
-                                            spacing: 5,
-                                            runSpacing: 4,
-                                            children: [
-                                              for (int i = 0;
-                                                  i < muscles.length;
-                                                  i++)
-                                                Container(
-                                                  padding:
-                                                      const EdgeInsets
-                                                          .symmetric(
-                                                          horizontal: 8,
-                                                          vertical: 3),
-                                                  decoration:
-                                                      BoxDecoration(
-                                                    color: i == 0
-                                                        ? const Color(
-                                                                0xFF6366F1)
-                                                            .withValues(
-                                                                alpha:
-                                                                    0.15)
-                                                        : Colors.white
-                                                            .withValues(
-                                                                alpha:
-                                                                    0.05),
-                                                    borderRadius:
-                                                        BorderRadius
-                                                            .circular(7),
-                                                    border: Border.all(
-                                                      color: i == 0
-                                                          ? const Color(
-                                                                  0xFF6366F1)
-                                                              .withValues(
-                                                                  alpha:
-                                                                      0.28)
-                                                          : Colors.white
-                                                              .withValues(
-                                                                  alpha:
-                                                                      0.09),
-                                                    ),
-                                                  ),
-                                                  child: Text(
-                                                    muscles[i],
-                                                    style: TextStyle(
-                                                      fontSize: 11,
-                                                      fontWeight: i == 0
-                                                          ? FontWeight.w700
-                                                          : FontWeight.w600,
-                                                      color: i == 0
-                                                          ? const Color(
-                                                              0xFF818CF8)
-                                                          : Colors.white
-                                                              .withValues(
-                                                                  alpha:
-                                                                      0.38),
-                                                    ),
-                                                  ),
-                                                ),
-                                            ],
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                  ),
-                                ),
+                            final muscles =
+                                muscleMap[exercise.id] ?? const <ExerciseMuscle>[];
+                            return _ExerciseRow(
+                              exercise: exercise,
+                              muscles: muscles,
+                              onTap: () => _showExerciseDialog(
+                                existing: exercise,
+                                all: exercises,
+                                muscleMap: muscleMap,
                               ),
+                              onLongPress: () => _confirmDelete(exercise),
                             );
                           }
                           remaining -= items.length;
@@ -613,14 +442,186 @@ class _ExerciseLibraryScreenState
   }
 }
 
-class _MuscleGroupHeader extends StatelessWidget {
-  const _MuscleGroupHeader({required this.label, required this.count});
-
+class _AssignmentPill extends StatelessWidget {
   final String label;
-  final int count;
+  final bool isPrimary;
+  const _AssignmentPill({required this.label, required this.isPrimary});
 
   @override
   Widget build(BuildContext context) {
+    final color =
+        isPrimary ? const Color(0xFF818CF8) : Colors.white.withValues(alpha: 0.6);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        isPrimary ? '● $label' : label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: isPrimary ? FontWeight.w700 : FontWeight.w600,
+          color: color,
+        ),
+      ),
+    );
+  }
+}
+
+class _ExerciseRow extends StatelessWidget {
+  final Exercise exercise;
+  final List<ExerciseMuscle> muscles;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+  const _ExerciseRow({
+    required this.exercise,
+    required this.muscles,
+    required this.onTap,
+    required this.onLongPress,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          onLongPress: onLongPress,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: exercise.muscleNeedsReview
+                    ? const Color(0xFFFBBF24).withValues(alpha: 0.4)
+                    : Colors.white.withValues(alpha: 0.09),
+                width: 1.5,
+              ),
+            ),
+            padding: const EdgeInsets.fromLTRB(14, 13, 14, 11),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Name row
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        exercise.name,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                    ),
+                    if (exercise.muscleNeedsReview) ...[
+                      const SizedBox(width: 8),
+                      const _Badge(
+                        label: 'NEEDS REVIEW',
+                        color: Color(0xFFFBBF24),
+                        icon: Icons.error_outline_rounded,
+                      ),
+                    ],
+                    if (exercise.isTimed) ...[
+                      const SizedBox(width: 8),
+                      const _Badge(
+                        label: 'TIMED',
+                        color: Color(0xFF6366F1),
+                      ),
+                    ],
+                  ],
+                ),
+                // Muscle chips
+                if (muscles.isNotEmpty) ...[
+                  const SizedBox(height: 7),
+                  Wrap(
+                    spacing: 5,
+                    runSpacing: 4,
+                    children: [
+                      for (final m in muscles)
+                        _AssignmentPill(
+                          label: m.muscle,
+                          isPrimary: m.role == kMuscleRolePrimary,
+                        ),
+                    ],
+                  ),
+                ] else if (!exercise.muscleNeedsReview) ...[
+                  const SizedBox(height: 7),
+                  Text(
+                    'Not tracked for muscle volume',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.white.withValues(alpha: 0.3),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Badge extends StatelessWidget {
+  final String label;
+  final Color color;
+  final IconData? icon;
+  const _Badge({required this.label, required this.color, this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 10, color: color),
+            const SizedBox(width: 3),
+          ],
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MuscleGroupHeader extends StatelessWidget {
+  const _MuscleGroupHeader({
+    required this.label,
+    required this.count,
+    this.isNeedsReview = false,
+  });
+
+  final String label;
+  final int count;
+  final bool isNeedsReview;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isNeedsReview
+        ? const Color(0xFFFBBF24)
+        : Theme.of(context).colorScheme.primary;
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 16, 4, 6),
       child: Row(
@@ -628,7 +629,7 @@ class _MuscleGroupHeader extends StatelessWidget {
           Text(
             label.toUpperCase(),
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
+                  color: color,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.2,
                 ),

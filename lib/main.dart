@@ -124,6 +124,37 @@ Future<StartupResult> runAppStartup(ProviderContainer container) async {
 
       await prefs.setBool('muscles_seeded_v1', true);
     }
+
+    // Muscle Taxonomy + Weekly Volume Report (schema v20): re-sync every
+    // default exercise's active muscle assignments to the new 21-muscle,
+    // role-aware taxonomy. Runs once per install regardless of whether
+    // muscles_seeded_v1 already ran (that flag may predate this feature and
+    // would otherwise skip re-seeding for upgraded installs). Non-
+    // destructive: setMusclesForExercise never deletes rows, it deactivates
+    // the previous active assignment and inserts the new one, and clears
+    // any stale "needs review" flag for exercises with an exact v2 mapping.
+    final musclesSeededV2 = prefs.getBool('muscles_seeded_v2') ?? false;
+    if (!musclesSeededV2) {
+      final dao = db.exercisesDao;
+      final existingByName = await dao.getExerciseIdsByName();
+
+      for (final companion in kDefaultExercises) {
+        final name = companion.name.value;
+        if (!existingByName.containsKey(name)) {
+          final newId = await dao.insertExercise(companion);
+          existingByName[name] = newId;
+        }
+      }
+
+      for (final entry in kExerciseMuscles.entries) {
+        final id = existingByName[entry.key];
+        if (id != null) {
+          await dao.setMusclesForExercise(id, entry.value);
+        }
+      }
+
+      await prefs.setBool('muscles_seeded_v2', true);
+    }
   } catch (e) {
     debugPrint(
       'Startup: first-launch seeding failed, will retry next launch (non-fatal): $e',

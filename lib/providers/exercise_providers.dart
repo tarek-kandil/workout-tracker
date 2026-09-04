@@ -7,11 +7,21 @@ final exercisesProvider = StreamProvider<List<Exercise>>((ref) {
   return db.exercisesDao.watchAllExercises();
 });
 
-/// Reactive map: exerciseId → [primary muscle, ...secondary muscles].
-/// Empty list means no muscles assigned for that exercise.
-final exerciseMuscleMapProvider = StreamProvider<Map<int, List<String>>>((ref) {
+/// Reactive map: exerciseId → active [ExerciseMuscle] rows (primary first).
+/// Empty list means no muscle assigned for that exercise.
+final exerciseMuscleMapProvider =
+    StreamProvider<Map<int, List<ExerciseMuscle>>>((ref) {
   final db = ref.watch(databaseProvider);
-  return db.exercisesDao.watchAllMuscleMap();
+  return db.exercisesDao.watchAllMuscleAssignmentMap();
+});
+
+/// Exercises still flagged as needing a muscle-assignment review
+/// (FR-016/FR-017) — either the v20 migration guessed ambiguously or the
+/// athlete has not assigned muscles yet.
+final exercisesNeedingMuscleReviewProvider =
+    FutureProvider<List<Exercise>>((ref) {
+  final db = ref.watch(databaseProvider);
+  return db.exercisesDao.getExercisesNeedingMuscleReview();
 });
 
 final variationsForExerciseProvider = FutureProvider.family<List<Exercise>, int>((
@@ -21,3 +31,4 @@ final variationsForExerciseProvider = FutureProvider.family<List<Exercise>, int>
   final db = ref.watch(databaseProvider);
   return db.exerciseVariationsDao.getVariations(exerciseId);
 });
+

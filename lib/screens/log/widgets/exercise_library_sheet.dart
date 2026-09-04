@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../database/app_database.dart';
 import '../../../providers/database_provider.dart';
+import '../../../utils/constants.dart';
 
 class ExerciseLibrarySheet extends ConsumerStatefulWidget {
   final String title;
@@ -15,13 +16,25 @@ class ExerciseLibrarySheet extends ConsumerStatefulWidget {
 class _ExerciseLibrarySheetState extends ConsumerState<ExerciseLibrarySheet> {
   String _query = '';
   List<Exercise> _all = [];
+  Map<int, List<ExerciseMuscle>> _muscleMap = const {};
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    ref.read(databaseProvider).exercisesDao.getAllExercises().then((list) {
-      if (mounted) setState(() { _all = list; _loading = false; });
+    // One-shot fetches (not a reactive `.watch()`/StreamProvider): this
+    // sheet is short-lived, so there's no need to keep a live Drift stream
+    // subscription open for the athlete's whole exercise-picking flow.
+    final dao = ref.read(databaseProvider).exercisesDao;
+    Future.wait([dao.getAllExercises(), dao.getAllMuscleAssignmentMap()])
+        .then((results) {
+      if (mounted) {
+        setState(() {
+          _all = results[0] as List<Exercise>;
+          _muscleMap = results[1] as Map<int, List<ExerciseMuscle>>;
+          _loading = false;
+        });
+      }
     });
   }
 
@@ -34,8 +47,23 @@ class _ExerciseLibrarySheetState extends ConsumerState<ExerciseLibrarySheet> {
   Future<void> _createAndSelect(String name) async {
     final db = ref.read(databaseProvider);
     final id = await db.exercisesDao.insertExercise(ExercisesCompanion.insert(name: name));
-    final created = Exercise(id: id, name: name, isTimed: false, category: 'Other', notes: null);
+    final created = Exercise(
+      id: id,
+      name: name,
+      isTimed: false,
+      category: 'Other',
+      notes: null,
+      muscleNeedsReview: false,
+      muscleReviewNote: null,
+    );
     if (mounted) widget.onSelected(created);
+  }
+
+  bool _isUnmapped(Exercise ex, Map<int, List<ExerciseMuscle>> muscleMap) {
+    if (kDefaultCardioExerciseNames.contains(ex.name)) return false;
+    if (ex.muscleNeedsReview) return true;
+    final assignments = muscleMap[ex.id] ?? const [];
+    return !assignments.any((m) => m.role == kMuscleRolePrimary);
   }
 
   @override
@@ -43,6 +71,7 @@ class _ExerciseLibrarySheetState extends ConsumerState<ExerciseLibrarySheet> {
     final filtered = _filtered;
     final showCreate = _query.isNotEmpty &&
         filtered.every((e) => e.name.toLowerCase() != _query.toLowerCase());
+    final muscleMap = _muscleMap;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.75, minChildSize: 0.5, maxChildSize: 0.95, expand: false,
@@ -87,13 +116,45 @@ class _ExerciseLibrarySheetState extends ConsumerState<ExerciseLibrarySheet> {
                       ),
                     for (final ex in filtered)
                       ListTile(
-                        title: Text(ex.name),
+                        title: Row(
+                          children: [
+                            Flexible(child: Text(ex.name)),
+                            if (_isUnmapped(ex, muscleMap)) ...[
+                              const SizedBox(width: 8),
+                              const _UnmappedPill(),
+                            ],
+                          ],
+                        ),
                         subtitle: Text(ex.isTimed ? 'Timed' : 'Weighted', style: const TextStyle(fontSize: 11)),
                         onTap: () => widget.onSelected(ex),
                       ),
                   ]),
           ),
         ]),
+      ),
+    );
+  }
+}
+
+class _UnmappedPill extends StatelessWidget {
+  const _UnmappedPill();
+
+  @override
+  Widget build(BuildContext context) {
+    const amber = Color(0xFFF59E0B);
+    return Semantics(
+      label: 'This exercise will not count toward muscle volume until assigned.',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: amber.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: amber.withValues(alpha: 0.3)),
+        ),
+        child: const Text(
+          'Unmapped',
+          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: amber),
+        ),
       ),
     );
   }

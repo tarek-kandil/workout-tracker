@@ -1211,6 +1211,8 @@ class _WorkoutBuilder {
         name: name,
         category: 'Strength',
         isTimed: isTimed,
+        muscleNeedsReview: false,
+        muscleReviewNote: null,
       ),
       suggestion: WeightSuggestion.noHistory,
     );
@@ -1237,6 +1239,8 @@ class _WorkoutBuilder {
       name: name,
       category: category,
       isTimed: isTimed,
+      muscleNeedsReview: false,
+      muscleReviewNote: null,
     );
   }
 

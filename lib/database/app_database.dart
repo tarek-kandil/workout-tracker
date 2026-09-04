@@ -28,6 +28,7 @@ import 'daos/sets_dao.dart';
 import 'daos/bodyweight_dao.dart';
 import 'daos/daily_tasks_dao.dart';
 import 'daos/user_profile_dao.dart';
+import 'daos/muscle_volume_dao.dart';
 
 part 'app_database.g.dart';
 
@@ -59,6 +60,7 @@ part 'app_database.g.dart';
     UserProfileDao,
     ExerciseNotesDao,
     ExerciseVariationsDao,
+    MuscleVolumeDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -68,7 +70,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 19;
+  int get schemaVersion => 20;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -278,6 +280,157 @@ class AppDatabase extends _$AppDatabase {
               }
             }
           }
+          if (from < 20) {
+            // Muscle Taxonomy + Weekly Volume Report: additive-only,
+            // non-destructive migration. Never drops tables or deletes
+            // exercise_muscles rows — legacy rows are marked is_active = 0
+            // instead, and ambiguous exercises are flagged for review.
+            // Guarded on table/column existence (see the from<14 step above
+            // for the same rationale — devices may have reached v19 via
+            // different upgrade paths, and tests seed minimal schemas).
+            final tables = await customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table'",
+            ).get();
+            final tableNames = tables.map((r) => r.read<String>('name')).toSet();
+
+            // `exercises` gets its new review columns whenever the table
+            // exists, regardless of whether `exercise_muscles` is present
+            // (some upgrade paths/tests exercise `exercises` in isolation).
+            if (tableNames.contains('exercises')) {
+              final exCols =
+                  await customSelect('PRAGMA table_info(exercises)').get();
+              final exColNames =
+                  exCols.map((r) => r.read<String>('name')).toSet();
+              if (!exColNames.contains('muscle_needs_review')) {
+                await m.addColumn(exercises, exercises.muscleNeedsReview);
+              }
+              if (!exColNames.contains('muscle_review_note')) {
+                await m.addColumn(exercises, exercises.muscleReviewNote);
+              }
+            }
+
+            if (tableNames.contains('exercise_muscles')) {
+              final emCols = await customSelect(
+                'PRAGMA table_info(exercise_muscles)',
+              ).get();
+              final emColNames = emCols.map((r) => r.read<String>('name')).toSet();
+
+              final roleColumnIsNew = !emColNames.contains('role');
+              if (roleColumnIsNew) {
+                await m.addColumn(exerciseMuscles, exerciseMuscles.role);
+              }
+              if (!emColNames.contains('is_active')) {
+                await m.addColumn(exerciseMuscles, exerciseMuscles.isActive);
+              }
+
+              if (roleColumnIsNew) {
+                // Normalize the old sortOrder==0-is-primary convention into
+                // the new explicit role column.
+                await customStatement(
+                  "UPDATE exercise_muscles SET role = 'primary' WHERE sort_order = 0;",
+                );
+                await customStatement(
+                  "UPDATE exercise_muscles SET role = 'secondary' WHERE sort_order > 0;",
+                );
+              }
+
+              if (tableNames.contains('exercises')) {
+                // ── Legacy broad-tag mapping ────────────────────────────
+                // Exact 1:1 tags (Chest, Biceps, Triceps, Quads, Hamstrings,
+                // Glutes, Calves) are already valid taxonomy names — nothing
+                // to migrate for them.
+
+                // Safe renames: singular Front/Rear Delt -> plural taxonomy
+                // names. No ambiguity, so no review flag.
+                await _migrateLegacyMuscleTag(
+                  from: 'Front Delt',
+                  to: 'Front Delts',
+                  needsReview: false,
+                );
+                await _migrateLegacyMuscleTag(
+                  from: 'Rear Delt',
+                  to: 'Rear Delts',
+                  needsReview: false,
+                );
+
+                // Ambiguous tags: pick the single most likely muscle and
+                // flag the exercise for athlete review (FR-016/FR-017).
+                await _migrateLegacyMuscleTag(
+                  from: 'Back',
+                  to: 'Lats',
+                  needsReview: true,
+                  reviewNote: 'Migrated legacy "Back" to Lats — review for '
+                      'Upper Back, Traps, or Spinal Erectors.',
+                );
+                await _migrateLegacyMuscleTag(
+                  from: 'Shoulders',
+                  to: 'Side Delts',
+                  needsReview: true,
+                  reviewNote:
+                      'Migrated legacy "Shoulders" to Side Delts — review '
+                      'for Front Delts or Rear Delts.',
+                );
+                await _migrateLegacyMuscleTag(
+                  from: 'Core',
+                  to: 'Abs',
+                  needsReview: true,
+                  reviewNote: 'Migrated legacy "Core" to Abs — review for '
+                      'Obliques.',
+                );
+
+                // Full Body / Cardio: no safe single-muscle mapping exists.
+                // Deactivate the legacy rows (never delete them) and flag
+                // any exercise left with zero active taxonomy muscles.
+                await customStatement(
+                  "UPDATE exercise_muscles SET is_active = 0 WHERE muscle = 'Full Body';",
+                );
+                await customStatement(
+                  "UPDATE exercise_muscles SET is_active = 0 WHERE muscle = 'Cardio';",
+                );
+
+                const trainableMuscleList =
+                    "'Chest','Lats','Upper Back','Traps','Spinal Erectors',"
+                    "'Front Delts','Side Delts','Rear Delts','Biceps',"
+                    "'Triceps','Forearms','Quads','Hamstrings','Glutes',"
+                    "'Adductors','Abductors','Hip Flexors','Calves','Abs',"
+                    "'Obliques','Neck'";
+
+                // Full Body: always ambiguous — flag for review whenever an
+                // exercise has no other active taxonomy muscle remaining.
+                await customStatement(
+                  'UPDATE exercises '
+                  'SET muscle_needs_review = 1, '
+                  '    muscle_review_note = TRIM(COALESCE(muscle_review_note || \' \', \'\') || '
+                  "      'Migrated legacy \"Full Body\" tag — assign specific muscles for this "
+                  "exercise to count toward muscle volume.') "
+                  'WHERE id IN (SELECT DISTINCT exercise_id FROM exercise_muscles WHERE muscle = \'Full Body\') '
+                  'AND id NOT IN ('
+                  '  SELECT DISTINCT exercise_id FROM exercise_muscles '
+                  '  WHERE is_active = 1 AND muscle IN ($trainableMuscleList)'
+                  ');',
+                );
+
+                // Cardio: default cardio exercises are intentionally
+                // muscle-less and should not be flagged; anything else
+                // (custom or non-cardio exercises tagged Cardio) with no
+                // remaining active taxonomy muscle is flagged for review.
+                await customStatement(
+                  'UPDATE exercises '
+                  'SET muscle_needs_review = 1, '
+                  '    muscle_review_note = TRIM(COALESCE(muscle_review_note || \' \', \'\') || '
+                  "      'Migrated legacy \"Cardio\" tag — assign specific muscles if this "
+                  "exercise should count toward muscle volume.') "
+                  'WHERE id IN (SELECT DISTINCT exercise_id FROM exercise_muscles WHERE muscle = \'Cardio\') '
+                  'AND id NOT IN ('
+                  '  SELECT DISTINCT exercise_id FROM exercise_muscles '
+                  '  WHERE is_active = 1 AND muscle IN ($trainableMuscleList)'
+                  ') '
+                  "AND name NOT IN ('Treadmill Run','Rowing Machine','Jump Rope',"
+                  "'Assault Bike','Stairmaster','Cycling');",
+                );
+              }
+            }
+          }
           if (from >= 3 && from < 8) {
             final cols = await customSelect(
               'PRAGMA table_info(daily_tasks)',
@@ -290,7 +443,50 @@ class AppDatabase extends _$AppDatabase {
           }
         },
       );
+
+  /// Migrates one legacy broad muscle tag ([from]) to an active v20
+  /// taxonomy muscle ([to]) for every exercise that has it, without
+  /// deleting the legacy row: the legacy row is marked `is_active = 0` and
+  /// a new active row is inserted (idempotently, via `NOT EXISTS`) that
+  /// preserves the legacy row's role. When [needsReview] is true, exercises
+  /// touched by this mapping are flagged `muscle_needs_review = 1` with
+  /// [reviewNote] appended (FR-016/FR-017).
+  Future<void> _migrateLegacyMuscleTag({
+    required String from,
+    required String to,
+    required bool needsReview,
+    String? reviewNote,
+  }) async {
+    await customStatement(
+      'INSERT INTO exercise_muscles (exercise_id, muscle, sort_order, role, is_active) '
+      'SELECT legacy.exercise_id, ?, legacy.sort_order, legacy.role, 1 '
+      'FROM exercise_muscles legacy '
+      'WHERE legacy.muscle = ? AND legacy.is_active = 1 '
+      'AND NOT EXISTS ('
+      '  SELECT 1 FROM exercise_muscles existing '
+      '  WHERE existing.exercise_id = legacy.exercise_id '
+      '    AND existing.muscle = ? AND existing.is_active = 1'
+      ');',
+      [to, from, to],
+    );
+
+    await customStatement(
+      'UPDATE exercise_muscles SET is_active = 0 WHERE muscle = ?;',
+      [from],
+    );
+
+    if (needsReview && reviewNote != null) {
+      await customStatement(
+        'UPDATE exercises '
+        "SET muscle_needs_review = 1, "
+        "    muscle_review_note = TRIM(COALESCE(muscle_review_note || ' ', '') || ?) "
+        'WHERE id IN (SELECT DISTINCT exercise_id FROM exercise_muscles WHERE muscle = ?);',
+        [reviewNote, from],
+      );
+    }
+  }
 }
+
 
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {
