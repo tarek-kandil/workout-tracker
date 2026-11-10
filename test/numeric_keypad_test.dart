@@ -131,7 +131,7 @@ void main() {
       expect(result!.moveNext, isFalse);
     });
 
-    testWidgets('deleting every digit with backspace shows 0, not the old value', (tester) async {
+    testWidgets('deleting every digit with backspace leaves the display empty', (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: Builder(builder: (context) {
           return ElevatedButton(
@@ -155,7 +155,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.backspace_outlined));
       await tester.pump();
 
-      expect(find.descendant(of: display, matching: find.text('0')), findsOneWidget);
+      expect(find.descendant(of: display, matching: find.text('')), findsOneWidget);
       expect(find.descendant(of: display, matching: find.text('20')), findsNothing);
     });
 
