@@ -2095,6 +2095,9 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   /// Key of the exercise whose coaching notes were last auto-shown, so each
   /// exercise pops its notes once when it becomes the active one.
   String? _coachingNotesShownKey;
+  /// Keys of each card's (i) icon (by SessionItem.id) so the notes popover can
+  /// animate out of it.
+  final Map<int, GlobalKey> _infoIconKeys = {};
 
   /// Pops the coaching notes sheet when an exercise becomes the active one
   /// (including the first exercise when the workout starts).
@@ -2112,7 +2115,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     _coachingNotesShownKey = key;
     final notes = entry.templateExercise.notes;
     if (notes == null || notes.trim().isEmpty) return;
-    ExerciseCard.showCoachingNotes(context, entry, entry.templateExercise);
+    ExerciseCard.showCoachingNotes(context, entry, entry.templateExercise,
+        anchorKey: _infoIconKeys[_sessionItems[_currentItemIdx].id]);
   }
 
   @override
@@ -2196,6 +2200,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                         skippedSets: si.skippedSets,
                         isAdHoc: si.isAdHoc,
                         historyTabs: _swapHistory[si.id] ?? const [],
+                        infoIconKey: _infoIconKeys.putIfAbsent(si.id, () => GlobalKey()),
                         timedRunning: itemIdx == _currentItemIdx ? _timedRunning : false,
                         timedElapsed: itemIdx == _currentItemIdx ? _timedElapsed : 0,
                         timedStopped: itemIdx == _currentItemIdx ? _timedStopped : false,

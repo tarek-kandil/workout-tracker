@@ -35,6 +35,8 @@ class ExerciseCard extends StatelessWidget {
   final VoidCallback onShowActions;
   /// Variation + original histories when this exercise was swapped in.
   final List<ExerciseHistory> historyTabs;
+  /// Key on the (i) icon so the notes popover can grow out of it.
+  final GlobalKey? infoIconKey;
 
   const ExerciseCard({super.key, 
     required this.entry, required this.cardState, required this.itemIndex,
@@ -47,36 +49,80 @@ class ExerciseCard extends StatelessWidget {
     required this.onDoneSet, required this.onStartTimer, required this.onStopTimer,
     required this.onSkipSet, required this.onEditSet, required this.onShowActions,
     this.historyTabs = const [],
+    this.infoIconKey,
   });
 
+  /// Screen-space rect of the widget behind [key], or null if not laid out.
+  static Rect? _rectOf(GlobalKey? key) {
+    final box = key?.currentContext?.findRenderObject();
+    if (box is! RenderBox || !box.attached || !box.hasSize) return null;
+    return box.localToGlobal(Offset.zero) & box.size;
+  }
+
+  /// Shows the coaching notes as a popover that grows out of the (i) icon
+  /// ([anchorKey]); swipe it away, tap outside, or press "Got it" to close.
   static void showCoachingNotes(
-      BuildContext context, WodExerciseEntry entry, WodTemplateExercise te) {
-    showModalBottomSheet(
+      BuildContext context, WodExerciseEntry entry, WodTemplateExercise te,
+      {GlobalKey? anchorKey}) {
+    final screen = MediaQuery.sizeOf(context);
+    final topInset = MediaQuery.paddingOf(context).top;
+    final rect = _rectOf(anchorKey);
+    final anchorX = (rect?.center.dx ?? screen.width / 2).clamp(40.0, screen.width - 40);
+    final top = ((rect?.bottom ?? topInset + 56) + 8)
+        .clamp(topInset + 8, screen.height * 0.55);
+    const hPad = 16.0;
+    final alignX = (((anchorX - hPad) / (screen.width - 2 * hPad)) * 2 - 1).clamp(-1.0, 1.0);
+
+    showGeneralDialog(
       context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      isDismissible: true, // tap outside to close
-      enableDrag: true, // swipe down to close
-      builder: (sheetCtx) => Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFF1e2030),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      barrierDismissible: true, // tap outside to close
+      barrierLabel: 'Close coaching notes',
+      barrierColor: Colors.black38,
+      transitionDuration: const Duration(milliseconds: 220),
+      transitionBuilder: (ctx, anim, _, child) {
+        final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
+        return FadeTransition(
+          opacity: curved,
+          // Grow from the icon: scale origin = icon's x, top edge of the card.
+          child: ScaleTransition(alignment: Alignment(alignX, -1), scale: Tween(begin: 0.4, end: 1.0).animate(curved), child: child),
+        );
+      },
+      pageBuilder: (sheetCtx, _, _) => Material(
+        type: MaterialType.transparency,
+        child: Stack(children: [
+          Positioned(
+            top: top,
+            left: hPad,
+            right: hPad,
+            child: Stack(clipBehavior: Clip.none, children: [
+              // Caret pointing at the icon.
+              Positioned(
+                top: -6,
+                left: anchorX - hPad - 6,
+                child: Transform.rotate(
+                  angle: 0.785398,
+                  child: Container(width: 12, height: 12, color: const Color(0xFF1e2030)),
+                ),
+              ),
+              // Swipe up/down to dismiss.
+              Dismissible(
+                key: const ValueKey('coaching-notes-popover'),
+                direction: DismissDirection.vertical,
+                onDismissed: (_) => Navigator.of(sheetCtx).pop(),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: screen.height * 0.6),
+                  child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF1e2030),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
         ),
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-        child: Column(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+        child: SingleChildScrollView(child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(
-              child: Container(
-                width: 36, height: 4,
-                margin: const EdgeInsets.only(bottom: 14),
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
+
             Text(entry.exercise.name,
                 style: const TextStyle(
                     fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white)),
@@ -128,7 +174,13 @@ class ExerciseCard extends StatelessWidget {
               ),
             ),
           ],
-        ),
+        )),
+      ),
+                ),
+              ),
+            ]),
+          ),
+        ]),
       ),
     );
   }
@@ -180,8 +232,9 @@ class ExerciseCard extends StatelessWidget {
                 children: [
                   if (te.notes != null && te.notes!.isNotEmpty)
                     IconButton(
+                      key: infoIconKey,
                       icon: const Icon(Icons.info_outline_rounded, size: 18),
-                      onPressed: () => showCoachingNotes(context, entry, te),
+                      onPressed: () => showCoachingNotes(context, entry, te, anchorKey: infoIconKey),
                       padding: EdgeInsets.zero,
                       style: IconButton.styleFrom(
                         minimumSize: const Size(32, 32),
