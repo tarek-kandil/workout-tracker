@@ -151,6 +151,33 @@ class SetsDao extends DatabaseAccessor<AppDatabase> with _$SetsDaoMixin {
         .toList();
   }
 
+  /// Sets from the most recent session (any WOD) that included [exerciseId],
+  /// plus that session's date. Null if the exercise was never logged.
+  Future<({DateTime date, List<WorkoutSet> sets})?> getLastSessionSetsForExercise(
+      int exerciseId) async {
+    final query = select(workoutSets).join([
+      innerJoin(workoutSessions,
+          workoutSessions.id.equalsExp(workoutSets.sessionId)),
+    ]);
+    query
+      ..where(workoutSets.exerciseId.equals(exerciseId))
+      ..orderBy([
+        OrderingTerm(
+            expression: workoutSessions.date, mode: OrderingMode.desc),
+        OrderingTerm(expression: workoutSets.setNumber),
+      ]);
+
+    final results = await query.get();
+    if (results.isEmpty) return null;
+
+    final latest = results.first.readTable(workoutSessions);
+    final sets = results
+        .where((r) => r.readTable(workoutSessions).id == latest.id)
+        .map((r) => r.readTable(workoutSets))
+        .toList();
+    return (date: latest.date, sets: sets);
+  }
+
   /// Max weight per session for an exercise — used for the progress chart.
   Future<List<WeightHistoryPoint>> getWeightHistoryForExercise(
       int exerciseId, {int limit = 30}) async {

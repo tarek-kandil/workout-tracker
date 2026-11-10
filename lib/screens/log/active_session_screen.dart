@@ -107,6 +107,9 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   final Map<int, int> _prBestReps = {};
   final Map<int, int?> _prDurationData = {};
   final Map<int, bool> _historyExpanded = {};
+  /// Per session item (by SessionItem.id): last log of the swapped-in exercise
+  /// and of the exercise it replaced, for the "Last" panel.
+  final Map<int, List<ExerciseHistory>> _swapHistory = {};
 
   // ── Mutable session items ──────────────────────────────────────────────────────
   final List<SessionItem> _sessionItems = [];
@@ -363,8 +366,6 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   // ── Set change ────────────────────────────────────────────────────────────────
 
   void _onSetChanged(int exerciseId, int setIndex, SetData data) {
-    // User started working on the current exercise → its notes may pop.
-    _coachingNotesGateOpen = true;
     setState(() => _setData[exerciseId]![setIndex] = data);
   }
 
@@ -635,7 +636,6 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   // ── Exercise timer ────────────────────────────────────────────────────────────
 
   void _startExerciseTimer() {
-    _coachingNotesGateOpen = true;
     _exerciseTicker?.cancel();
     _exerciseStartTime = DateTime.now();
     setState(() { _timedElapsed = 0; _timedRunning = true; _timedStopped = false; });
@@ -745,35 +745,6 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     }
     final entry = _currentEntry;
     return '${entry.exercise.name}  ·  Set ${_currentSetIdx + 1}/${entry.templateExercise.targetSets}';
-  }
-
-  /// What comes AFTER the upcoming set — shown as secondary hint in the pill.
-  String _getNextLabel() {
-    final circuit = _currentCircuit;
-    final isLastItem = _currentItemIdx >= _sessionItems.length - 1;
-
-    if (circuit != null) {
-      final isLastInRound = _circuitExerciseIdx >= circuit.exercises.length - 1;
-      final isLastRound = _currentSetIdx >= circuit.rounds - 1;
-      if (isLastInRound && isLastRound && isLastItem) return '';
-      if (!isLastInRound) return 'Then: ${circuit.exercises[_circuitExerciseIdx + 1].exercise.name}';
-      if (!isLastRound) return 'Then: Round ${_currentSetIdx + 2}';
-    } else {
-      final targetSets = _currentEntry.templateExercise.targetSets;
-      final isLastSet = _currentSetIdx >= targetSets - 1;
-      if (isLastSet && isLastItem) return '';
-      if (!isLastSet) return 'Then: Set ${_currentSetIdx + 2}/$targetSets';
-    }
-
-    if (!isLastItem) {
-      final nextItem = _sessionItems[_currentItemIdx + 1].wodItem;
-      final name = switch (nextItem) {
-        StandaloneWodExercise(:final entry) => entry.exercise.name,
-        WodCircuit(:final exercises) => 'Circuit (${exercises.length} exercises)',
-      };
-      return 'Then: $name';
-    }
-    return '';
   }
 
   // ── Save / restore ────────────────────────────────────────────────────────────
@@ -1667,19 +1638,55 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     final newEntry = WodExerciseEntry(
       templateExercise: fakeTe, exercise: exercise, suggestion: WeightSuggestion.noHistory,
     );
+    // Remember what this slot was originally (survives repeated swaps); swapping
+    // back to the original clears it.
+    final oldItem = _sessionItems[itemIdx];
+    final baseId = oldItem.originalExerciseId ?? origEntry.templateExercise.exerciseId;
+    final originalExercise = baseId == origEntry.templateExercise.exerciseId
+        ? origEntry.exercise
+        : widget.result.allExercises
+            .map((e) => e.exercise)
+            .where((e) => e.id == baseId)
+            .firstOrNull;
+    final trackOriginal = baseId != exercise.id;
     setState(() {
       _sessionItems[itemIdx] = SessionItem(
-        id: _sessionItems[itemIdx].id,
+        id: oldItem.id,
         wodItem: StandaloneWodExercise(entry: newEntry, restSeconds: original.restSeconds),
         isAdHoc: true,
+        originalExerciseId: trackOriginal ? baseId : null,
       );
+      _swapHistory.remove(oldItem.id);
       _setData[exercise.id] = List.generate(origEntry.templateExercise.targetSets, (_) => SetData(weightKg: 0, reps: 0));
       _lastSets[exercise.id] = [];
       _prData[exercise.id] = null;
       if (itemIdx == _currentItemIdx) { _currentSetIdx = 0; _circuitExerciseIdx = 0; }
     });
     _loadExerciseHistory(exercise.id);
+    _loadSwapHistory(oldItem.id, exercise, trackOriginal ? (baseId, originalExercise) : null);
     _saveProgress();
+  }
+
+  /// Loads the last log (any workout) of the swapped-in exercise and, if known,
+  /// of the exercise it replaced, for the card's "Last" panel.
+  Future<void> _loadSwapHistory(int itemId, Exercise current, (int, Exercise?)? original) async {
+    final dao = ref.read(databaseProvider).setsDao;
+    final histories = <ExerciseHistory>[];
+    final cur = await dao.getLastSessionSetsForExercise(current.id);
+    if (cur != null) histories.add(ExerciseHistory(name: current.name, date: cur.date, sets: cur.sets));
+    if (original != null) {
+      final orig = await dao.getLastSessionSetsForExercise(original.$1);
+      final name = original.$2?.name ?? 'Original';
+      if (orig != null) histories.add(ExerciseHistory(name: name, date: orig.date, sets: orig.sets));
+    }
+    if (!mounted) return;
+    // Ignore if the slot was swapped again while loading.
+    final stillCurrent = _sessionItems.any((si) =>
+        si.id == itemId &&
+        si.wodItem is StandaloneWodExercise &&
+        (si.wodItem as StandaloneWodExercise).entry.templateExercise.exerciseId == current.id);
+    if (!stillCurrent) return;
+    setState(() => _swapHistory[itemId] = histories);
   }
 
   void _showSwapCircuitExerciseSheet(int itemIdx, int exIdx) {
@@ -2089,23 +2096,14 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   /// exercise pops its notes once when it becomes the active one.
   String? _coachingNotesShownKey;
 
-  /// The exercise the session opened on. Its notes must not pop merely because
-  /// the workout was opened — only once the user starts it (edits a set or
-  /// starts its timer) or moves on to a later exercise.
-  int? _coachingNotesBaselineIdx;
-  bool _coachingNotesGateOpen = false;
-
-  /// Pops the coaching notes sheet when the user starts an exercise.
+  /// Pops the coaching notes sheet when an exercise becomes the active one
+  /// (including the first exercise when the workout starts).
   void _maybeShowCoachingNotes() {
     if (!mounted || _loading || _showResumePrompt || _countingDown ||
         _allExercisesDone || _sessionItems.isEmpty ||
         _currentItemIdx >= _sessionItems.length) {
       return;
     }
-    _coachingNotesBaselineIdx ??= _currentItemIdx;
-    if (_currentItemIdx != _coachingNotesBaselineIdx) _coachingNotesGateOpen = true;
-    // Circuits start via their own countdown, which is the "start" moment.
-    if (!_coachingNotesGateOpen && !_isCircuit) return;
     final entry = _currentEntry;
     final key = '$_currentItemIdx:${entry.templateExercise.exerciseId}';
     if (key == _coachingNotesShownKey) return;
@@ -2121,7 +2119,11 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   Widget build(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowCoachingNotes());
     final totalItems = _sessionItems.length;
-    final progressValue = totalItems == 0 ? 0.0 : _currentItemIdx / totalItems;
+    // _currentItemIdx stays on the last item once everything is done, so fill
+    // the bar completely in that case.
+    final progressValue = totalItems == 0
+        ? 0.0
+        : _allExercisesDone ? 1.0 : _currentItemIdx / totalItems;
 
     return Scaffold(
       appBar: AppBar(
@@ -2193,6 +2195,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                         prDurationSeconds: _prDurationData[entry.templateExercise.exerciseId],
                         skippedSets: si.skippedSets,
                         isAdHoc: si.isAdHoc,
+                        historyTabs: _swapHistory[si.id] ?? const [],
                         timedRunning: itemIdx == _currentItemIdx ? _timedRunning : false,
                         timedElapsed: itemIdx == _currentItemIdx ? _timedElapsed : 0,
                         timedStopped: itemIdx == _currentItemIdx ? _timedStopped : false,
@@ -2253,8 +2256,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                 child: RestPill(
                   secondsLeft: _restSecondsLeft,
                   totalSeconds: _restTotalSeconds,
-                  currentLabel: _getCurrentRestLabel(),
-                  nextLabel: _getNextLabel(),
+                  currentLabel: 'Next: ${_getCurrentRestLabel()}',
+                  nextLabel: '',
                   onSkip: _skipRest,
                 ),
               ),

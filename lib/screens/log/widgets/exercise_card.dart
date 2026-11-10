@@ -33,6 +33,8 @@ class ExerciseCard extends StatelessWidget {
   final void Function(int) onSkipSet;
   final void Function(int) onEditSet;
   final VoidCallback onShowActions;
+  /// Variation + original histories when this exercise was swapped in.
+  final List<ExerciseHistory> historyTabs;
 
   const ExerciseCard({super.key, 
     required this.entry, required this.cardState, required this.itemIndex,
@@ -44,6 +46,7 @@ class ExerciseCard extends StatelessWidget {
     required this.onToggleHistory, required this.onSetDataChanged,
     required this.onDoneSet, required this.onStartTimer, required this.onStopTimer,
     required this.onSkipSet, required this.onEditSet, required this.onShowActions,
+    this.historyTabs = const [],
   });
 
   static void showCoachingNotes(
@@ -215,6 +218,7 @@ class ExerciseCard extends StatelessWidget {
             lastSets: lastSets, isTimed: isTimed,
             prKg: prKg, prDurationSeconds: prDurationSeconds,
             expanded: historyExpanded, onToggle: onToggleHistory,
+            tabs: historyTabs,
           ),
           const SizedBox(height: 10),
           if (isActive && effectiveRir(te.targetRir, te.targetRpe) != null) ...[

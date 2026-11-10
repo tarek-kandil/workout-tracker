@@ -1,3 +1,4 @@
+import '../../../database/app_database.dart' show WorkoutSet;
 import '../../../models/wod_item.dart';
 
 // ─── Local session data models ─────────────────────────────────────────────────
@@ -17,6 +18,9 @@ class SessionItem {
   WodItem wodItem;
   bool skipped;
   bool isAdHoc;
+  /// Set when this item was swapped from another exercise (e.g. to a
+  /// variation): the exercise it replaced, so its history can still be shown.
+  int? originalExerciseId;
   final Set<int> skippedSets;
 
   SessionItem({
@@ -24,7 +28,16 @@ class SessionItem {
     required this.wodItem,
     this.skipped = false,
     this.isAdHoc = false,
+    this.originalExerciseId,
   }) : skippedSets = {};
+}
+
+/// One labelled "last time" log shown in the history panel.
+class ExerciseHistory {
+  final String name;
+  final DateTime date;
+  final List<WorkoutSet> sets;
+  const ExerciseHistory({required this.name, required this.date, required this.sets});
 }
 
 enum CardState { active, completed, upcoming }
