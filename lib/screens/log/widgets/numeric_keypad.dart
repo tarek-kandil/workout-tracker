@@ -158,7 +158,8 @@ class _NumericKeypadSheetState extends State<NumericKeypadSheet> {
   /// falls back to the original value when the buffer is empty/invalid,
   /// mirroring the previous inline-TextField "discard invalid input" rule.
   double get _clampedValue {
-    final raw = _buffer.numericValue ?? widget.initialValue;
+    // An empty buffer (everything deleted) means 0, matching what the display shows.
+    final raw = _buffer.numericValue ?? 0.0;
     return clampNumericValue(raw, min: widget.min, max: widget.max, allowDecimal: widget.allowDecimal);
   }
 
@@ -196,7 +197,7 @@ class _NumericKeypadSheetState extends State<NumericKeypadSheet> {
   @override
   Widget build(BuildContext context) {
     final accent = Theme.of(context).colorScheme.primary;
-    final displayText = _buffer.text.isEmpty ? _formatSeed(widget.initialValue) : _buffer.text;
+    final displayText = _buffer.text.isEmpty ? '0' : _buffer.text;
 
     return Container(
       decoration: const BoxDecoration(

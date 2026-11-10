@@ -131,6 +131,34 @@ void main() {
       expect(result!.moveNext, isFalse);
     });
 
+    testWidgets('deleting every digit with backspace shows 0, not the old value', (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: Builder(builder: (context) {
+          return ElevatedButton(
+            onPressed: () => showNumericKeypadSheet(
+              context,
+              title: 'Weight',
+              initialValue: 20,
+              allowDecimal: true,
+              unit: 'kg',
+              quickAdjusts: const [],
+            ),
+            child: const Text('open'),
+          );
+        }),
+      ));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      final display = find.byKey(const ValueKey('keypad-display'));
+      await tester.tap(find.byIcon(Icons.backspace_outlined));
+      await tester.tap(find.byIcon(Icons.backspace_outlined));
+      await tester.pump();
+
+      expect(find.descendant(of: display, matching: find.text('0')), findsOneWidget);
+      expect(find.descendant(of: display, matching: find.text('20')), findsNothing);
+    });
+
     testWidgets('quick-adjust chip nudges the seeded value', (tester) async {
       NumericKeypadResult? result;
       await tester.pumpWidget(MaterialApp(
