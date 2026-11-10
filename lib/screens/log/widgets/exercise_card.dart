@@ -46,13 +46,15 @@ class ExerciseCard extends StatelessWidget {
     required this.onSkipSet, required this.onEditSet, required this.onShowActions,
   });
 
-  static void _showCoachingNotes(
+  static void showCoachingNotes(
       BuildContext context, WodExerciseEntry entry, WodTemplateExercise te) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (_) => Container(
+      isDismissible: true, // tap outside to close
+      enableDrag: true, // swipe down to close
+      builder: (sheetCtx) => Container(
         decoration: const BoxDecoration(
           color: Color(0xFF1e2030),
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -114,6 +116,14 @@ class ExerciseCard extends StatelessWidget {
                 ],
               ),
             ],
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: () => Navigator.of(sheetCtx).pop(),
+                child: const Text('Got it'),
+              ),
+            ),
           ],
         ),
       ),
@@ -168,7 +178,7 @@ class ExerciseCard extends StatelessWidget {
                   if (te.notes != null && te.notes!.isNotEmpty)
                     IconButton(
                       icon: const Icon(Icons.info_outline_rounded, size: 18),
-                      onPressed: () => _showCoachingNotes(context, entry, te),
+                      onPressed: () => showCoachingNotes(context, entry, te),
                       padding: EdgeInsets.zero,
                       style: IconButton.styleFrom(
                         minimumSize: const Size(32, 32),

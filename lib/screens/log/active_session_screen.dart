@@ -363,6 +363,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   // ── Set change ────────────────────────────────────────────────────────────────
 
   void _onSetChanged(int exerciseId, int setIndex, SetData data) {
+    // User started working on the current exercise → its notes may pop.
+    _coachingNotesGateOpen = true;
     setState(() => _setData[exerciseId]![setIndex] = data);
   }
 
@@ -633,6 +635,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   // ── Exercise timer ────────────────────────────────────────────────────────────
 
   void _startExerciseTimer() {
+    _coachingNotesGateOpen = true;
     _exerciseTicker?.cancel();
     _exerciseStartTime = DateTime.now();
     setState(() { _timedElapsed = 0; _timedRunning = true; _timedStopped = false; });
@@ -2082,8 +2085,41 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
 
   // ── Build ─────────────────────────────────────────────────────────────────────
 
+  /// Key of the exercise whose coaching notes were last auto-shown, so each
+  /// exercise pops its notes once when it becomes the active one.
+  String? _coachingNotesShownKey;
+
+  /// The exercise the session opened on. Its notes must not pop merely because
+  /// the workout was opened — only once the user starts it (edits a set or
+  /// starts its timer) or moves on to a later exercise.
+  int? _coachingNotesBaselineIdx;
+  bool _coachingNotesGateOpen = false;
+
+  /// Pops the coaching notes sheet when the user starts an exercise.
+  void _maybeShowCoachingNotes() {
+    if (!mounted || _loading || _showResumePrompt || _countingDown ||
+        _allExercisesDone || _sessionItems.isEmpty ||
+        _currentItemIdx >= _sessionItems.length) {
+      return;
+    }
+    _coachingNotesBaselineIdx ??= _currentItemIdx;
+    if (_currentItemIdx != _coachingNotesBaselineIdx) _coachingNotesGateOpen = true;
+    // Circuits start via their own countdown, which is the "start" moment.
+    if (!_coachingNotesGateOpen && !_isCircuit) return;
+    final entry = _currentEntry;
+    final key = '$_currentItemIdx:${entry.templateExercise.exerciseId}';
+    if (key == _coachingNotesShownKey) return;
+    // Wait (retried on next build) if another sheet/dialog is on top.
+    if (ModalRoute.of(context)?.isCurrent != true) return;
+    _coachingNotesShownKey = key;
+    final notes = entry.templateExercise.notes;
+    if (notes == null || notes.trim().isEmpty) return;
+    ExerciseCard.showCoachingNotes(context, entry, entry.templateExercise);
+  }
+
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowCoachingNotes());
     final totalItems = _sessionItems.length;
     final progressValue = totalItems == 0 ? 0.0 : _currentItemIdx / totalItems;
 
