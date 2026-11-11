@@ -10,6 +10,7 @@ class DrumPicker extends StatefulWidget {
     required this.backgroundColor,
     this.itemExtent = 48,
     this.height = 160,
+    this.looping = false,
   });
 
   final List<String> items;
@@ -19,6 +20,7 @@ class DrumPicker extends StatefulWidget {
   final Color backgroundColor;
   final double itemExtent;
   final double height;
+  final bool looping;
 
   @override
   State<DrumPicker> createState() => _DrumPickerState();
@@ -38,12 +40,17 @@ class _DrumPickerState extends State<DrumPicker> {
   @override
   void didUpdateWidget(DrumPicker oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.selectedIndex != widget.selectedIndex) {
+    final n = widget.items.length;
+    final currentEffective = (widget.looping && n > 0)
+        ? ((_currentIndex % n) + n) % n
+        : _currentIndex;
+    if (oldWidget.selectedIndex != widget.selectedIndex &&
+        widget.selectedIndex != currentEffective) {
       _currentIndex = widget.selectedIndex;
       _controller.animateToItem(
         widget.selectedIndex,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
       );
     }
   }
@@ -72,18 +79,29 @@ class _DrumPickerState extends State<DrumPicker> {
             ListWheelScrollView.useDelegate(
               controller: _controller,
               itemExtent: widget.itemExtent,
-              physics: const BouncingScrollPhysics(
-                parent: FixedExtentScrollPhysics(),
+              physics: const FixedExtentScrollPhysics(
+                parent: BouncingScrollPhysics(),
               ),
               perspective: 0.003,
               diameterRatio: 2.5,
               onSelectedItemChanged: (index) {
+                final n = widget.items.length;
+                if (n == 0) return;
+                final effectiveIndex =
+                    widget.looping ? ((index % n) + n) % n : index;
                 setState(() => _currentIndex = index);
-                widget.onChanged(index);
+                widget.onChanged(effectiveIndex);
               },
               childDelegate: ListWheelChildBuilderDelegate(
-                childCount: widget.items.length,
+                childCount: widget.looping ? null : widget.items.length,
                 builder: (context, index) {
+                  final n = widget.items.length;
+                  if (n == 0) return const SizedBox.shrink();
+                  if (!widget.looping && (index < 0 || index >= n)) {
+                    return null;
+                  }
+                  final itemIndex =
+                      widget.looping ? ((index % n) + n) % n : index;
                   final distance = (index - _currentIndex).abs();
                   final TextStyle style;
                   if (distance == 0) {
@@ -106,7 +124,7 @@ class _DrumPickerState extends State<DrumPicker> {
                     );
                   }
                   return Center(
-                    child: Text(widget.items[index], style: style),
+                    child: Text(widget.items[itemIndex], style: style),
                   );
                 },
               ),

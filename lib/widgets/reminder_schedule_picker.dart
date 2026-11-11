@@ -271,9 +271,12 @@ class _DrumTimePickerSheetState extends State<_DrumTimePickerSheet> {
                 child: DrumPicker(
                   items: _hours,
                   selectedIndex: _hour,
-                  onChanged: (i) => setState(() => _hour = i),
+                  onChanged: (i) => _hour = i,
                   accentColor: accent,
                   backgroundColor: _bg,
+                  itemExtent: 40,
+                  height: 180,
+                  looping: true,
                 ),
               ),
               const Padding(
@@ -291,9 +294,12 @@ class _DrumTimePickerSheetState extends State<_DrumTimePickerSheet> {
                 child: DrumPicker(
                   items: _minutes,
                   selectedIndex: _minute,
-                  onChanged: (i) => setState(() => _minute = i),
+                  onChanged: (i) => _minute = i,
                   accentColor: accent,
                   backgroundColor: _bg,
+                  itemExtent: 40,
+                  height: 180,
+                  looping: true,
                 ),
               ),
             ],
