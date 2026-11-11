@@ -15,31 +15,35 @@ class WodExerciseEntry {
   });
 }
 
-/// Full context for the "Next Workout" card / session screen.
+/// Full context for the "Next Workout" card / session screen, or a standalone
+/// Flash Workout (when [program] and [phase] are null).
 class NextWodResult {
-  final Program program;
-  final ProgramPhase phase;
-  final int phaseIndex; // 1-based
-  final int totalPhases;
+  final Program? program;
+  final ProgramPhase? phase;
+  final int? phaseIndex; // 1-based
+  final int? totalPhases;
   final WodTemplate wodTemplate;
-  final int weekNumberInProgram; // 1-based
-  final int totalProgramWeeks; // sum of all phase durations
+  final int? weekNumberInProgram; // 1-based
+  final int? totalProgramWeeks; // sum of all phase durations
   /// Ordered list of WOD items (standalone exercises and circuits).
   final List<WodItem> items;
   /// Date of the most recent completed session for this WOD (null = first ever)
   final DateTime? lastSessionDate;
 
   const NextWodResult({
-    required this.program,
-    required this.phase,
-    required this.phaseIndex,
-    required this.totalPhases,
+    this.program,
+    this.phase,
+    this.phaseIndex,
+    this.totalPhases,
     required this.wodTemplate,
-    required this.weekNumberInProgram,
-    required this.totalProgramWeeks,
+    this.weekNumberInProgram,
+    this.totalProgramWeeks,
     required this.items,
     this.lastSessionDate,
   });
+
+  /// True when this represents a standalone Flash Workout outside any program.
+  bool get isFlashWorkout => program == null || wodTemplate.phaseId == null;
 
   /// Flat list of all exercises (from standalone items and circuit items).
   /// Useful for display in non-session contexts.

@@ -12,7 +12,7 @@ import 'program_providers.dart';
 
 /// Builds the ordered [List<WodItem>] for a WOD template.
 /// Merges standalone exercises and circuits sorted by their WOD-level sortOrder.
-Future<List<WodItem>> _buildWodItems(
+Future<List<WodItem>> buildWodItems(
   AppDatabase db,
   int wodTemplateId,
   Map<int, Exercise> exerciseMap,
@@ -39,11 +39,17 @@ Future<List<WodItem>> _buildWodItems(
         entry: WodExerciseEntry(
           templateExercise: te,
           exercise: exercise,
-          suggestion: _computeSuggestion(
-            lastSets: lastSets,
-            repRangeMin: te.repRangeMin,
-            repRangeMax: te.repRangeMax,
-          ),
+          suggestion: exercise.isTimed
+              ? _computeTimedSuggestion(
+                  lastSets: lastSets,
+                  repRangeMin: te.repRangeMin,
+                  repRangeMax: te.repRangeMax,
+                )
+              : _computeSuggestion(
+                  lastSets: lastSets,
+                  repRangeMin: te.repRangeMin,
+                  repRangeMax: te.repRangeMax,
+                ),
         ),
         restSeconds: te.restSeconds,
       ),
@@ -62,11 +68,17 @@ Future<List<WodItem>> _buildWodItems(
       entries.add(WodExerciseEntry(
         templateExercise: te,
         exercise: exercise,
-        suggestion: _computeSuggestion(
-          lastSets: lastSets,
-          repRangeMin: te.repRangeMin,
-          repRangeMax: te.repRangeMax,
-        ),
+        suggestion: exercise.isTimed
+            ? _computeTimedSuggestion(
+                lastSets: lastSets,
+                repRangeMin: te.repRangeMin,
+                repRangeMax: te.repRangeMax,
+              )
+            : _computeSuggestion(
+                lastSets: lastSets,
+                repRangeMin: te.repRangeMin,
+                repRangeMax: te.repRangeMax,
+              ),
       ));
     }
     items.add((
@@ -93,17 +105,17 @@ Future<List<WodItem>> _buildWodItems(
 final allCurrentPhaseWodsProvider =
     FutureProvider<List<NextWodResult>>((ref) async {
   final recommended = await ref.watch(nextWodProvider.future);
-  if (recommended == null) return [];
+  if (recommended == null || recommended.phase == null) return [];
 
   final db = ref.watch(databaseProvider);
   final phaseWods =
-      await db.programsDao.getWodTemplatesForPhase(recommended.phase.id);
+      await db.programsDao.getWodTemplatesForPhase(recommended.phase!.id);
   final allExercises = await db.exercisesDao.getAllExercises();
   final exerciseMap = {for (final e in allExercises) e.id: e};
 
   final results = <NextWodResult>[];
   for (final wod in phaseWods) {
-    final wodItems = await _buildWodItems(db, wod.id, exerciseMap);
+    final wodItems = await buildWodItems(db, wod.id, exerciseMap);
     final wodSessions =
         await db.sessionsDao.getSessionsForWodTemplate(wod.id);
     results.add(NextWodResult(
@@ -188,7 +200,7 @@ final nextWodProvider = FutureProvider<NextWodResult?>((ref) async {
   // ── Load items ────────────────────────────────────────────────────────────
   final allExercises = await db.exercisesDao.getAllExercises();
   final exerciseMap = {for (final e in allExercises) e.id: e};
-  final wodItems = await _buildWodItems(db, nextWod.id, exerciseMap);
+  final wodItems = await buildWodItems(db, nextWod.id, exerciseMap);
 
   return NextWodResult(
     program: program,
@@ -248,6 +260,45 @@ WeightSuggestion _computeSuggestion({
       message: easyEffort
           ? 'Easy effort$rirStr — maintain ${bestWeight}kg, push to $repRangeMax reps'
           : 'Stay at ${bestWeight}kg, aim for $repRangeMax reps',
+    );
+  }
+}
+
+WeightSuggestion _computeTimedSuggestion({
+  required List<WorkoutSet> lastSets,
+  required int repRangeMin,
+  required int repRangeMax,
+}) {
+  final validDurations = lastSets
+      .map((s) => s.durationSeconds ?? 0)
+      .where((d) => d > 0)
+      .toList();
+  if (validDurations.isEmpty) return WeightSuggestion.noHistory;
+
+  final minDur = validDurations.reduce(min);
+  final maxDur = validDurations.reduce(max);
+  final step = maxDur >= 60 ? 10 : 5;
+  final highCeiling = max(repRangeMin, repRangeMax);
+
+  if (minDur >= highCeiling) {
+    final nextDur = maxDur + step;
+    return WeightSuggestion(
+      type: SuggestionType.increase,
+      suggestedDurationSeconds: nextDur,
+      message: 'Held ${maxDur}s — increase to ${nextDur}s (+${step}s)',
+    );
+  } else if (maxDur < repRangeMin) {
+    final nextDur = max(5, maxDur - 5);
+    return WeightSuggestion(
+      type: SuggestionType.decrease,
+      suggestedDurationSeconds: nextDur,
+      message: 'Held ${minDur}s — reduce to ${nextDur}s',
+    );
+  } else {
+    return WeightSuggestion(
+      type: SuggestionType.maintain,
+      suggestedDurationSeconds: maxDur,
+      message: 'Stay at ${maxDur}s, aim for ${highCeiling}s',
     );
   }
 }

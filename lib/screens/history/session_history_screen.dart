@@ -207,8 +207,14 @@ class _SessionTile extends ConsumerWidget {
     final cs = Theme.of(context).colorScheme;
 
     final parts = <String>[];
-    if (entry.programName != null) parts.add(entry.programName!);
-    if (session.weekNumber != null) parts.add('Week ${session.weekNumber}');
+    if (entry.programName != null) {
+      parts.add(entry.programName!);
+      if (session.weekNumber != null) parts.add('Week ${session.weekNumber}');
+    } else if (session.wodTemplateId != null && session.weekNumber == null) {
+      parts.add('Flash Workout');
+    } else if (session.weekNumber != null) {
+      parts.add('Week ${session.weekNumber}');
+    }
     final subtitle = parts.isNotEmpty ? parts.join(' · ') : null;
 
     return Padding(

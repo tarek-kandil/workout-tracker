@@ -1081,7 +1081,7 @@ class _WorkoutBuilder {
         .insert(
           WodTemplatesCompanion.insert(
             id: Value(wodId),
-            phaseId: phaseId,
+            phaseId: Value(phaseId),
             wodNumber: 1,
             name: 'QA Workout',
             restSeconds: const Value(0),
@@ -1266,6 +1266,8 @@ class _WorkoutBuilder {
       wodNumber: 1,
       name: 'QA Workout',
       restSeconds: 0,
+      isArchived: false,
+      sortOrder: 0,
     ),
     weekNumberInProgram: 1,
     totalProgramWeeks: 4,

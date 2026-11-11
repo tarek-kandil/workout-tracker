@@ -70,7 +70,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 21;
+  int get schemaVersion => 22;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -449,6 +449,34 @@ class AppDatabase extends _$AppDatabase {
                   exCols.map((r) => r.read<String>('name')).toSet();
               if (!exColNames.contains('archived')) {
                 await m.addColumn(exercises, exercises.archived);
+              }
+            }
+          }
+          if (from < 22) {
+            // Flash workouts: wod_templates.phase_id becomes nullable (a flash
+            // workout has no program phase) and gains reminder / archive /
+            // ordering columns. SQLite cannot relax NOT NULL in place, so the
+            // table is rebuilt by drift (ids and all rows are preserved).
+            // Guarded: upgrades from < v2 create the table in its final shape.
+            final tables = await customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table'",
+            ).get();
+            final tableNames = tables.map((r) => r.read<String>('name')).toSet();
+            if (tableNames.contains('wod_templates')) {
+              final cols =
+                  await customSelect('PRAGMA table_info(wod_templates)').get();
+              final colNames = cols.map((r) => r.read<String>('name')).toSet();
+              if (!colNames.contains('reminder_days')) {
+                await m.alterTable(TableMigration(
+                  wodTemplates,
+                  newColumns: [
+                    wodTemplates.reminderDays,
+                    wodTemplates.reminderHour,
+                    wodTemplates.reminderMinute,
+                    wodTemplates.isArchived,
+                    wodTemplates.sortOrder,
+                  ],
+                ));
               }
             }
           }

@@ -1210,9 +1210,9 @@ class $WodTemplatesTable extends WodTemplates
   late final GeneratedColumn<int> phaseId = GeneratedColumn<int>(
     'phase_id',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.int,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'REFERENCES program_phases (id)',
     ),
@@ -1262,6 +1262,66 @@ class $WodTemplatesTable extends WodTemplates
     requiredDuringInsert: false,
     defaultValue: const Constant(90),
   );
+  static const VerificationMeta _reminderDaysMeta = const VerificationMeta(
+    'reminderDays',
+  );
+  @override
+  late final GeneratedColumn<int> reminderDays = GeneratedColumn<int>(
+    'reminder_days',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _reminderHourMeta = const VerificationMeta(
+    'reminderHour',
+  );
+  @override
+  late final GeneratedColumn<int> reminderHour = GeneratedColumn<int>(
+    'reminder_hour',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _reminderMinuteMeta = const VerificationMeta(
+    'reminderMinute',
+  );
+  @override
+  late final GeneratedColumn<int> reminderMinute = GeneratedColumn<int>(
+    'reminder_minute',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isArchivedMeta = const VerificationMeta(
+    'isArchived',
+  );
+  @override
+  late final GeneratedColumn<bool> isArchived = GeneratedColumn<bool>(
+    'is_archived',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_archived" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1270,6 +1330,11 @@ class $WodTemplatesTable extends WodTemplates
     name,
     notes,
     restSeconds,
+    reminderDays,
+    reminderHour,
+    reminderMinute,
+    isArchived,
+    sortOrder,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1291,8 +1356,6 @@ class $WodTemplatesTable extends WodTemplates
         _phaseIdMeta,
         phaseId.isAcceptableOrUnknown(data['phase_id']!, _phaseIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_phaseIdMeta);
     }
     if (data.containsKey('wod_number')) {
       context.handle(
@@ -1325,6 +1388,45 @@ class $WodTemplatesTable extends WodTemplates
         ),
       );
     }
+    if (data.containsKey('reminder_days')) {
+      context.handle(
+        _reminderDaysMeta,
+        reminderDays.isAcceptableOrUnknown(
+          data['reminder_days']!,
+          _reminderDaysMeta,
+        ),
+      );
+    }
+    if (data.containsKey('reminder_hour')) {
+      context.handle(
+        _reminderHourMeta,
+        reminderHour.isAcceptableOrUnknown(
+          data['reminder_hour']!,
+          _reminderHourMeta,
+        ),
+      );
+    }
+    if (data.containsKey('reminder_minute')) {
+      context.handle(
+        _reminderMinuteMeta,
+        reminderMinute.isAcceptableOrUnknown(
+          data['reminder_minute']!,
+          _reminderMinuteMeta,
+        ),
+      );
+    }
+    if (data.containsKey('is_archived')) {
+      context.handle(
+        _isArchivedMeta,
+        isArchived.isAcceptableOrUnknown(data['is_archived']!, _isArchivedMeta),
+      );
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    }
     return context;
   }
 
@@ -1341,7 +1443,7 @@ class $WodTemplatesTable extends WodTemplates
       phaseId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}phase_id'],
-      )!,
+      ),
       wodNumber: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}wod_number'],
@@ -1358,6 +1460,26 @@ class $WodTemplatesTable extends WodTemplates
         DriftSqlType.int,
         data['${effectivePrefix}rest_seconds'],
       )!,
+      reminderDays: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}reminder_days'],
+      ),
+      reminderHour: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}reminder_hour'],
+      ),
+      reminderMinute: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}reminder_minute'],
+      ),
+      isArchived: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_archived'],
+      )!,
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort_order'],
+      )!,
     );
   }
 
@@ -1369,43 +1491,85 @@ class $WodTemplatesTable extends WodTemplates
 
 class WodTemplate extends DataClass implements Insertable<WodTemplate> {
   final int id;
-  final int phaseId;
+
+  /// Null for a standalone "flash workout" (not part of any program phase).
+  final int? phaseId;
   final int wodNumber;
   final String name;
   final String? notes;
   final int restSeconds;
+
+  /// Weekday reminder bitmask: bit 0 = Monday … bit 6 = Sunday. Null = none.
+  final int? reminderDays;
+  final int? reminderHour;
+  final int? reminderMinute;
+
+  /// Soft-delete: hides a flash workout that already has logged history.
+  final bool isArchived;
+  final int sortOrder;
   const WodTemplate({
     required this.id,
-    required this.phaseId,
+    this.phaseId,
     required this.wodNumber,
     required this.name,
     this.notes,
     required this.restSeconds,
+    this.reminderDays,
+    this.reminderHour,
+    this.reminderMinute,
+    required this.isArchived,
+    required this.sortOrder,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
-    map['phase_id'] = Variable<int>(phaseId);
+    if (!nullToAbsent || phaseId != null) {
+      map['phase_id'] = Variable<int>(phaseId);
+    }
     map['wod_number'] = Variable<int>(wodNumber);
     map['name'] = Variable<String>(name);
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
     }
     map['rest_seconds'] = Variable<int>(restSeconds);
+    if (!nullToAbsent || reminderDays != null) {
+      map['reminder_days'] = Variable<int>(reminderDays);
+    }
+    if (!nullToAbsent || reminderHour != null) {
+      map['reminder_hour'] = Variable<int>(reminderHour);
+    }
+    if (!nullToAbsent || reminderMinute != null) {
+      map['reminder_minute'] = Variable<int>(reminderMinute);
+    }
+    map['is_archived'] = Variable<bool>(isArchived);
+    map['sort_order'] = Variable<int>(sortOrder);
     return map;
   }
 
   WodTemplatesCompanion toCompanion(bool nullToAbsent) {
     return WodTemplatesCompanion(
       id: Value(id),
-      phaseId: Value(phaseId),
+      phaseId: phaseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(phaseId),
       wodNumber: Value(wodNumber),
       name: Value(name),
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
       restSeconds: Value(restSeconds),
+      reminderDays: reminderDays == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reminderDays),
+      reminderHour: reminderHour == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reminderHour),
+      reminderMinute: reminderMinute == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reminderMinute),
+      isArchived: Value(isArchived),
+      sortOrder: Value(sortOrder),
     );
   }
 
@@ -1416,11 +1580,16 @@ class WodTemplate extends DataClass implements Insertable<WodTemplate> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return WodTemplate(
       id: serializer.fromJson<int>(json['id']),
-      phaseId: serializer.fromJson<int>(json['phaseId']),
+      phaseId: serializer.fromJson<int?>(json['phaseId']),
       wodNumber: serializer.fromJson<int>(json['wodNumber']),
       name: serializer.fromJson<String>(json['name']),
       notes: serializer.fromJson<String?>(json['notes']),
       restSeconds: serializer.fromJson<int>(json['restSeconds']),
+      reminderDays: serializer.fromJson<int?>(json['reminderDays']),
+      reminderHour: serializer.fromJson<int?>(json['reminderHour']),
+      reminderMinute: serializer.fromJson<int?>(json['reminderMinute']),
+      isArchived: serializer.fromJson<bool>(json['isArchived']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
     );
   }
   @override
@@ -1428,28 +1597,45 @@ class WodTemplate extends DataClass implements Insertable<WodTemplate> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
-      'phaseId': serializer.toJson<int>(phaseId),
+      'phaseId': serializer.toJson<int?>(phaseId),
       'wodNumber': serializer.toJson<int>(wodNumber),
       'name': serializer.toJson<String>(name),
       'notes': serializer.toJson<String?>(notes),
       'restSeconds': serializer.toJson<int>(restSeconds),
+      'reminderDays': serializer.toJson<int?>(reminderDays),
+      'reminderHour': serializer.toJson<int?>(reminderHour),
+      'reminderMinute': serializer.toJson<int?>(reminderMinute),
+      'isArchived': serializer.toJson<bool>(isArchived),
+      'sortOrder': serializer.toJson<int>(sortOrder),
     };
   }
 
   WodTemplate copyWith({
     int? id,
-    int? phaseId,
+    Value<int?> phaseId = const Value.absent(),
     int? wodNumber,
     String? name,
     Value<String?> notes = const Value.absent(),
     int? restSeconds,
+    Value<int?> reminderDays = const Value.absent(),
+    Value<int?> reminderHour = const Value.absent(),
+    Value<int?> reminderMinute = const Value.absent(),
+    bool? isArchived,
+    int? sortOrder,
   }) => WodTemplate(
     id: id ?? this.id,
-    phaseId: phaseId ?? this.phaseId,
+    phaseId: phaseId.present ? phaseId.value : this.phaseId,
     wodNumber: wodNumber ?? this.wodNumber,
     name: name ?? this.name,
     notes: notes.present ? notes.value : this.notes,
     restSeconds: restSeconds ?? this.restSeconds,
+    reminderDays: reminderDays.present ? reminderDays.value : this.reminderDays,
+    reminderHour: reminderHour.present ? reminderHour.value : this.reminderHour,
+    reminderMinute: reminderMinute.present
+        ? reminderMinute.value
+        : this.reminderMinute,
+    isArchived: isArchived ?? this.isArchived,
+    sortOrder: sortOrder ?? this.sortOrder,
   );
   WodTemplate copyWithCompanion(WodTemplatesCompanion data) {
     return WodTemplate(
@@ -1461,6 +1647,19 @@ class WodTemplate extends DataClass implements Insertable<WodTemplate> {
       restSeconds: data.restSeconds.present
           ? data.restSeconds.value
           : this.restSeconds,
+      reminderDays: data.reminderDays.present
+          ? data.reminderDays.value
+          : this.reminderDays,
+      reminderHour: data.reminderHour.present
+          ? data.reminderHour.value
+          : this.reminderHour,
+      reminderMinute: data.reminderMinute.present
+          ? data.reminderMinute.value
+          : this.reminderMinute,
+      isArchived: data.isArchived.present
+          ? data.isArchived.value
+          : this.isArchived,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
     );
   }
 
@@ -1472,14 +1671,30 @@ class WodTemplate extends DataClass implements Insertable<WodTemplate> {
           ..write('wodNumber: $wodNumber, ')
           ..write('name: $name, ')
           ..write('notes: $notes, ')
-          ..write('restSeconds: $restSeconds')
+          ..write('restSeconds: $restSeconds, ')
+          ..write('reminderDays: $reminderDays, ')
+          ..write('reminderHour: $reminderHour, ')
+          ..write('reminderMinute: $reminderMinute, ')
+          ..write('isArchived: $isArchived, ')
+          ..write('sortOrder: $sortOrder')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, phaseId, wodNumber, name, notes, restSeconds);
+  int get hashCode => Object.hash(
+    id,
+    phaseId,
+    wodNumber,
+    name,
+    notes,
+    restSeconds,
+    reminderDays,
+    reminderHour,
+    reminderMinute,
+    isArchived,
+    sortOrder,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1489,16 +1704,26 @@ class WodTemplate extends DataClass implements Insertable<WodTemplate> {
           other.wodNumber == this.wodNumber &&
           other.name == this.name &&
           other.notes == this.notes &&
-          other.restSeconds == this.restSeconds);
+          other.restSeconds == this.restSeconds &&
+          other.reminderDays == this.reminderDays &&
+          other.reminderHour == this.reminderHour &&
+          other.reminderMinute == this.reminderMinute &&
+          other.isArchived == this.isArchived &&
+          other.sortOrder == this.sortOrder);
 }
 
 class WodTemplatesCompanion extends UpdateCompanion<WodTemplate> {
   final Value<int> id;
-  final Value<int> phaseId;
+  final Value<int?> phaseId;
   final Value<int> wodNumber;
   final Value<String> name;
   final Value<String?> notes;
   final Value<int> restSeconds;
+  final Value<int?> reminderDays;
+  final Value<int?> reminderHour;
+  final Value<int?> reminderMinute;
+  final Value<bool> isArchived;
+  final Value<int> sortOrder;
   const WodTemplatesCompanion({
     this.id = const Value.absent(),
     this.phaseId = const Value.absent(),
@@ -1506,16 +1731,25 @@ class WodTemplatesCompanion extends UpdateCompanion<WodTemplate> {
     this.name = const Value.absent(),
     this.notes = const Value.absent(),
     this.restSeconds = const Value.absent(),
+    this.reminderDays = const Value.absent(),
+    this.reminderHour = const Value.absent(),
+    this.reminderMinute = const Value.absent(),
+    this.isArchived = const Value.absent(),
+    this.sortOrder = const Value.absent(),
   });
   WodTemplatesCompanion.insert({
     this.id = const Value.absent(),
-    required int phaseId,
+    this.phaseId = const Value.absent(),
     required int wodNumber,
     required String name,
     this.notes = const Value.absent(),
     this.restSeconds = const Value.absent(),
-  }) : phaseId = Value(phaseId),
-       wodNumber = Value(wodNumber),
+    this.reminderDays = const Value.absent(),
+    this.reminderHour = const Value.absent(),
+    this.reminderMinute = const Value.absent(),
+    this.isArchived = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+  }) : wodNumber = Value(wodNumber),
        name = Value(name);
   static Insertable<WodTemplate> custom({
     Expression<int>? id,
@@ -1524,6 +1758,11 @@ class WodTemplatesCompanion extends UpdateCompanion<WodTemplate> {
     Expression<String>? name,
     Expression<String>? notes,
     Expression<int>? restSeconds,
+    Expression<int>? reminderDays,
+    Expression<int>? reminderHour,
+    Expression<int>? reminderMinute,
+    Expression<bool>? isArchived,
+    Expression<int>? sortOrder,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1532,16 +1771,26 @@ class WodTemplatesCompanion extends UpdateCompanion<WodTemplate> {
       if (name != null) 'name': name,
       if (notes != null) 'notes': notes,
       if (restSeconds != null) 'rest_seconds': restSeconds,
+      if (reminderDays != null) 'reminder_days': reminderDays,
+      if (reminderHour != null) 'reminder_hour': reminderHour,
+      if (reminderMinute != null) 'reminder_minute': reminderMinute,
+      if (isArchived != null) 'is_archived': isArchived,
+      if (sortOrder != null) 'sort_order': sortOrder,
     });
   }
 
   WodTemplatesCompanion copyWith({
     Value<int>? id,
-    Value<int>? phaseId,
+    Value<int?>? phaseId,
     Value<int>? wodNumber,
     Value<String>? name,
     Value<String?>? notes,
     Value<int>? restSeconds,
+    Value<int?>? reminderDays,
+    Value<int?>? reminderHour,
+    Value<int?>? reminderMinute,
+    Value<bool>? isArchived,
+    Value<int>? sortOrder,
   }) {
     return WodTemplatesCompanion(
       id: id ?? this.id,
@@ -1550,6 +1799,11 @@ class WodTemplatesCompanion extends UpdateCompanion<WodTemplate> {
       name: name ?? this.name,
       notes: notes ?? this.notes,
       restSeconds: restSeconds ?? this.restSeconds,
+      reminderDays: reminderDays ?? this.reminderDays,
+      reminderHour: reminderHour ?? this.reminderHour,
+      reminderMinute: reminderMinute ?? this.reminderMinute,
+      isArchived: isArchived ?? this.isArchived,
+      sortOrder: sortOrder ?? this.sortOrder,
     );
   }
 
@@ -1574,6 +1828,21 @@ class WodTemplatesCompanion extends UpdateCompanion<WodTemplate> {
     if (restSeconds.present) {
       map['rest_seconds'] = Variable<int>(restSeconds.value);
     }
+    if (reminderDays.present) {
+      map['reminder_days'] = Variable<int>(reminderDays.value);
+    }
+    if (reminderHour.present) {
+      map['reminder_hour'] = Variable<int>(reminderHour.value);
+    }
+    if (reminderMinute.present) {
+      map['reminder_minute'] = Variable<int>(reminderMinute.value);
+    }
+    if (isArchived.present) {
+      map['is_archived'] = Variable<bool>(isArchived.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
     return map;
   }
 
@@ -1585,7 +1854,12 @@ class WodTemplatesCompanion extends UpdateCompanion<WodTemplate> {
           ..write('wodNumber: $wodNumber, ')
           ..write('name: $name, ')
           ..write('notes: $notes, ')
-          ..write('restSeconds: $restSeconds')
+          ..write('restSeconds: $restSeconds, ')
+          ..write('reminderDays: $reminderDays, ')
+          ..write('reminderHour: $reminderHour, ')
+          ..write('reminderMinute: $reminderMinute, ')
+          ..write('isArchived: $isArchived, ')
+          ..write('sortOrder: $sortOrder')
           ..write(')'))
         .toString();
   }
@@ -8569,20 +8843,30 @@ typedef $$ProgramPhasesTableProcessedTableManager =
 typedef $$WodTemplatesTableCreateCompanionBuilder =
     WodTemplatesCompanion Function({
       Value<int> id,
-      required int phaseId,
+      Value<int?> phaseId,
       required int wodNumber,
       required String name,
       Value<String?> notes,
       Value<int> restSeconds,
+      Value<int?> reminderDays,
+      Value<int?> reminderHour,
+      Value<int?> reminderMinute,
+      Value<bool> isArchived,
+      Value<int> sortOrder,
     });
 typedef $$WodTemplatesTableUpdateCompanionBuilder =
     WodTemplatesCompanion Function({
       Value<int> id,
-      Value<int> phaseId,
+      Value<int?> phaseId,
       Value<int> wodNumber,
       Value<String> name,
       Value<String?> notes,
       Value<int> restSeconds,
+      Value<int?> reminderDays,
+      Value<int?> reminderHour,
+      Value<int?> reminderMinute,
+      Value<bool> isArchived,
+      Value<int> sortOrder,
     });
 
 final class $$WodTemplatesTableReferences
@@ -8594,9 +8878,9 @@ final class $$WodTemplatesTableReferences
         $_aliasNameGenerator(db.wodTemplates.phaseId, db.programPhases.id),
       );
 
-  $$ProgramPhasesTableProcessedTableManager get phaseId {
-    final $_column = $_itemColumn<int>('phase_id')!;
-
+  $$ProgramPhasesTableProcessedTableManager? get phaseId {
+    final $_column = $_itemColumn<int>('phase_id');
+    if ($_column == null) return null;
     final manager = $$ProgramPhasesTableTableManager(
       $_db,
       $_db.programPhases,
@@ -8715,6 +8999,31 @@ class $$WodTemplatesTableFilterComposer
 
   ColumnFilters<int> get restSeconds => $composableBuilder(
     column: $table.restSeconds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get reminderDays => $composableBuilder(
+    column: $table.reminderDays,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get reminderHour => $composableBuilder(
+    column: $table.reminderHour,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get reminderMinute => $composableBuilder(
+    column: $table.reminderMinute,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8851,6 +9160,31 @@ class $$WodTemplatesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get reminderDays => $composableBuilder(
+    column: $table.reminderDays,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get reminderHour => $composableBuilder(
+    column: $table.reminderHour,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get reminderMinute => $composableBuilder(
+    column: $table.reminderMinute,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$ProgramPhasesTableOrderingComposer get phaseId {
     final $$ProgramPhasesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -8900,6 +9234,29 @@ class $$WodTemplatesTableAnnotationComposer
     column: $table.restSeconds,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get reminderDays => $composableBuilder(
+    column: $table.reminderDays,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get reminderHour => $composableBuilder(
+    column: $table.reminderHour,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get reminderMinute => $composableBuilder(
+    column: $table.reminderMinute,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
 
   $$ProgramPhasesTableAnnotationComposer get phaseId {
     final $$ProgramPhasesTableAnnotationComposer composer = $composerBuilder(
@@ -9036,11 +9393,16 @@ class $$WodTemplatesTableTableManager
           updateCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
-                Value<int> phaseId = const Value.absent(),
+                Value<int?> phaseId = const Value.absent(),
                 Value<int> wodNumber = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<int> restSeconds = const Value.absent(),
+                Value<int?> reminderDays = const Value.absent(),
+                Value<int?> reminderHour = const Value.absent(),
+                Value<int?> reminderMinute = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
               }) => WodTemplatesCompanion(
                 id: id,
                 phaseId: phaseId,
@@ -9048,15 +9410,25 @@ class $$WodTemplatesTableTableManager
                 name: name,
                 notes: notes,
                 restSeconds: restSeconds,
+                reminderDays: reminderDays,
+                reminderHour: reminderHour,
+                reminderMinute: reminderMinute,
+                isArchived: isArchived,
+                sortOrder: sortOrder,
               ),
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
-                required int phaseId,
+                Value<int?> phaseId = const Value.absent(),
                 required int wodNumber,
                 required String name,
                 Value<String?> notes = const Value.absent(),
                 Value<int> restSeconds = const Value.absent(),
+                Value<int?> reminderDays = const Value.absent(),
+                Value<int?> reminderHour = const Value.absent(),
+                Value<int?> reminderMinute = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
               }) => WodTemplatesCompanion.insert(
                 id: id,
                 phaseId: phaseId,
@@ -9064,6 +9436,11 @@ class $$WodTemplatesTableTableManager
                 name: name,
                 notes: notes,
                 restSeconds: restSeconds,
+                reminderDays: reminderDays,
+                reminderHour: reminderHour,
+                reminderMinute: reminderMinute,
+                isArchived: isArchived,
+                sortOrder: sortOrder,
               ),
           withReferenceMapper: (p0) => p0
               .map(

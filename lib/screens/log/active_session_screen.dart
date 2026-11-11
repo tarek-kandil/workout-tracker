@@ -13,6 +13,7 @@ import '../../models/next_wod_result.dart';
 import '../../models/weight_suggestion.dart';
 import '../../models/wod_item.dart';
 import '../../providers/database_provider.dart';
+import '../../providers/flash_workouts_providers.dart';
 import '../../providers/home_providers.dart';
 import '../../providers/next_workout_provider.dart';
 import '../../providers/program_providers.dart';
@@ -305,11 +306,20 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
           return SetData(
             weightKg: ls.weightKg,
             reps: isTimed ? 0 : ls.reps,
-            durationSeconds: isTimed ? (ls.durationSeconds ?? te.repRangeMin) : 0,
+            durationSeconds: isTimed
+                ? (entry.suggestion.suggestedDurationSeconds ?? ls.durationSeconds ?? te.repRangeMin)
+                : 0,
           );
         }
         if (idx == 0 && !isTimed) {
           return SetData(weightKg: entry.suggestion.suggestedKg ?? 0.0, reps: (te.repRangeMax * 0.8).round());
+        }
+        if (isTimed) {
+          return SetData(
+            weightKg: 0,
+            reps: 0,
+            durationSeconds: entry.suggestion.suggestedDurationSeconds ?? te.repRangeMin,
+          );
         }
         return SetData(weightKg: 0, reps: 0);
       });
@@ -388,6 +398,18 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       _prBestReps[exerciseId] = reps;
     }
     return result.isPersonalRecord;
+  }
+
+  /// Returns true if this timed set is a new duration PR; updates _prDurationData when it is.
+  bool _checkDurationPrAndUpdate(int exerciseId, int durationSeconds) {
+    final isPr = evaluateDurationPersonalRecord(
+      currentTopDurationSeconds: _prDurationData[exerciseId],
+      durationSeconds: durationSeconds,
+    );
+    if (isPr) {
+      _prDurationData[exerciseId] = durationSeconds;
+    }
+    return isPr;
   }
 
   Iterable<SetData> _loggedSetDataForExercise(int exerciseId) sync* {
@@ -562,7 +584,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
         if (!startRestAfter && (!circuitDone || !isLastItem)) needAutoStart = true;
     }
 
-    // ── PR overlay (non-timed only) ──────────────────────────────────────────
+    // ── PR overlay ───────────────────────────────────────────────────────────
     if (!isTimed && loggedData != null && loggedData.reps > 0 && mounted) {
       final oldPrKg = _prData[exerciseId];
       if (_checkPrAndUpdate(exerciseId, loggedData.weightKg, loggedData.reps)) {
@@ -574,6 +596,19 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
             newWeightKg: loggedData.weightKg,
             reps: loggedData.reps,
             oldWeightKg: oldPrKg,
+          );
+        }
+      }
+    } else if (isTimed && loggedData != null && loggedData.durationSeconds > 0 && mounted) {
+      final oldPrSec = _prDurationData[exerciseId];
+      if (_checkDurationPrAndUpdate(exerciseId, loggedData.durationSeconds)) {
+        HapticFeedback.heavyImpact();
+        if (mounted) {
+          await showPrOverlay(
+            context,
+            exerciseName: capturedName,
+            newDurationSeconds: loggedData.durationSeconds,
+            oldDurationSeconds: oldPrSec,
           );
         }
       }
@@ -1151,6 +1186,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     ref.invalidate(activeProgramProvider);
     ref.invalidate(currentProgramWeekProvider);
     ref.invalidate(pointsScoreProvider);
+    ref.invalidate(flashWorkoutResultProvider(wod.id));
+    ref.invalidate(flashWorkoutConsistencyProvider(wod.id));
     if (mounted) {
       await showWorkoutCompleteOverlay(context, wod.name);
       if (mounted) Navigator.of(context).pop();
@@ -2135,14 +2172,17 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
           Text(widget.result.wodTemplate.name),
           Text(
             () {
-              if (_loading || _sessionItems.isEmpty) return 'Week ${widget.result.weekNumberInProgram}';
+              final prefix = widget.result.isFlashWorkout
+                  ? 'Flash Workout'
+                  : 'Week ${widget.result.weekNumberInProgram}';
+              if (_loading || _sessionItems.isEmpty) return prefix;
               final circuit = _currentCircuit;
               if (circuit != null) {
                 final name = (circuit.name != null && circuit.name!.isNotEmpty) ? circuit.name! : 'Circuit';
-                return 'Week ${widget.result.weekNumberInProgram} · $name · Round ${_currentSetIdx + 1}/${circuit.rounds}';
+                return '$prefix · $name · Round ${_currentSetIdx + 1}/${circuit.rounds}';
               }
               final ts = _currentEntry.templateExercise.targetSets;
-              return 'Week ${widget.result.weekNumberInProgram} · Set ${_currentSetIdx + 1}/$ts';
+              return '$prefix · Set ${_currentSetIdx + 1}/$ts';
             }(),
             style: Theme.of(context).textTheme.bodySmall,
           ),

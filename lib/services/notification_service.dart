@@ -100,6 +100,26 @@ class NotificationService {
 
   static Future<void> cancelReminder(int id) => _plugin.cancel(id);
 
+  static const _flashReminderBaseId = 10000;
+
+  static int flashWorkoutReminderId(int wodId) => _flashReminderBaseId + wodId;
+
+  static Future<String?> scheduleFlashWorkoutReminder({
+    required int wodId,
+    required String title,
+    required int hour,
+    required int minute,
+  }) =>
+      scheduleDailyReminder(
+        id: flashWorkoutReminderId(wodId),
+        title: title,
+        hour: hour,
+        minute: minute,
+      );
+
+  static Future<void> cancelFlashWorkoutReminder(int wodId) =>
+      cancelReminder(flashWorkoutReminderId(wodId));
+
   /// Schedules the next weigh-in reminder as a rolling **one-shot**
   /// notification (not a repeating schedule) anchored at
   /// `anchorDate + intervalDays`. Call this again after every weigh-in log

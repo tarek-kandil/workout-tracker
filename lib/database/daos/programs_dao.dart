@@ -86,8 +86,39 @@ class ProgramsDao extends DatabaseAccessor<AppDatabase>
     await (delete(wodTemplateExercises)
           ..where((w) => w.wodTemplateId.equals(wodTemplateId)))
         .go();
+    await (delete(wodExerciseGroups)
+          ..where((g) => g.wodTemplateId.equals(wodTemplateId)))
+        .go();
     await (delete(wodTemplates)..where((w) => w.id.equals(wodTemplateId))).go();
   }
+
+  // ── Flash Workouts (standalone WODs with phaseId IS NULL) ─────────────────
+
+  Stream<List<WodTemplate>> watchFlashWorkouts() =>
+      (select(wodTemplates)
+            ..where((w) => w.phaseId.isNull() & w.isArchived.equals(false))
+            ..orderBy([
+              (w) => OrderingTerm(expression: w.sortOrder),
+              (w) => OrderingTerm(expression: w.id),
+            ]))
+          .watch();
+
+  Future<List<WodTemplate>> getFlashWorkouts() =>
+      (select(wodTemplates)
+            ..where((w) => w.phaseId.isNull() & w.isArchived.equals(false))
+            ..orderBy([
+              (w) => OrderingTerm(expression: w.sortOrder),
+              (w) => OrderingTerm(expression: w.id),
+            ]))
+          .get();
+
+  Future<void> updateFlashWorkoutFields(WodTemplatesCompanion entry) =>
+      (update(wodTemplates)..where((w) => w.id.equals(entry.id.value)))
+          .write(entry);
+
+  Future<void> archiveFlashWorkout(int id) =>
+      (update(wodTemplates)..where((w) => w.id.equals(id)))
+          .write(const WodTemplatesCompanion(isArchived: Value(true)));
 
   // ── WOD Template Exercises ────────────────────────────────────────────────
 

@@ -136,7 +136,9 @@ class SuggestionBadge extends StatelessWidget {
       case SuggestionType.noHistory:
         color = Theme.of(context).colorScheme.secondary; icon = Icons.trending_flat;
     }
-    final kg = suggestion.suggestedKg != null ? '${fmtW(suggestion.suggestedKg!)} kg' : '';
+    final valueLabel = suggestion.suggestedDurationSeconds != null
+        ? fmtSec(suggestion.suggestedDurationSeconds!)
+        : (suggestion.suggestedKg != null ? '${fmtW(suggestion.suggestedKg!)} kg' : '');
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -146,9 +148,9 @@ class SuggestionBadge extends StatelessWidget {
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Icon(icon, size: 14, color: color),
-        if (kg.isNotEmpty) ...[
+        if (valueLabel.isNotEmpty) ...[
           const SizedBox(width: 4),
-          Text(kg, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w600)),
+          Text(valueLabel, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w600)),
         ],
       ]),
     );

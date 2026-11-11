@@ -41,3 +41,12 @@ PersonalRecordAttemptResult evaluateWeightPersonalRecord({
     isMoreRepsAtTopWeight: isMoreRepsAtTopWeight,
   );
 }
+
+bool evaluateDurationPersonalRecord({
+  required int? currentTopDurationSeconds,
+  required int durationSeconds,
+}) {
+  if (durationSeconds <= 0) return false;
+  final currentTop = currentTopDurationSeconds ?? 0;
+  return durationSeconds > currentTop;
+}

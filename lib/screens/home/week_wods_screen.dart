@@ -125,11 +125,11 @@ class _WeekWodsScreenState extends ConsumerState<WeekWodsScreen> {
             title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(rec.program.name,
+                Text(rec.program?.name ?? 'Workout',
                     style: const TextStyle(
                         fontSize: 16, fontWeight: FontWeight.bold)),
                 Text(
-                  'Week ${rec.weekNumberInProgram} of ${rec.totalProgramWeeks}',
+                  'Week ${rec.weekNumberInProgram ?? 1} of ${rec.totalProgramWeeks ?? 1}',
                   style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.normal,

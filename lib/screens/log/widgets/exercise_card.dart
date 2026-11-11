@@ -165,7 +165,7 @@ class ExerciseCard extends StatelessWidget {
                   ),
                 ],
               ),
-              if (!isTimed) SuggestionBadge(suggestion: entry.suggestion),
+              SuggestionBadge(suggestion: entry.suggestion),
             ]),
           ]),
           const SizedBox(height: 8),

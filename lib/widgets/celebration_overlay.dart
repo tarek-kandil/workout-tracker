@@ -133,9 +133,11 @@ class _TaskDoneFlashState extends State<_TaskDoneFlash>
 Future<void> showPrOverlay(
   BuildContext context, {
   required String exerciseName,
-  required double newWeightKg,
-  required int reps,
+  double newWeightKg = 0,
+  int reps = 0,
   double? oldWeightKg,
+  int? newDurationSeconds,
+  int? oldDurationSeconds,
 }) {
   final completer = Completer<void>();
   final overlay = Overlay.of(context);
@@ -146,6 +148,8 @@ Future<void> showPrOverlay(
       newWeightKg: newWeightKg,
       reps: reps,
       oldWeightKg: oldWeightKg,
+      newDurationSeconds: newDurationSeconds,
+      oldDurationSeconds: oldDurationSeconds,
       onDone: () {
         if (entry.mounted) entry.remove();
         if (!completer.isCompleted) completer.complete();
@@ -161,12 +165,16 @@ class _PrOverlay extends StatefulWidget {
   final double newWeightKg;
   final int reps;
   final double? oldWeightKg;
+  final int? newDurationSeconds;
+  final int? oldDurationSeconds;
   final VoidCallback onDone;
   const _PrOverlay({
     required this.exerciseName,
     required this.newWeightKg,
     required this.reps,
     required this.oldWeightKg,
+    this.newDurationSeconds,
+    this.oldDurationSeconds,
     required this.onDone,
   });
   @override
@@ -212,10 +220,22 @@ class _PrOverlayState extends State<_PrOverlay>
   String _fmtW(double v) =>
       v == v.truncateToDouble() ? v.toInt().toString() : v.toStringAsFixed(1);
 
+  String _fmtSec(int seconds) {
+    final m = seconds ~/ 60;
+    final s = seconds % 60;
+    return '$m:${s.toString().padLeft(2, '0')}';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isTimed = widget.newDurationSeconds != null;
     final delta = widget.oldWeightKg != null && widget.oldWeightKg! > 0
         ? widget.newWeightKg - widget.oldWeightKg!
+        : null;
+    final durationDelta = isTimed &&
+            widget.oldDurationSeconds != null &&
+            widget.oldDurationSeconds! > 0
+        ? widget.newDurationSeconds! - widget.oldDurationSeconds!
         : null;
 
     return GestureDetector(
@@ -299,7 +319,9 @@ class _PrOverlayState extends State<_PrOverlay>
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      '${_fmtW(widget.newWeightKg)} kg',
+                      isTimed
+                          ? _fmtSec(widget.newDurationSeconds!)
+                          : '${_fmtW(widget.newWeightKg)} kg',
                       style: const TextStyle(
                         fontSize: 30,
                         fontWeight: FontWeight.w800,
@@ -307,7 +329,7 @@ class _PrOverlayState extends State<_PrOverlay>
                         decoration: TextDecoration.none,
                       ),
                     ),
-                    if (delta != null && delta > 0) ...[
+                    if (!isTimed && delta != null && delta > 0) ...[
                       const SizedBox(height: 2),
                       Text(
                         '↑ +${_fmtW(delta)} kg from ${_fmtW(widget.oldWeightKg!)} kg',
@@ -317,10 +339,22 @@ class _PrOverlayState extends State<_PrOverlay>
                           decoration: TextDecoration.none,
                         ),
                       ),
+                    ] else if (isTimed && durationDelta != null && durationDelta > 0) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        '↑ +${durationDelta}s from ${_fmtSec(widget.oldDurationSeconds!)}',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.white.withValues(alpha: 0.45),
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
                     ],
                     const SizedBox(height: 4),
                     Text(
-                      '${widget.exerciseName} · ${widget.reps} reps',
+                      isTimed
+                          ? widget.exerciseName
+                          : '${widget.exerciseName} · ${widget.reps} reps',
                       style: TextStyle(
                         fontSize: 10,
                         color: Colors.white.withValues(alpha: 0.4),

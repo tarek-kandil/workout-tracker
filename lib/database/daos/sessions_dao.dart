@@ -195,4 +195,44 @@ class SessionsDao extends DatabaseAccessor<AppDatabase>
             ..orderBy([(s) =>
                 OrderingTerm(expression: s.date, mode: OrderingMode.desc)]))
           .get();
+
+  /// Stream of 7 booleans — one per day, index 0 = 6 days ago, index 6 = today.
+  /// Reacts whenever a session for [wodTemplateId] changes.
+  Stream<List<bool>> watchLast7DaysForWodTemplate(int wodTemplateId) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final start = today.subtract(const Duration(days: 6));
+    return (select(workoutSessions)
+          ..where((s) =>
+              s.wodTemplateId.equals(wodTemplateId) &
+              s.date.isBiggerOrEqualValue(start)))
+        .watch()
+        .map((sessions) {
+      final completedDays = sessions
+          .map((s) => DateTime(s.date.year, s.date.month, s.date.day))
+          .toSet();
+      return List.generate(7, (i) {
+        final day = today.subtract(Duration(days: 6 - i));
+        return completedDays.contains(day);
+      });
+    });
+  }
+
+  /// (completed, outOf) days over the last [days] calendar days for [wodTemplateId].
+  Future<(int, int)> getConsistencyForWodTemplate(int wodTemplateId,
+      {int days = 30}) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final start = today.subtract(Duration(days: days - 1));
+    final sessions = await (select(workoutSessions)
+          ..where((s) =>
+              s.wodTemplateId.equals(wodTemplateId) &
+              s.date.isBiggerOrEqualValue(start)))
+        .get();
+    final uniqueDays = sessions
+        .map((s) => DateTime(s.date.year, s.date.month, s.date.day))
+        .toSet()
+        .length;
+    return (uniqueDays, days);
+  }
 }

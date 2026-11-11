@@ -132,7 +132,7 @@ void main() {
             durationWeeks: 4));
     final wodTemplateId = await db.into(db.wodTemplates).insert(
         WodTemplatesCompanion.insert(
-            phaseId: phaseId, wodNumber: 1, name: 'Circuit'));
+            phaseId: Value(phaseId), wodNumber: 1, name: 'Circuit'));
     final groupId = await db.into(db.wodExerciseGroups).insert(
         WodExerciseGroupsCompanion.insert(
             wodTemplateId: wodTemplateId, sortOrder: 0));

@@ -14,6 +14,7 @@ import '../../widgets/liquid_glass_container.dart';
 import 'exercise_library_screen.dart';
 import 'profile_screen.dart';
 import 'program_list_screen.dart';
+import '../flash/flash_workouts_screen.dart';
 import '../tasks/daily_tasks_screen.dart';
 import '../history/session_history_screen.dart';
 import '../weight/weight_hub_screen.dart';
@@ -78,6 +79,15 @@ class SettingsScreen extends ConsumerWidget {
                     subtitle: 'Manage plans',
                     onTap: () => Navigator.of(context).push(
                       glassRoute(const ProgramListScreen()),
+                    ),
+                  ),
+                  _NavItem(
+                    icon: Icons.bolt_rounded,
+                    color: const Color(0xFF38BDF8),
+                    title: 'Flash Workouts',
+                    subtitle: 'Quick routines',
+                    onTap: () => Navigator.of(context).push(
+                      glassRoute(const FlashWorkoutsScreen()),
                     ),
                   ),
                   _NavItem(
