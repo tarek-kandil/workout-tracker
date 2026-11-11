@@ -72,6 +72,7 @@ class _WodExerciseSetupScreenState
     }
     items.sort((a, b) => a.wodSortOrder.compareTo(b.wodSortOrder));
 
+    if (!mounted) return;
     setState(() {
       _items = items;
       _wodName = wodResult?.name ?? 'Exercises';

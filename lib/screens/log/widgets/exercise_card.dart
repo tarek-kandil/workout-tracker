@@ -136,13 +136,14 @@ class ExerciseCard extends StatelessWidget {
                   if (te.notes != null && te.notes!.isNotEmpty)
                     IconButton(
                       key: infoIconKey,
-                      icon: const Icon(Icons.info_outline_rounded, size: 18),
+                      icon: const Icon(Icons.info_outline_rounded, size: 19),
                       onPressed: () => showCoachingNotes(context, entry, te, anchorKey: infoIconKey),
                       padding: EdgeInsets.zero,
                       style: IconButton.styleFrom(
                         minimumSize: const Size(32, 32),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        foregroundColor: Colors.white38,
+                        foregroundColor: const Color(0xFFFBBF24),
+                        backgroundColor: const Color(0xFFFBBF24).withValues(alpha: 0.14),
                       ),
                     ),
                   if (dragIndex != null)
@@ -285,18 +286,63 @@ class _CoachingNotePopoverState extends State<_CoachingNotePopover> {
     final top = widget.anchorBottom + 8;
     final caretX = (widget.anchor.dx - left - 6).clamp(14.0, width - 26);
 
+    const gold = Color(0xFFFBBF24);
+    const surfaceTop = Color(0xFF332811);
+    const surfaceBottom = Color(0xFF1F190C);
+    const noteTextColor = Color(0xFFFEF3C7);
+
     final card = Container(
       constraints: BoxConstraints(maxHeight: screen.height * 0.4),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1e2030),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [surfaceTop, surfaceBottom],
+        ),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(
+          color: gold.withValues(alpha: 0.65),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: gold.withValues(alpha: 0.18),
+            blurRadius: 16,
+            spreadRadius: 1,
+            offset: const Offset(0, 6),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.45),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: SingleChildScrollView(
-        child: Text(
-          widget.note,
-          style: TextStyle(fontSize: 13, height: 1.45, color: Colors.white.withValues(alpha: 0.85)),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(top: 1, right: 8),
+              child: Icon(
+                Icons.lightbulb_outline_rounded,
+                size: 16,
+                color: gold,
+              ),
+            ),
+            Expanded(
+              child: Text(
+                widget.note,
+                style: const TextStyle(
+                  fontSize: 13,
+                  height: 1.45,
+                  fontWeight: FontWeight.w600,
+                  color: noteTextColor,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -337,7 +383,23 @@ class _CoachingNotePopoverState extends State<_CoachingNotePopover> {
                     left: caretX,
                     child: Transform.rotate(
                       angle: 0.785398,
-                      child: Container(width: 12, height: 12, color: const Color(0xFF1e2030)),
+                      child: Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: surfaceTop,
+                          border: Border(
+                            top: BorderSide(
+                              color: gold.withValues(alpha: 0.65),
+                              width: 1.5,
+                            ),
+                            left: BorderSide(
+                              color: gold.withValues(alpha: 0.65),
+                              width: 1.5,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                   card,

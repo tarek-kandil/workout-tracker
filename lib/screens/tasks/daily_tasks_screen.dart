@@ -10,6 +10,7 @@ import '../../utils/task_icons.dart';
 import '../../widgets/celebration_overlay.dart';
 import '../../widgets/glass_background.dart';
 import '../../widgets/liquid_glass_container.dart';
+import '../../widgets/reminder_schedule_picker.dart';
 
 // ─── Screen ────────────────────────────────────────────────────────────────────
 
@@ -117,13 +118,14 @@ class DailyTasksScreen extends ConsumerWidget {
       isEnabled: Value(nowEnabled),
     ));
     if (!nowEnabled) {
-      await NotificationService.cancelReminder(task.id);
+      await NotificationService.cancelRecurringReminder(task.id);
     } else if (task.reminderHour != null && task.reminderMinute != null) {
-      await NotificationService.scheduleDailyReminder(
-        id: task.id,
+      await NotificationService.scheduleRecurringReminder(
+        baseId: task.id,
         title: task.name,
         hour: task.reminderHour!,
         minute: task.reminderMinute!,
+        daysMask: task.reminderDays,
       );
     }
   }
@@ -150,7 +152,8 @@ class DailyTasksScreen extends ConsumerWidget {
     );
     if (confirmed == true) {
       await ref.read(databaseProvider).dailyTasksDao.deleteTask(task.id);
-      await NotificationService.cancelReminder(task.id);
+      ref.invalidate(dailyTasksProvider);
+      await NotificationService.cancelRecurringReminder(task.id);
     }
   }
 
@@ -170,28 +173,27 @@ class DailyTasksScreen extends ConsumerWidget {
       BuildContext context, WidgetRef ref, DailyTask? task) async {
     await showDialog<void>(
       context: context,
-      builder: (_) => _TaskDialog(existingTask: task, ref: ref),
+      builder: (_) => _TaskDialog(existingTask: task),
     );
   }
 }
 
-// ─── Task dialog (own StatefulWidget — avoids stale-context crashes) ──────────
+// ─── Task dialog (own ConsumerStatefulWidget — avoids stale-context crashes) ──
 
-class _TaskDialog extends StatefulWidget {
+class _TaskDialog extends ConsumerStatefulWidget {
   final DailyTask? existingTask;
-  final WidgetRef ref;
-  const _TaskDialog({required this.existingTask, required this.ref});
+  const _TaskDialog({required this.existingTask});
 
   @override
-  State<_TaskDialog> createState() => _TaskDialogState();
+  ConsumerState<_TaskDialog> createState() => _TaskDialogState();
 }
 
-class _TaskDialogState extends State<_TaskDialog> {
+class _TaskDialogState extends ConsumerState<_TaskDialog> {
   late final TextEditingController _nameCtrl;
-  late final TextEditingController _hourCtrl;
-  late final TextEditingController _minuteCtrl;
   bool _reminderEnabled = false;
-  String? _timeError;
+  int _reminderHour = 8;
+  int _reminderMinute = 30;
+  int _reminderDays = 0x7F;
   String? _selectedIcon;
 
   bool get _isEditing => widget.existingTask != null;
@@ -201,16 +203,9 @@ class _TaskDialogState extends State<_TaskDialog> {
     super.initState();
     final task = widget.existingTask;
     _nameCtrl = TextEditingController(text: task?.name ?? '');
-    _hourCtrl = TextEditingController(
-      text: task?.reminderHour != null
-          ? task!.reminderHour!.toString().padLeft(2, '0')
-          : '',
-    );
-    _minuteCtrl = TextEditingController(
-      text: task?.reminderMinute != null
-          ? task!.reminderMinute!.toString().padLeft(2, '0')
-          : '',
-    );
+    _reminderHour = task?.reminderHour ?? 8;
+    _reminderMinute = task?.reminderMinute ?? 30;
+    _reminderDays = task?.reminderDays ?? 0x7F;
     _selectedIcon = task?.iconName;
     if (task?.reminderHour != null && task?.reminderMinute != null) {
       _reminderEnabled = true;
@@ -220,8 +215,6 @@ class _TaskDialogState extends State<_TaskDialog> {
   @override
   void dispose() {
     _nameCtrl.dispose();
-    _hourCtrl.dispose();
-    _minuteCtrl.dispose();
     super.dispose();
   }
 
@@ -229,20 +222,11 @@ class _TaskDialogState extends State<_TaskDialog> {
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) return;
 
-    int? hour, minute;
-    if (_reminderEnabled) {
-      hour = int.tryParse(_hourCtrl.text.trim());
-      minute = int.tryParse(_minuteCtrl.text.trim());
-      if (hour == null || minute == null ||
-          hour < 0 || hour > 23 || minute < 0 || minute > 59) {
-        setState(() => _timeError = 'Enter a valid hour (0–23) and minute (0–59)');
-        return;
-      }
-    }
+    final int? hour = _reminderEnabled ? _reminderHour : null;
+    final int? minute = _reminderEnabled ? _reminderMinute : null;
+    final int? days = _reminderEnabled ? _reminderDays : null;
 
-    final dao = widget.ref.read(databaseProvider).dailyTasksDao;
-
-    String? scheduleError;
+    final dao = ref.read(databaseProvider).dailyTasksDao;
 
     if (!_isEditing) {
       final id = await dao.insertTask(DailyTasksCompanion.insert(
@@ -250,10 +234,16 @@ class _TaskDialogState extends State<_TaskDialog> {
         iconName: Value(_selectedIcon),
         reminderHour: Value(hour),
         reminderMinute: Value(minute),
+        reminderDays: Value(days),
       ));
+      ref.invalidate(dailyTasksProvider);
       if (hour != null && minute != null) {
-        scheduleError = await NotificationService.scheduleDailyReminder(
-          id: id, title: name, hour: hour, minute: minute,
+        await NotificationService.scheduleRecurringReminder(
+          baseId: id,
+          title: name,
+          hour: hour,
+          minute: minute,
+          daysMask: days,
         );
       }
     } else {
@@ -264,24 +254,22 @@ class _TaskDialogState extends State<_TaskDialog> {
         iconName: Value(_selectedIcon),
         reminderHour: Value(hour),
         reminderMinute: Value(minute),
+        reminderDays: Value(days),
       ));
-      await NotificationService.cancelReminder(task.id);
+      ref.invalidate(dailyTasksProvider);
+      await NotificationService.cancelRecurringReminder(task.id);
       if (hour != null && minute != null) {
-        scheduleError = await NotificationService.scheduleDailyReminder(
-          id: task.id, title: name, hour: hour, minute: minute,
+        await NotificationService.scheduleRecurringReminder(
+          baseId: task.id,
+          title: name,
+          hour: hour,
+          minute: minute,
+          daysMask: days,
         );
       }
     }
 
     if (!mounted) return;
-
-    if (scheduleError != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Could not schedule notification: $scheduleError'),
-        backgroundColor: Theme.of(context).colorScheme.error,
-        duration: const Duration(seconds: 6),
-      ));
-    }
 
     Navigator.pop(context);
   }
@@ -344,70 +332,18 @@ class _TaskDialogState extends State<_TaskDialog> {
             ),
           ),
           const SizedBox(height: 20),
-          // ── Reminder toggle row ───────────────────────────────────────
-          Row(
-            children: [
-              Icon(Icons.notifications_outlined,
-                  size: 18, color: scheme.onSurface.withValues(alpha: 0.6)),
-              const SizedBox(width: 8),
-              Text('Daily reminder',
-                  style: Theme.of(context).textTheme.bodyMedium),
-              const Spacer(),
-              Switch(
-                value: _reminderEnabled,
-                onChanged: (v) => setState(() => _reminderEnabled = v),
-              ),
-            ],
+          ReminderSchedulePicker(
+            enabled: _reminderEnabled,
+            onEnabledChanged: (v) => setState(() => _reminderEnabled = v),
+            hour: _reminderHour,
+            minute: _reminderMinute,
+            onTimeChanged: (h, m) => setState(() {
+              _reminderHour = h;
+              _reminderMinute = m;
+            }),
+            daysMask: _reminderDays,
+            onDaysChanged: (mask) => setState(() => _reminderDays = mask),
           ),
-          // ── Time fields (shown when reminder is on) ───────────────────
-          if (_reminderEnabled) ...[
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _hourCtrl,
-                    keyboardType: TextInputType.number,
-                    maxLength: 2,
-                    textAlign: TextAlign.center,
-                    decoration: const InputDecoration(
-                      labelText: 'HH',
-                      hintText: '08',
-                      counterText: '',
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Text(':',
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.w300)),
-                ),
-                Expanded(
-                  child: TextField(
-                    controller: _minuteCtrl,
-                    keyboardType: TextInputType.number,
-                    maxLength: 2,
-                    textAlign: TextAlign.center,
-                    decoration: const InputDecoration(
-                      labelText: 'MM',
-                      hintText: '30',
-                      counterText: '',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            if (_timeError != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Text(_timeError!,
-                    style: TextStyle(
-                        color: scheme.error, fontSize: 12)),
-              ),
-          ],
         ],
       ),
       ),
@@ -548,9 +484,11 @@ class _TaskTile extends ConsumerWidget {
           style: theme.textTheme.bodySmall?.copyWith(color: Colors.amber));
     }
     if (task.reminderHour != null && task.reminderMinute != null) {
-      final h = task.reminderHour!.toString().padLeft(2, '0');
-      final m = task.reminderMinute!.toString().padLeft(2, '0');
-      parts.add('Daily at $h:$m');
+      parts.add(NotificationService.formatReminderSchedule(
+        task.reminderDays,
+        task.reminderHour!,
+        task.reminderMinute!,
+      ));
     }
     if (consistency != null) {
       final (done, outOf) = consistency;

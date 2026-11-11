@@ -70,7 +70,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 22;
+  int get schemaVersion => 23;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -467,6 +467,7 @@ class AppDatabase extends _$AppDatabase {
                   await customSelect('PRAGMA table_info(wod_templates)').get();
               final colNames = cols.map((r) => r.read<String>('name')).toSet();
               if (!colNames.contains('reminder_days')) {
+                await customStatement('PRAGMA foreign_keys = OFF');
                 await m.alterTable(TableMigration(
                   wodTemplates,
                   newColumns: [
@@ -477,6 +478,20 @@ class AppDatabase extends _$AppDatabase {
                     wodTemplates.sortOrder,
                   ],
                 ));
+              }
+            }
+          }
+          if (from < 23) {
+            final tables = await customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table'",
+            ).get();
+            final tableNames = tables.map((r) => r.read<String>('name')).toSet();
+            if (tableNames.contains('daily_tasks')) {
+              final cols =
+                  await customSelect('PRAGMA table_info(daily_tasks)').get();
+              final colNames = cols.map((r) => r.read<String>('name')).toSet();
+              if (!colNames.contains('reminder_days')) {
+                await m.addColumn(dailyTasks, dailyTasks.reminderDays);
               }
             }
           }

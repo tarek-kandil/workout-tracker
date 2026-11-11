@@ -83,6 +83,10 @@ class ProgramsDao extends DatabaseAccessor<AppDatabase>
       update(wodTemplates).replace(entry);
 
   Future<void> deleteWodTemplate(int wodTemplateId) async {
+    await attachedDatabase.customStatement(
+      'UPDATE workout_sessions SET wod_template_id = NULL WHERE wod_template_id = ?;',
+      [wodTemplateId],
+    );
     await (delete(wodTemplateExercises)
           ..where((w) => w.wodTemplateId.equals(wodTemplateId)))
         .go();

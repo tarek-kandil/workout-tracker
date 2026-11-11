@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../database/app_database.dart';
 import '../../../providers/database_provider.dart';
 import '../../../providers/daily_tasks_providers.dart';
+import '../../../services/notification_service.dart';
 import '../../../utils/task_icons.dart';
 import '../../../widgets/liquid_glass_container.dart';
 import '../../../widgets/celebration_overlay.dart';
@@ -56,7 +57,11 @@ class DailyTaskHomeCard extends ConsumerWidget {
                       task.reminderMinute != null) ...[
                     const SizedBox(height: 3),
                     Text(
-                      '${task.reminderHour.toString().padLeft(2, '0')}:${task.reminderMinute.toString().padLeft(2, '0')}',
+                      NotificationService.formatReminderSchedule(
+                        task.reminderDays,
+                        task.reminderHour!,
+                        task.reminderMinute!,
+                      ),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: cs.onSurface.withValues(alpha: 0.35),
                           ),

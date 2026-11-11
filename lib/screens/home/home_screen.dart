@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../database/app_database.dart';
 import '../../providers/program_providers.dart';
 import '../../providers/daily_tasks_providers.dart';
 import '../../providers/flash_workouts_providers.dart';
@@ -7,8 +8,6 @@ import '../../providers/home_providers.dart';
 import '../../providers/session_providers.dart';
 import '../../widgets/glass_background.dart';
 import '../../widgets/glass_card.dart';
-import '../../widgets/glass_route.dart';
-import '../flash/flash_workouts_screen.dart';
 import 'widgets/daily_task_home_card.dart';
 import 'widgets/flash_workout_home_card.dart';
 import 'widgets/muscle_volume_home_card.dart';
@@ -48,10 +47,11 @@ class HomeScreen extends ConsumerWidget {
                   child: Center(child: Text('Error: $e')),
                 ),
                 data: (program) {
-                  final enabledTasks = (tasksAsync.valueOrNull ?? [])
+                  final enabledTasks = (tasksAsync.valueOrNull ?? const <DailyTask>[])
                       .where((t) => t.isEnabled)
                       .toList();
-                  final flashWorkouts = flashWorkoutsAsync.valueOrNull ?? const [];
+                  final flashWorkouts =
+                      flashWorkoutsAsync.valueOrNull ?? const <WodTemplate>[];
                   if (program == null) {
                     return _buildNoProgramState(context, ref, enabledTasks, flashWorkouts);
                   }
@@ -65,65 +65,20 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  List<Widget> _buildFlashWorkoutsSection(
-      BuildContext context, WidgetRef ref, List flashWorkouts) {
-    final cs = Theme.of(context).colorScheme;
+  List<Widget> _buildFlashWorkoutsSection(List<WodTemplate> flashWorkouts) {
+    if (flashWorkouts.isEmpty) return const [];
     return [
-      Row(
-        children: [
-          const _SectionLabel(label: 'FLASH WORKOUTS'),
-          const Spacer(),
-          GestureDetector(
-            onTap: () => Navigator.of(context)
-                .push(glassRoute(const FlashWorkoutsScreen())),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              child: Text(
-                flashWorkouts.isEmpty ? '+ Create' : 'Manage',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: cs.primary,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.6,
-                    ),
-              ),
-            ),
-          ),
-        ],
-      ),
+      const _SectionLabel(label: 'FLASH WORKOUTS'),
       const SizedBox(height: 8),
-      if (flashWorkouts.isEmpty)
-        GlassCard(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: InkWell(
-            onTap: () => showFlashWorkoutDialog(context, ref, null),
-            child: Row(
-              children: [
-                Icon(Icons.bolt_rounded, color: cs.primary, size: 22),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Add a flash workout (mobility, abs, quick circuit…)',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: cs.onSurface.withValues(alpha: 0.6),
-                        ),
-                  ),
-                ),
-                Icon(Icons.add_circle_outline,
-                    size: 18, color: cs.onSurface.withValues(alpha: 0.45)),
-              ],
-            ),
-          ),
-        )
-      else
-        ...flashWorkouts.expand((w) => [
-              FlashWorkoutHomeCard(wod: w),
-              const SizedBox(height: 8),
-            ]),
+      ...flashWorkouts.expand((w) => [
+            FlashWorkoutHomeCard(wod: w),
+            const SizedBox(height: 8),
+          ]),
     ];
   }
 
-  Widget _buildNoProgramState(
-      BuildContext context, WidgetRef ref, List enabledTasks, List flashWorkouts) {
+  Widget _buildNoProgramState(BuildContext context, WidgetRef ref,
+      List<DailyTask> enabledTasks, List<WodTemplate> flashWorkouts) {
     return SliverList(
       delegate: SliverChildListDelegate([
         GlassCard(
@@ -156,8 +111,10 @@ class HomeScreen extends ConsumerWidget {
             ],
           ),
         ),
-        const SizedBox(height: 16),
-        ..._buildFlashWorkoutsSection(context, ref, flashWorkouts),
+        if (flashWorkouts.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          ..._buildFlashWorkoutsSection(flashWorkouts),
+        ],
         if (enabledTasks.isNotEmpty) ...[
           const SizedBox(height: 16),
           const _SectionLabel(label: 'DAILY TASKS'),
@@ -173,7 +130,7 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Widget _buildDashboard(BuildContext context, WidgetRef ref,
-      List enabledTasks, List flashWorkouts) {
+      List<DailyTask> enabledTasks, List<WodTemplate> flashWorkouts) {
     final scoreAsync = ref.watch(pointsScoreProvider);
     final sessionsAsync = ref.watch(recentSessionsProvider);
     final weekAsync = ref.watch(currentProgramWeekProvider);
@@ -209,8 +166,10 @@ class HomeScreen extends ConsumerWidget {
         const SizedBox(height: 20),
 
         // ── Flash workouts ───────────────────────────────────────────────
-        ..._buildFlashWorkoutsSection(context, ref, flashWorkouts),
-        const SizedBox(height: 12),
+        if (flashWorkouts.isNotEmpty) ...[
+          ..._buildFlashWorkoutsSection(flashWorkouts),
+          const SizedBox(height: 12),
+        ],
 
         // ── Daily tasks ──────────────────────────────────────────────────
         if (enabledTasks.isNotEmpty) ...[

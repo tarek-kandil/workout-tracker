@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../database/app_database.dart';
 import '../../../providers/flash_workouts_providers.dart';
+import '../../../services/notification_service.dart';
 import '../../../widgets/glass_route.dart';
 import '../../../widgets/liquid_glass_container.dart';
 import '../../log/active_session_screen.dart';
@@ -85,7 +86,11 @@ class _FlashWorkoutHomeCardState extends ConsumerState<FlashWorkoutHomeCard> {
         'Tap to add exercises',
       if (widget.wod.reminderHour != null &&
           widget.wod.reminderMinute != null)
-        '${widget.wod.reminderHour!.toString().padLeft(2, '0')}:${widget.wod.reminderMinute!.toString().padLeft(2, '0')}',
+        NotificationService.formatReminderSchedule(
+          widget.wod.reminderDays,
+          widget.wod.reminderHour!,
+          widget.wod.reminderMinute!,
+        ),
       if (_hasProgress) 'In progress',
     ];
 
@@ -94,8 +99,8 @@ class _FlashWorkoutHomeCardState extends ConsumerState<FlashWorkoutHomeCard> {
       blurSigma: 10,
       tintColor: tint,
       padding: EdgeInsets.zero,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(22),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: _startOrEdit,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),

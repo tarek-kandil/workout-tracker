@@ -42,19 +42,32 @@ class NotificationService {
     icon: '@mipmap/ic_launcher',
   );
 
+  static const _darwinDetails = DarwinNotificationDetails();
+  static const _defaultDetails = NotificationDetails(
+    android: _androidDetails,
+    iOS: _darwinDetails,
+    macOS: _darwinDetails,
+  );
+
   static Future<void> init() async {
     if (_initialized) return;
     tz.initializeTimeZones();
 
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
-    await _plugin.initialize(const InitializationSettings(android: android));
+    const darwin = DarwinInitializationSettings();
+    await _plugin.initialize(
+      const InitializationSettings(
+        android: android,
+        iOS: darwin,
+        macOS: darwin,
+      ),
+    );
+    _initialized = true;
 
     await _plugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.requestNotificationsPermission();
-
-    _initialized = true;
   }
 
   /// Returns null on success, or an error string on failure.
@@ -65,13 +78,16 @@ class NotificationService {
     required int minute,
   }) async {
     try {
+      if (!_initialized) {
+        await init();
+      }
       final scheduled = _nextInstanceOfTime(hour, minute);
       await _plugin.zonedSchedule(
         id,
         title,
         'Daily reminder',
         scheduled,
-        const NotificationDetails(android: _androidDetails),
+        _defaultDetails,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
@@ -86,11 +102,14 @@ class NotificationService {
   /// Fires an immediate notification — use to verify the pipeline works.
   static Future<String?> sendTestNotification(String title) async {
     try {
+      if (!_initialized) {
+        await init();
+      }
       await _plugin.show(
         99999,
         title,
         'Test notification — if you see this, notifications are working.',
-        const NotificationDetails(android: _androidDetails),
+        _defaultDetails,
       );
       return null;
     } catch (e) {
@@ -98,27 +117,109 @@ class NotificationService {
     }
   }
 
-  static Future<void> cancelReminder(int id) => _plugin.cancel(id);
+  static Future<void> cancelReminder(int id) async {
+    try {
+      await _plugin.cancel(id);
+    } catch (e) {
+      debugPrint('NotificationService.cancelReminder failed: $e');
+    }
+  }
 
   static const _flashReminderBaseId = 10000;
+  static const _weekdayStride = 10;
 
   static int flashWorkoutReminderId(int wodId) => _flashReminderBaseId + wodId;
+
+  /// Formats a weekday bitmask (bit 0 = Mon … bit 6 = Sun) + time as a human label.
+  static String formatReminderSchedule(int? daysMask, int hour, int minute) {
+    final timeStr =
+        '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+    final mask = (daysMask == null || daysMask == 0) ? 0x7F : (daysMask & 0x7F);
+    if (mask == 0x7F) return 'Daily at $timeStr';
+    if (mask == 0x1F) return 'Weekdays at $timeStr';
+    if (mask == 0x60) return 'Weekends at $timeStr';
+    const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final parts = <String>[];
+    for (int i = 0; i < 7; i++) {
+      if ((mask & (1 << i)) != 0) parts.add(names[i]);
+    }
+    return '${parts.join(', ')} at $timeStr';
+  }
+
+  /// Schedules a daily or selected-weekdays reminder for [baseId].
+  /// [daysMask] bit 0 = Monday (weekday 1) … bit 6 = Sunday (weekday 7).
+  /// When [daysMask] is null, 0, or 0x7F (all 7 days), schedules a single daily alarm.
+  static Future<String?> scheduleRecurringReminder({
+    required int baseId,
+    required String title,
+    required int hour,
+    required int minute,
+    int? daysMask,
+  }) async {
+    await cancelRecurringReminder(baseId);
+    final mask = (daysMask == null || daysMask == 0) ? 0x7F : (daysMask & 0x7F);
+    if (mask == 0x7F) {
+      return scheduleDailyReminder(
+        id: baseId,
+        title: title,
+        hour: hour,
+        minute: minute,
+      );
+    }
+    try {
+      if (!_initialized) {
+        await init();
+      }
+      for (int i = 0; i < 7; i++) {
+        if ((mask & (1 << i)) == 0) continue;
+        final weekday = i + 1; // 1 = Monday … 7 = Sunday
+        final scheduled = _nextInstanceOfWeekdayAndTime(weekday, hour, minute);
+        await _plugin.zonedSchedule(
+          baseId * _weekdayStride + weekday,
+          title,
+          'Scheduled reminder',
+          scheduled,
+          _defaultDetails,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+        );
+      }
+      return null;
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+  static Future<void> cancelRecurringReminder(int baseId) async {
+    try {
+      await _plugin.cancel(baseId);
+      for (int weekday = 1; weekday <= 7; weekday++) {
+        await _plugin.cancel(baseId * _weekdayStride + weekday);
+      }
+    } catch (e) {
+      debugPrint('NotificationService.cancelRecurringReminder failed: $e');
+    }
+  }
 
   static Future<String?> scheduleFlashWorkoutReminder({
     required int wodId,
     required String title,
     required int hour,
     required int minute,
+    int? daysMask,
   }) =>
-      scheduleDailyReminder(
-        id: flashWorkoutReminderId(wodId),
+      scheduleRecurringReminder(
+        baseId: flashWorkoutReminderId(wodId),
         title: title,
         hour: hour,
         minute: minute,
+        daysMask: daysMask,
       );
 
   static Future<void> cancelFlashWorkoutReminder(int wodId) =>
-      cancelReminder(flashWorkoutReminderId(wodId));
+      cancelRecurringReminder(flashWorkoutReminderId(wodId));
 
   /// Schedules the next weigh-in reminder as a rolling **one-shot**
   /// notification (not a repeating schedule) anchored at
@@ -226,6 +327,16 @@ class NotificationService {
       local = local.add(const Duration(days: 1));
     }
 
+    return tz.TZDateTime.from(local.toUtc(), tz.UTC);
+  }
+
+  static tz.TZDateTime _nextInstanceOfWeekdayAndTime(
+      int weekday, int hour, int minute) {
+    final now = DateTime.now();
+    var local = DateTime(now.year, now.month, now.day, hour, minute);
+    while (local.weekday != weekday || !local.isAfter(now)) {
+      local = local.add(const Duration(days: 1));
+    }
     return tz.TZDateTime.from(local.toUtc(), tz.UTC);
   }
 }

@@ -11,6 +11,7 @@ import '../../services/notification_service.dart';
 import '../../widgets/glass_background.dart';
 import '../../widgets/glass_route.dart';
 import '../../widgets/liquid_glass_container.dart';
+import '../../widgets/reminder_schedule_picker.dart';
 import '../log/active_session_screen.dart';
 import '../settings/wod_exercise_setup_screen.dart';
 
@@ -131,14 +132,18 @@ class FlashWorkoutsScreen extends ConsumerWidget {
       ),
     );
     if (confirmed == true) {
-      await NotificationService.cancelFlashWorkoutReminder(wod.id);
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('workout_progress_${wod.id}');
       if (hasHistory) {
         await db.programsDao.archiveFlashWorkout(wod.id);
       } else {
         await db.programsDao.deleteWodTemplate(wod.id);
       }
+      ref.invalidate(flashWorkoutsProvider);
+      ref.invalidate(flashWorkoutResultProvider(wod.id));
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('workout_progress_${wod.id}');
+      } catch (_) {}
+      await NotificationService.cancelFlashWorkoutReminder(wod.id);
     }
   }
 }
@@ -149,10 +154,59 @@ Future<void> showFlashWorkoutDialog(
   WodTemplate? existing, {
   bool openExercisesOnCreate = true,
 }) async {
-  final createdId = await showDialog<int>(
+  final form = await showDialog<_FlashWorkoutFormData>(
     context: context,
-    builder: (_) => _FlashWorkoutDialog(existing: existing, ref: ref),
+    builder: (_) => _FlashWorkoutDialog(existing: existing),
   );
+  if (form == null) return;
+
+  final dao = ref.read(databaseProvider).programsDao;
+  int? createdId;
+
+  if (existing == null) {
+    final id = await dao.insertWodTemplate(WodTemplatesCompanion.insert(
+      phaseId: const Value(null),
+      wodNumber: 0,
+      name: form.name,
+      restSeconds: Value(form.restSeconds),
+      reminderDays: Value(form.reminderDays),
+      reminderHour: Value(form.reminderHour),
+      reminderMinute: Value(form.reminderMinute),
+    ));
+    createdId = id;
+    ref.invalidate(flashWorkoutsProvider);
+    if (form.reminderHour != null && form.reminderMinute != null) {
+      await NotificationService.scheduleFlashWorkoutReminder(
+        wodId: id,
+        title: form.name,
+        hour: form.reminderHour!,
+        minute: form.reminderMinute!,
+        daysMask: form.reminderDays,
+      );
+    }
+  } else {
+    await dao.updateFlashWorkoutFields(WodTemplatesCompanion(
+      id: Value(existing.id),
+      name: Value(form.name),
+      restSeconds: Value(form.restSeconds),
+      reminderDays: Value(form.reminderDays),
+      reminderHour: Value(form.reminderHour),
+      reminderMinute: Value(form.reminderMinute),
+    ));
+    ref.invalidate(flashWorkoutsProvider);
+    ref.invalidate(flashWorkoutResultProvider(existing.id));
+    await NotificationService.cancelFlashWorkoutReminder(existing.id);
+    if (form.reminderHour != null && form.reminderMinute != null) {
+      await NotificationService.scheduleFlashWorkoutReminder(
+        wodId: existing.id,
+        title: form.name,
+        hour: form.reminderHour!,
+        minute: form.reminderMinute!,
+        daysMask: form.reminderDays,
+      );
+    }
+  }
+
   if (createdId != null && openExercisesOnCreate && context.mounted) {
     await Navigator.of(context).push(
       glassRoute(WodExerciseSetupScreen(wodTemplateId: createdId)),
@@ -161,21 +215,37 @@ Future<void> showFlashWorkoutDialog(
   }
 }
 
-class _FlashWorkoutDialog extends StatefulWidget {
-  final WodTemplate? existing;
-  final WidgetRef ref;
-  const _FlashWorkoutDialog({required this.existing, required this.ref});
+class _FlashWorkoutFormData {
+  final String name;
+  final int restSeconds;
+  final int? reminderDays;
+  final int? reminderHour;
+  final int? reminderMinute;
 
-  @override
-  State<_FlashWorkoutDialog> createState() => _FlashWorkoutDialogState();
+  const _FlashWorkoutFormData({
+    required this.name,
+    required this.restSeconds,
+    required this.reminderDays,
+    required this.reminderHour,
+    required this.reminderMinute,
+  });
 }
 
-class _FlashWorkoutDialogState extends State<_FlashWorkoutDialog> {
+class _FlashWorkoutDialog extends ConsumerStatefulWidget {
+  final WodTemplate? existing;
+  const _FlashWorkoutDialog({required this.existing});
+
+  @override
+  ConsumerState<_FlashWorkoutDialog> createState() =>
+      _FlashWorkoutDialogState();
+}
+
+class _FlashWorkoutDialogState extends ConsumerState<_FlashWorkoutDialog> {
   late final TextEditingController _nameCtrl;
-  late final TextEditingController _hourCtrl;
-  late final TextEditingController _minuteCtrl;
   bool _reminderEnabled = false;
-  String? _timeError;
+  int _reminderHour = 8;
+  int _reminderMinute = 30;
+  int _reminderDays = 0x7F;
   int _restSeconds = 60;
 
   bool get _isEditing => widget.existing != null;
@@ -185,16 +255,9 @@ class _FlashWorkoutDialogState extends State<_FlashWorkoutDialog> {
     super.initState();
     final wod = widget.existing;
     _nameCtrl = TextEditingController(text: wod?.name ?? '');
-    _hourCtrl = TextEditingController(
-      text: wod?.reminderHour != null
-          ? wod!.reminderHour!.toString().padLeft(2, '0')
-          : '',
-    );
-    _minuteCtrl = TextEditingController(
-      text: wod?.reminderMinute != null
-          ? wod!.reminderMinute!.toString().padLeft(2, '0')
-          : '',
-    );
+    _reminderHour = wod?.reminderHour ?? 8;
+    _reminderMinute = wod?.reminderMinute ?? 30;
+    _reminderDays = wod?.reminderDays ?? 0x7F;
     _restSeconds = wod?.restSeconds ?? 60;
     if (wod?.reminderHour != null && wod?.reminderMinute != null) {
       _reminderEnabled = true;
@@ -204,84 +267,23 @@ class _FlashWorkoutDialogState extends State<_FlashWorkoutDialog> {
   @override
   void dispose() {
     _nameCtrl.dispose();
-    _hourCtrl.dispose();
-    _minuteCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _save() async {
+  void _save() {
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) return;
 
-    int? hour, minute;
-    if (_reminderEnabled) {
-      hour = int.tryParse(_hourCtrl.text.trim());
-      minute = int.tryParse(_minuteCtrl.text.trim());
-      if (hour == null ||
-          minute == null ||
-          hour < 0 ||
-          hour > 23 ||
-          minute < 0 ||
-          minute > 59) {
-        setState(() => _timeError = 'Enter a valid hour (0–23) and minute (0–59)');
-        return;
-      }
-    }
-
-    final dao = widget.ref.read(databaseProvider).programsDao;
-    String? scheduleError;
-    int? createdId;
-
-    if (!_isEditing) {
-      final id = await dao.insertWodTemplate(WodTemplatesCompanion.insert(
-        phaseId: const Value(null),
-        wodNumber: 0,
+    Navigator.pop(
+      context,
+      _FlashWorkoutFormData(
         name: name,
-        restSeconds: Value(_restSeconds),
-        reminderHour: Value(hour),
-        reminderMinute: Value(minute),
-      ));
-      createdId = id;
-      if (hour != null && minute != null) {
-        scheduleError = await NotificationService.scheduleFlashWorkoutReminder(
-          wodId: id,
-          title: name,
-          hour: hour,
-          minute: minute,
-        );
-      }
-    } else {
-      final wod = widget.existing!;
-      await dao.updateFlashWorkoutFields(WodTemplatesCompanion(
-        id: Value(wod.id),
-        name: Value(name),
-        restSeconds: Value(_restSeconds),
-        reminderHour: Value(hour),
-        reminderMinute: Value(minute),
-      ));
-      await NotificationService.cancelFlashWorkoutReminder(wod.id);
-      if (hour != null && minute != null) {
-        scheduleError = await NotificationService.scheduleFlashWorkoutReminder(
-          wodId: wod.id,
-          title: name,
-          hour: hour,
-          minute: minute,
-        );
-      }
-      widget.ref.invalidate(flashWorkoutResultProvider(wod.id));
-    }
-
-    if (!mounted) return;
-
-    if (scheduleError != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Could not schedule notification: $scheduleError'),
-        backgroundColor: Theme.of(context).colorScheme.error,
-        duration: const Duration(seconds: 6),
-      ));
-    }
-
-    Navigator.pop(context, createdId);
+        restSeconds: _restSeconds,
+        reminderDays: _reminderEnabled ? _reminderDays : null,
+        reminderHour: _reminderEnabled ? _reminderHour : null,
+        reminderMinute: _reminderEnabled ? _reminderMinute : null,
+      ),
+    );
   }
 
   @override
@@ -333,68 +335,18 @@ class _FlashWorkoutDialogState extends State<_FlashWorkoutDialog> {
               ],
             ),
             const SizedBox(height: 12),
-            // ── Reminder toggle row (same as Daily Tasks) ──────────────
-            Row(
-              children: [
-                Icon(Icons.notifications_outlined,
-                    size: 18, color: scheme.onSurface.withValues(alpha: 0.6)),
-                const SizedBox(width: 8),
-                Text('Daily reminder',
-                    style: Theme.of(context).textTheme.bodyMedium),
-                const Spacer(),
-                Switch(
-                  value: _reminderEnabled,
-                  onChanged: (v) => setState(() => _reminderEnabled = v),
-                ),
-              ],
+            ReminderSchedulePicker(
+              enabled: _reminderEnabled,
+              onEnabledChanged: (v) => setState(() => _reminderEnabled = v),
+              hour: _reminderHour,
+              minute: _reminderMinute,
+              onTimeChanged: (h, m) => setState(() {
+                _reminderHour = h;
+                _reminderMinute = m;
+              }),
+              daysMask: _reminderDays,
+              onDaysChanged: (mask) => setState(() => _reminderDays = mask),
             ),
-            if (_reminderEnabled) ...[
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _hourCtrl,
-                      keyboardType: TextInputType.number,
-                      maxLength: 2,
-                      textAlign: TextAlign.center,
-                      decoration: const InputDecoration(
-                        labelText: 'HH',
-                        hintText: '08',
-                        counterText: '',
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text(':',
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineSmall
-                            ?.copyWith(fontWeight: FontWeight.w300)),
-                  ),
-                  Expanded(
-                    child: TextField(
-                      controller: _minuteCtrl,
-                      keyboardType: TextInputType.number,
-                      maxLength: 2,
-                      textAlign: TextAlign.center,
-                      decoration: const InputDecoration(
-                        labelText: 'MM',
-                        hintText: '30',
-                        counterText: '',
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              if (_timeError != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text(_timeError!,
-                      style: TextStyle(color: scheme.error, fontSize: 12)),
-                ),
-            ],
           ],
         ),
       ),
@@ -445,9 +397,11 @@ class _FlashWorkoutTile extends ConsumerWidget {
       '$exerciseCount exercise${exerciseCount == 1 ? '' : 's'}',
     ];
     if (wod.reminderHour != null && wod.reminderMinute != null) {
-      final h = wod.reminderHour!.toString().padLeft(2, '0');
-      final m = wod.reminderMinute!.toString().padLeft(2, '0');
-      parts.add('Daily at $h:$m');
+      parts.add(NotificationService.formatReminderSchedule(
+        wod.reminderDays,
+        wod.reminderHour!,
+        wod.reminderMinute!,
+      ));
     }
     if (consistency != null) {
       final (done, outOf) = consistency;
