@@ -59,128 +59,31 @@ class ExerciseCard extends StatelessWidget {
     return box.localToGlobal(Offset.zero) & box.size;
   }
 
-  /// Shows the coaching notes as a popover that grows out of the (i) icon
-  /// ([anchorKey]); swipe it away, tap outside, or press "Got it" to close.
+  /// Shows the coaching note as a small popover that grows out of the (i) icon
+  /// ([anchorKey]). Swipe it up or sideways (it shrinks back into the icon),
+  /// or tap outside, to close. Swiping down does nothing.
   static void showCoachingNotes(
       BuildContext context, WodExerciseEntry entry, WodTemplateExercise te,
       {GlobalKey? anchorKey}) {
     final screen = MediaQuery.sizeOf(context);
     final topInset = MediaQuery.paddingOf(context).top;
     final rect = _rectOf(anchorKey);
-    final anchorX = (rect?.center.dx ?? screen.width / 2).clamp(40.0, screen.width - 40);
-    final top = ((rect?.bottom ?? topInset + 56) + 8)
-        .clamp(topInset + 8, screen.height * 0.55);
-    const hPad = 16.0;
-    final alignX = (((anchorX - hPad) / (screen.width - 2 * hPad)) * 2 - 1).clamp(-1.0, 1.0);
+    final anchor = rect?.center ?? Offset(screen.width / 2, topInset + 56);
 
     showGeneralDialog(
       context: context,
-      barrierDismissible: true, // tap outside to close
-      barrierLabel: 'Close coaching notes',
-      barrierColor: Colors.black38,
+      barrierDismissible: true,
+      barrierLabel: 'Close coaching note',
+      barrierColor: Colors.black26,
       transitionDuration: const Duration(milliseconds: 220),
-      transitionBuilder: (ctx, anim, _, child) {
-        final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
-        return FadeTransition(
-          opacity: curved,
-          // Grow from the icon: scale origin = icon's x, top edge of the card.
-          child: ScaleTransition(alignment: Alignment(alignX, -1), scale: Tween(begin: 0.4, end: 1.0).animate(curved), child: child),
-        );
-      },
-      pageBuilder: (sheetCtx, _, _) => Material(
-        type: MaterialType.transparency,
-        child: Stack(children: [
-          Positioned(
-            top: top,
-            left: hPad,
-            right: hPad,
-            child: Stack(clipBehavior: Clip.none, children: [
-              // Caret pointing at the icon.
-              Positioned(
-                top: -6,
-                left: anchorX - hPad - 6,
-                child: Transform.rotate(
-                  angle: 0.785398,
-                  child: Container(width: 12, height: 12, color: const Color(0xFF1e2030)),
-                ),
-              ),
-              // Swipe up/down to dismiss.
-              Dismissible(
-                key: const ValueKey('coaching-notes-popover'),
-                direction: DismissDirection.vertical,
-                onDismissed: (_) => Navigator.of(sheetCtx).pop(),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(maxHeight: screen.height * 0.6),
-                  child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF1e2030),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        ),
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-        child: SingleChildScrollView(child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-
-            Text(entry.exercise.name,
-                style: const TextStyle(
-                    fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white)),
-            const SizedBox(height: 2),
-            const Text('Coaching Notes',
-                style: TextStyle(fontSize: 10, color: Colors.white38)),
-            const SizedBox(height: 12),
-            const Divider(color: Colors.white12, height: 1),
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                te.notes!,
-                style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.white.withValues(alpha: 0.75),
-                    height: 1.5),
-              ),
-            ),
-            if (effectiveRir(te.targetRir, te.targetRpe) != null) ...[
-              const SizedBox(height: 14),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Target RIR',
-                      style: TextStyle(fontSize: 11, color: Colors.white38)),
-                  Text(
-                    fmtRir(effectiveRir(te.targetRir, te.targetRpe)!),
-                    style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: rirColor(effectiveRir(te.targetRir, te.targetRpe)!)),
-                  ),
-                ],
-              ),
-            ],
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: TextButton(
-                onPressed: () => Navigator.of(sheetCtx).pop(),
-                child: const Text('Got it'),
-              ),
-            ),
-          ],
-        )),
-      ),
-                ),
-              ),
-            ]),
-          ),
-        ]),
+      // The popover animates itself (scale from the icon), so no default fade.
+      transitionBuilder: (ctx, anim, _, child) => child,
+      pageBuilder: (ctx, anim, _) => _CoachingNotePopover(
+        animation: anim,
+        anchor: anchor,
+        anchorBottom: rect?.bottom ?? anchor.dy + 16,
+        note: te.notes!,
+        onClose: () => Navigator.of(ctx).pop(),
       ),
     );
   }
@@ -324,6 +227,126 @@ class ExerciseCard extends StatelessWidget {
           ],
         ]),
       ),
+    );
+  }
+}
+
+
+/// Small note-only popover that scales out of / back into the (i) icon.
+class _CoachingNotePopover extends StatefulWidget {
+  final Animation<double> animation;
+  final Offset anchor; // centre of the (i) icon, in screen coordinates
+  final double anchorBottom;
+  final String note;
+  final VoidCallback onClose;
+
+  const _CoachingNotePopover({
+    required this.animation,
+    required this.anchor,
+    required this.anchorBottom,
+    required this.note,
+    required this.onClose,
+  });
+
+  @override
+  State<_CoachingNotePopover> createState() => _CoachingNotePopoverState();
+}
+
+class _CoachingNotePopoverState extends State<_CoachingNotePopover> {
+  late final CurvedAnimation _curved = CurvedAnimation(
+    parent: widget.animation,
+    curve: Curves.easeOutCubic,
+    reverseCurve: Curves.easeInCubic,
+  );
+  Offset _drag = Offset.zero;
+
+  @override
+  void dispose() {
+    _curved.dispose();
+    super.dispose();
+  }
+
+  void _onPanEnd(DragEndDetails d) {
+    final v = d.velocity.pixelsPerSecond;
+    // Up or sideways dismisses; downward movement is ignored.
+    final dismiss = _drag.dy < -40 || _drag.dx.abs() > 60 || v.dy < -400 || v.dx.abs() > 600;
+    if (dismiss) {
+      widget.onClose();
+    } else {
+      setState(() => _drag = Offset.zero);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screen = MediaQuery.sizeOf(context);
+    final width = screen.width - 32 < 280.0 ? screen.width - 32 : 280.0;
+    final left = (widget.anchor.dx - width / 2).clamp(16.0, screen.width - 16 - width);
+    final top = widget.anchorBottom + 8;
+    final caretX = (widget.anchor.dx - left - 6).clamp(14.0, width - 26);
+
+    final card = Container(
+      constraints: BoxConstraints(maxHeight: screen.height * 0.4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1e2030),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: SingleChildScrollView(
+        child: Text(
+          widget.note,
+          style: TextStyle(fontSize: 13, height: 1.45, color: Colors.white.withValues(alpha: 0.85)),
+        ),
+      ),
+    );
+
+    return Material(
+      type: MaterialType.transparency,
+      child: Stack(children: [
+        Positioned(
+          left: left,
+          top: top,
+          width: width,
+          child: AnimatedBuilder(
+            animation: _curved,
+            builder: (context, child) {
+              final t = _curved.value.clamp(0.0, 1.0);
+              return Opacity(
+                opacity: t,
+                // Scale about the icon's centre so it grows out of / shrinks
+                // back into the (i).
+                child: Transform.scale(
+                  scale: 0.02 + 0.98 * t,
+                  origin: Offset(widget.anchor.dx - left, widget.anchor.dy - top),
+                  child: child,
+                ),
+              );
+            },
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onPanUpdate: (d) => setState(() {
+                _drag = Offset(_drag.dx + d.delta.dx, (_drag.dy + d.delta.dy).clamp(double.negativeInfinity, 0.0));
+              }),
+              onPanEnd: _onPanEnd,
+              child: Transform.translate(
+                offset: _drag,
+                child: Stack(clipBehavior: Clip.none, children: [
+                  Positioned(
+                    top: -5,
+                    left: caretX,
+                    child: Transform.rotate(
+                      angle: 0.785398,
+                      child: Container(width: 12, height: 12, color: const Color(0xFF1e2030)),
+                    ),
+                  ),
+                  card,
+                ]),
+              ),
+            ),
+          ),
+        ),
+      ]),
     );
   }
 }
