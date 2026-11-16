@@ -4,28 +4,39 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/weekly_muscle_volume.dart';
 import '../../providers/muscle_volume_provider.dart';
 import '../../utils/constants.dart';
+import '../../widgets/anatomical_body_map.dart';
 import '../../widgets/glass_background.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/glass_route.dart';
 import '../../widgets/volume_status_pill.dart';
 import '../settings/exercise_library_screen.dart';
 
-/// FR-007/FR-012/FR-014, design.md §4: the athlete-facing Weekly Muscle
-/// Volume report. Shows a summary hero, an unmapped-exercises banner, a
-/// needs-attention shortlist, then all 21 muscles grouped by body region.
-/// Never shows MV/MEV/MAV/MRV jargon in the main list — only via the
-/// optional "What does this mean?" info affordance / detail sheet.
+/// FR-007/FR-012/FR-014, design.md §4: the athlete-facing Muscle Volume
+/// report. Supports both Program Volume Analysis ([phaseId] != null, planned
+/// sets across 1 full rotation of the program's WODs) and rolling 7-day
+/// volume ([phaseId] == null).
 class WeeklyMuscleReportScreen extends ConsumerWidget {
-  const WeeklyMuscleReportScreen({super.key});
+  final int? phaseId;
+  final String? programName;
+  const WeeklyMuscleReportScreen({
+    super.key,
+    this.phaseId,
+    this.programName,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final reportAsync = ref.watch(weeklyMuscleVolumeProvider);
+    final reportAsync = phaseId != null
+        ? ref.watch(phaseMuscleVolumeProvider(phaseId!))
+        : ref.watch(weeklyMuscleVolumeProvider);
     final unmappedAsync = ref.watch(unmappedExerciseCountProvider);
+    final title = programName != null
+        ? '$programName · Volume'
+        : (phaseId != null ? 'Program Volume Analysis' : 'Muscle Volume');
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Muscle Volume'),
+        title: Text(title),
         actions: [
           IconButton(
             tooltip: 'What does this mean?',
@@ -40,7 +51,13 @@ class WeeklyMuscleReportScreen extends ConsumerWidget {
           reportAsync.when(
             loading: () => const _LoadingBody(),
             error: (e, _) => _ErrorBody(
-              onRetry: () => ref.invalidate(weeklyMuscleVolumeProvider),
+              onRetry: () {
+                if (phaseId != null) {
+                  ref.invalidate(phaseMuscleVolumeProvider(phaseId!));
+                } else {
+                  ref.invalidate(weeklyMuscleVolumeProvider);
+                }
+              },
             ),
             data: (report) => _ReportBody(
               report: report,
@@ -193,6 +210,8 @@ class _ReportBody extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 88),
       children: [
+        AnatomicalBodyMap(report: report),
+        const SizedBox(height: 16),
         _SummaryHero(
           under: under.length,
           optimal: report.length - under.length - over.length,

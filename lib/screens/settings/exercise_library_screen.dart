@@ -244,10 +244,14 @@ class _ExerciseLibraryScreenState
                   child: ValueListenableBuilder(
                     valueListenable: nameController,
                     builder: (_, value, child) => FilledButton(
-                      onPressed: nameController.text.trim().isEmpty
+                      onPressed: (nameController.text.trim().isEmpty ||
+                              primarySeed == null)
                           ? null
                           : () async {
                               final name = nameController.text.trim();
+                              final derivedCategory =
+                                  regionForMuscle(primarySeed.muscle) ??
+                                      primarySeed.muscle;
                               final dao =
                                   ref.read(databaseProvider).exercisesDao;
                               int exerciseId;
@@ -255,12 +259,14 @@ class _ExerciseLibraryScreenState
                                 exerciseId =
                                     await dao.insertExercise(ExercisesCompanion(
                                   name: Value(name),
+                                  category: Value(derivedCategory),
                                   isTimed: Value(isTimed),
                                 ));
                               } else {
                                 await dao.updateExercise(ExercisesCompanion(
                                   id: Value(existing.id),
                                   name: Value(name),
+                                  category: Value(derivedCategory),
                                   isTimed: Value(isTimed),
                                 ));
                                 exerciseId = existing.id;
@@ -276,7 +282,9 @@ class _ExerciseLibraryScreenState
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      child: const Text('Save'),
+                      child: Text(primarySeed == null
+                          ? 'Assign a Primary Muscle to Save'
+                          : 'Save'),
                     ),
                   ),
                 ),

@@ -4,12 +4,14 @@ import 'package:drift/drift.dart' show Value;
 import '../../database/app_database.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/exercise_providers.dart';
+import '../../providers/muscle_volume_provider.dart';
 import '../../providers/next_workout_provider.dart';
 import '../../providers/program_providers.dart';
 import '../../utils/rir_conversion.dart';
 import '../../widgets/glass_background.dart';
 import '../../widgets/glass_route.dart';
 import '../../widgets/liquid_glass_container.dart';
+import '../reports/weekly_muscle_report_screen.dart';
 import 'wod_exercise_setup_screen.dart';
 import 'wod_setup_screen.dart';
 
@@ -350,6 +352,25 @@ class _ProgramSetupScreenState extends ConsumerState<ProgramSetupScreen> {
                   children: [
                     Text('Workouts',
                         style: Theme.of(context).textTheme.titleMedium),
+                    const Spacer(),
+                    if (_phaseId != null)
+                      TextButton.icon(
+                        onPressed: () {
+                          ref.invalidate(phaseMuscleVolumeProvider(_phaseId!));
+                          Navigator.of(context).push(
+                            glassRoute(
+                              WeeklyMuscleReportScreen(
+                                phaseId: _phaseId!,
+                                programName: _nameCtrl.text.trim().isNotEmpty
+                                    ? _nameCtrl.text.trim()
+                                    : null,
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.radar_rounded, size: 17),
+                        label: const Text('Analyze Volume'),
+                      ),
                   ],
                 ),
                 if (_phaseId != null)

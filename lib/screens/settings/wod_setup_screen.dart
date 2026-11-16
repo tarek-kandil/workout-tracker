@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' show Value;
 import '../../database/app_database.dart';
 import '../../providers/database_provider.dart';
+import '../../providers/muscle_volume_provider.dart';
 import '../../providers/next_workout_provider.dart';
 import '../../widgets/glass_background.dart';
 import '../../widgets/glass_route.dart';
+import '../reports/weekly_muscle_report_screen.dart';
 import 'wod_exercise_setup_screen.dart';
 
 class WodSetupScreen extends ConsumerStatefulWidget {
@@ -242,7 +244,24 @@ class _WodSetupScreenState extends ConsumerState<WodSetupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Workouts')),
+      appBar: AppBar(
+        title: const Text('Workouts'),
+        actions: [
+          if (_wods.isNotEmpty)
+            TextButton.icon(
+              onPressed: () {
+                ref.invalidate(phaseMuscleVolumeProvider(widget.phaseId));
+                Navigator.of(context).push(
+                  glassRoute(
+                    WeeklyMuscleReportScreen(phaseId: widget.phaseId),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.radar_rounded, size: 18),
+              label: const Text('Analyze Volume'),
+            ),
+        ],
+      ),
       body: Stack(
         children: [
           const Positioned.fill(child: GlassBackground()),

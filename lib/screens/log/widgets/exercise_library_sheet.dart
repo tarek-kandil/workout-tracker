@@ -1,8 +1,12 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../database/app_database.dart';
+import '../../../models/exercise_muscle_seed.dart';
 import '../../../providers/database_provider.dart';
+import '../../../providers/exercise_providers.dart';
 import '../../../utils/constants.dart';
+import '../../settings/widgets/muscle_assignment_sheet.dart';
 
 class ExerciseLibrarySheet extends ConsumerStatefulWidget {
   final String title;
@@ -44,14 +48,38 @@ class _ExerciseLibrarySheetState extends ConsumerState<ExerciseLibrarySheet> {
     return _all.where((e) => e.name.toLowerCase().contains(q)).toList();
   }
 
-  Future<void> _createAndSelect(String name) async {
+  Future<void> _createAndSelect(String rawName) async {
+    final name = rawName.trim();
+    if (name.isEmpty) return;
+
+    final assignments = await showMuscleAssignmentSheet(
+      context,
+      initial: const [],
+    );
+    if (assignments == null || !mounted) return;
+
+    final primary = assignments
+        .where((m) => m.role == ExerciseMuscleRole.primary)
+        .map((m) => m.muscle)
+        .firstOrNull;
+    final category =
+        (primary != null ? regionForMuscle(primary) : null) ?? primary ?? 'Other';
+
     final db = ref.read(databaseProvider);
-    final id = await db.exercisesDao.insertExercise(ExercisesCompanion.insert(name: name));
+    final id = await db.exercisesDao.insertExercise(ExercisesCompanion(
+      name: Value(name),
+      category: Value(category),
+    ));
+    if (assignments.isNotEmpty) {
+      await db.exercisesDao.setMusclesForExercise(id, assignments);
+    }
+    ref.invalidate(exercisesProvider);
+    ref.invalidate(exerciseMuscleMapProvider);
     final created = Exercise(
       id: id,
       name: name,
       isTimed: false,
-      category: 'Other',
+      category: category,
       notes: null,
       muscleNeedsReview: false,
       muscleReviewNote: null,

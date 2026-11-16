@@ -10,9 +10,8 @@ import '../../widgets/glass_background.dart';
 import '../../widgets/glass_card.dart';
 import 'widgets/daily_task_home_card.dart';
 import 'widgets/flash_workout_home_card.dart';
-import 'widgets/muscle_volume_home_card.dart';
 import 'widgets/next_workout_card.dart';
-import 'widgets/weekly_progress_card.dart';
+import 'widgets/progressive_overload_card.dart';
 import 'widgets/weekly_pr_card.dart';
 import 'widgets/weight_goal_card.dart';
 
@@ -156,11 +155,9 @@ class HomeScreen extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 10),
-        const MuscleVolumeHomeCard(),
+        const ProgressiveOverloadCard(),
         const SizedBox(height: 10),
         const WeightGoalCard(),
-        const SizedBox(height: 10),
-        const WeeklyProgressCard(),
         const SizedBox(height: 10),
         const WeeklyPRCard(),
         const SizedBox(height: 20),

@@ -178,3 +178,212 @@ final weeklyPRsProvider = FutureProvider<List<WeeklyPREntry>>((ref) async {
   final nextMonday = thisMonday.add(const Duration(days: 7));
   return db.setsDao.getPRsBreakingThisWeek(thisMonday, nextMonday);
 });
+
+class ProgressiveOverloadSummary {
+  final int weightUpCount;
+  final int repsOrTimeUpCount;
+  final int heldCount;
+  final int droppedCount;
+  final int firstTimeCount;
+  final double? vsWeek1Pct;
+  final List<({int week, double pctGain})> weekBars;
+
+  const ProgressiveOverloadSummary({
+    required this.weightUpCount,
+    required this.repsOrTimeUpCount,
+    required this.heldCount,
+    required this.droppedCount,
+    required this.firstTimeCount,
+    this.vsWeek1Pct,
+    this.weekBars = const [],
+  });
+
+  int get totalCompared =>
+      weightUpCount + repsOrTimeUpCount + heldCount + droppedCount;
+
+  int get progressedCount => weightUpCount + repsOrTimeUpCount;
+
+  int get overloadRatePct =>
+      totalCompared == 0 ? 0 : ((progressedCount / totalCompared) * 100).round();
+}
+
+final progressiveOverloadProvider =
+    FutureProvider<ProgressiveOverloadSummary>((ref) async {
+  final db = ref.watch(databaseProvider);
+  ref.watch(pointsScoreProvider);
+  final program = await ref.watch(activeProgramProvider.future);
+
+  final allExercises = await db.exercisesDao.getAllExercises();
+  final exerciseMap = {for (final e in allExercises) e.id: e};
+
+  final now = DateTime.now();
+  final sevenDaysAgo = now.subtract(const Duration(days: 7));
+  final allSessions = await db.sessionsDao.getAllSessions(); // newest first
+  final recentSessionIds = allSessions
+      .where((s) => !s.date.isBefore(sevenDaysAgo))
+      .map((s) => s.id)
+      .toSet();
+
+  // Map: exerciseId -> list of (sessionDate, sessionWeek, sets) ordered oldest -> newest
+  final historyByExercise =
+      <int, List<({int sessionId, DateTime date, int week, List<WorkoutSet> sets})>>{};
+
+  for (final session in allSessions.reversed) {
+    final sets = await db.setsDao.getSetsForSession(session.id);
+    final byEx = <int, List<WorkoutSet>>{};
+    for (final s in sets) {
+      final ex = exerciseMap[s.exerciseId];
+      if (ex == null) continue;
+      final valid = ex.isTimed
+          ? (s.durationSeconds ?? 0) > 0
+          : (s.reps > 0 && s.weightKg > 0);
+      if (!valid) continue;
+      (byEx[s.exerciseId] ??= []).add(s);
+    }
+    for (final entry in byEx.entries) {
+      (historyByExercise[entry.key] ??= []).add((
+        sessionId: session.id,
+        date: session.date,
+        week: session.weekNumber ?? 1,
+        sets: entry.value,
+      ));
+    }
+  }
+
+  int weightUp = 0;
+  int repsOrTimeUp = 0;
+  int held = 0;
+  int dropped = 0;
+  int firstTime = 0;
+
+  double bestMetric(Exercise ex, List<WorkoutSet> sets) {
+    if (ex.isTimed) {
+      var best = 0;
+      for (final s in sets) {
+        final d = s.durationSeconds ?? 0;
+        if (d > best) best = d;
+      }
+      return best.toDouble();
+    } else {
+      var best = 0.0;
+      for (final s in sets) {
+        final e1rm = s.weightKg * (1.0 + s.reps / 30.0);
+        if (e1rm > best) best = e1rm;
+      }
+      return best;
+    }
+  }
+
+  WorkoutSet bestWeightedSet(List<WorkoutSet> sets) {
+    return sets.reduce((a, b) =>
+        (a.weightKg * a.reps > b.weightKg * b.reps ||
+                (a.weightKg * a.reps == b.weightKg * b.reps &&
+                    a.weightKg >= b.weightKg))
+            ? a
+            : b);
+  }
+
+  for (final entry in historyByExercise.entries) {
+    final ex = exerciseMap[entry.key];
+    if (ex == null) continue;
+    final logs = entry.value;
+    if (logs.isEmpty) continue;
+    final latest = logs.last;
+    if (!recentSessionIds.contains(latest.sessionId)) continue;
+
+    if (logs.length < 2) {
+      firstTime++;
+      continue;
+    }
+    final prev = logs[logs.length - 2];
+
+    if (ex.isTimed) {
+      final curDur = bestMetric(ex, latest.sets).round();
+      final prevDur = bestMetric(ex, prev.sets).round();
+      if (curDur > prevDur) {
+        repsOrTimeUp++;
+      } else if (curDur == prevDur) {
+        held++;
+      } else {
+        dropped++;
+      }
+    } else {
+      final curBest = bestWeightedSet(latest.sets);
+      final prevBest = bestWeightedSet(prev.sets);
+      final curE1rm = bestMetric(ex, latest.sets);
+      final prevE1rm = bestMetric(ex, prev.sets);
+
+      if (curBest.weightKg > prevBest.weightKg &&
+          curBest.reps >= (prevBest.reps * 0.75).floor()) {
+        weightUp++;
+      } else if ((curBest.weightKg == prevBest.weightKg &&
+              curBest.reps > prevBest.reps) ||
+          curE1rm > prevE1rm + 0.01) {
+        repsOrTimeUp++;
+      } else if (curBest.weightKg == prevBest.weightKg &&
+          curBest.reps == prevBest.reps) {
+        held++;
+      } else {
+        dropped++;
+      }
+    }
+  }
+
+  // Program vs Week 1 calculation
+  double? vsWeek1Pct;
+  final weekBars = <({int week, double pctGain})>[];
+
+  if (program != null) {
+    final programSessions =
+        await db.sessionsDao.getSessionsForProgram(program.id);
+    final programSessionIds = programSessions.map((s) => s.id).toSet();
+
+    final pctGains = <double>[];
+    final weekGainsMap = <int, List<double>>{};
+
+    for (final entry in historyByExercise.entries) {
+      final ex = exerciseMap[entry.key];
+      if (ex == null) continue;
+      final progLogs = entry.value
+          .where((l) => programSessionIds.contains(l.sessionId))
+          .toList();
+      if (progLogs.isEmpty) continue;
+
+      final baseline = bestMetric(ex, progLogs.first.sets);
+      if (baseline <= 0) continue;
+
+      for (final log in progLogs) {
+        final m = bestMetric(ex, log.sets);
+        final pct = ((m - baseline) / baseline) * 100.0;
+        (weekGainsMap[log.week] ??= []).add(pct);
+      }
+
+      if (progLogs.length >= 2) {
+        final latestMetric = bestMetric(ex, progLogs.last.sets);
+        pctGains.add(((latestMetric - baseline) / baseline) * 100.0);
+      }
+    }
+
+    if (pctGains.isNotEmpty) {
+      vsWeek1Pct =
+          pctGains.reduce((a, b) => a + b) / pctGains.length;
+    }
+
+    final sortedWeeks = weekGainsMap.keys.toList()..sort();
+    for (final w in sortedWeeks.reversed.take(5).toList().reversed) {
+      final list = weekGainsMap[w]!;
+      final avg = list.reduce((a, b) => a + b) / list.length;
+      weekBars.add((week: w, pctGain: avg));
+    }
+  }
+
+  return ProgressiveOverloadSummary(
+    weightUpCount: weightUp,
+    repsOrTimeUpCount: repsOrTimeUp,
+    heldCount: held,
+    droppedCount: dropped,
+    firstTimeCount: firstTime,
+    vsWeek1Pct: vsWeek1Pct,
+    weekBars: weekBars,
+  );
+});

@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' show Value;
 import '../../database/app_database.dart';
+import '../../models/exercise_muscle_seed.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/exercise_providers.dart';
+import '../../utils/constants.dart';
 import '../../utils/rir_conversion.dart';
 import '../../widgets/glass_background.dart';
 import '../../widgets/drum_picker.dart';
+import 'widgets/muscle_assignment_sheet.dart';
 
 // ── Local list model ───────────────────────────────────────────────────────────
 
@@ -137,14 +140,22 @@ class _WodExerciseSetupScreenState
   }
 
   Future<Exercise?> _createAndPickExercise(
-      String name, String category, bool isTimed) async {
+      String name, List<ExerciseMuscleSeed> muscles, bool isTimed) async {
     final db = ref.read(databaseProvider);
+    final primary = muscles
+        .where((m) => m.role == ExerciseMuscleRole.primary)
+        .map((m) => m.muscle)
+        .firstOrNull;
+    final category =
+        (primary != null ? regionForMuscle(primary) : null) ?? primary ?? 'Other';
     final id = await db.exercisesDao.insertExercise(ExercisesCompanion(
       name: Value(name),
       category: Value(category),
       isTimed: Value(isTimed),
     ));
+    await db.exercisesDao.setMusclesForExercise(id, muscles);
     ref.invalidate(exercisesProvider);
+    ref.invalidate(exerciseMuscleMapProvider);
     final allExercises = await db.exercisesDao.getAllExercises();
     return allExercises.where((e) => e.id == id).firstOrNull;
   }
@@ -1062,8 +1073,8 @@ class _RestStepperState extends State<_RestStepper> {
 
 class _ExercisePickerSheet extends StatefulWidget {
   final List<Exercise> exercises;
-  final Future<Exercise?> Function(String name, String category, bool isTimed)
-      onCreateNew;
+  final Future<Exercise?> Function(
+      String name, List<ExerciseMuscleSeed> muscles, bool isTimed) onCreateNew;
 
   const _ExercisePickerSheet({
     required this.exercises,
@@ -1140,56 +1151,104 @@ class _ExercisePickerSheetState extends State<_ExercisePickerSheet> {
   }
 
   Future<void> _promptCreateNew(BuildContext sheetCtx) async {
-    final categories = ['Push', 'Pull', 'Legs', 'Core', 'Cardio', 'Other'];
-    String selectedCategory = 'Other';
+    List<ExerciseMuscleSeed> assignments = [];
     bool isTimed = false;
     final name = _query.trim();
 
     final confirmed = await showDialog<bool>(
       context: sheetCtx,
       builder: (dlgCtx) => StatefulBuilder(
-        builder: (ctx, setDlgState) => AlertDialog(
-          title: Text('Add "$name"'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Category:'),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                initialValue: selectedCategory,
-                decoration: const InputDecoration(
-                    border: OutlineInputBorder(), isDense: true),
-                items: categories
-                    .map((c) =>
-                        DropdownMenuItem(value: c, child: Text(c)))
-                    .toList(),
-                onChanged: (v) =>
-                    setDlgState(() => selectedCategory = v!),
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Timed exercise'),
-                value: isTimed,
-                onChanged: (v) => setDlgState(() => isTimed = v),
-              ),
+        builder: (ctx, setDlgState) {
+          final primarySeed = assignments
+              .where((a) => a.role == ExerciseMuscleRole.primary)
+              .firstOrNull;
+          final secondarySeeds = assignments
+              .where((a) => a.role == ExerciseMuscleRole.secondary)
+              .toList();
+          return AlertDialog(
+            title: Text('Add "$name"'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'MUSCLES WORKED',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1,
+                    color: Colors.white.withValues(alpha: 0.45),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                if (primarySeed == null)
+                  Text(
+                    'Pick 1 primary muscle (required) and optional secondary muscles.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.5),
+                    ),
+                  )
+                else
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      Chip(
+                        label: Text('${primarySeed.muscle} · Primary',
+                            style: const TextStyle(
+                                fontSize: 11, fontWeight: FontWeight.w700)),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      for (final s in secondarySeeds)
+                        Chip(
+                          label: Text(s.muscle,
+                              style: const TextStyle(fontSize: 11)),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                    ],
+                  ),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final result = await showMuscleAssignmentSheet(
+                      ctx,
+                      initial: assignments,
+                    );
+                    if (result != null) {
+                      setDlgState(() => assignments = result);
+                    }
+                  },
+                  icon: const Icon(Icons.tune, size: 16),
+                  label: Text(
+                      assignments.isEmpty ? 'Assign muscles' : 'Edit muscles'),
+                ),
+                const SizedBox(height: 8),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Timed exercise'),
+                  value: isTimed,
+                  onChanged: (v) => setDlgState(() => isTimed = v),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Cancel')),
+              FilledButton(
+                  onPressed: primarySeed == null
+                      ? null
+                      : () => Navigator.pop(ctx, true),
+                  child: const Text('Create & Add')),
             ],
-          ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancel')),
-            FilledButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Create & Add')),
-          ],
-        ),
+          );
+        },
       ),
     );
 
     if (confirmed != true) return;
-    final exercise =
-        await widget.onCreateNew(name, selectedCategory, isTimed);
+    final exercise = await widget.onCreateNew(name, assignments, isTimed);
     if (exercise != null && sheetCtx.mounted) {
       Navigator.pop(sheetCtx, exercise);
     }
@@ -1339,14 +1398,22 @@ class _EditExerciseDialogState extends ConsumerState<_EditExerciseDialog> {
   }
 
   Future<Exercise?> _createAndPickVariationExercise(
-      String name, String category, bool isTimed) async {
+      String name, List<ExerciseMuscleSeed> muscles, bool isTimed) async {
     final db = ref.read(databaseProvider);
+    final primary = muscles
+        .where((m) => m.role == ExerciseMuscleRole.primary)
+        .map((m) => m.muscle)
+        .firstOrNull;
+    final category =
+        (primary != null ? regionForMuscle(primary) : null) ?? primary ?? 'Other';
     final id = await db.exercisesDao.insertExercise(ExercisesCompanion(
       name: Value(name),
       category: Value(category),
       isTimed: Value(isTimed),
     ));
+    await db.exercisesDao.setMusclesForExercise(id, muscles);
     ref.invalidate(exercisesProvider);
+    ref.invalidate(exerciseMuscleMapProvider);
     final allExercises = await db.exercisesDao.getAllExercises();
     return allExercises.where((e) => e.id == id).firstOrNull;
   }

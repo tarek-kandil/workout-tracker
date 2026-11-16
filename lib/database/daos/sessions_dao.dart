@@ -24,6 +24,14 @@ class SessionsDao extends DatabaseAccessor<AppDatabase>
             ..limit(limit))
           .watch();
 
+  Future<List<WorkoutSession>> getAllSessions() =>
+      (select(workoutSessions)
+            ..orderBy([
+              (s) => OrderingTerm(expression: s.date, mode: OrderingMode.desc),
+              (s) => OrderingTerm(expression: s.id, mode: OrderingMode.desc),
+            ]))
+          .get();
+
   Future<int> insertSession(WorkoutSessionsCompanion entry) =>
       into(workoutSessions).insert(entry);
 
