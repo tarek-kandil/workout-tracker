@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../database/app_database.dart';
 import '../../models/personal_record_entry.dart';
 import '../../models/weight_history_point.dart';
 import '../../providers/database_provider.dart';
+import '../../providers/session_providers.dart';
 import '../../widgets/glass_background.dart';
 import '../../widgets/liquid_glass_container.dart';
 import '../../widgets/vibrant_text.dart';
@@ -22,10 +23,10 @@ class _ExerciseHistoryScreenState
     extends ConsumerState<ExerciseHistoryScreen> {
   // Chronological order (oldest → newest) — used for the chart
   List<WeightHistoryPoint> _history = [];
+  List<WorkoutSet> _allSets = [];
   double? _goalKg;
+  int _goalReps = 5;
   bool _loading = true;
-
-  static const _prefKey = 'exercise_goal_';
 
   @override
   void initState() {
@@ -34,38 +35,58 @@ class _ExerciseHistoryScreenState
   }
 
   Future<void> _load() async {
-    final points = await ref
-        .read(databaseProvider)
-        .setsDao
+    final db = ref.read(databaseProvider);
+    final points = await db.setsDao
         .getWeightHistoryForExercise(widget.record.exerciseId);
+    final sets =
+        await db.setsDao.getSetsForExercise(widget.record.exerciseId);
+    final goals = await ref.read(exerciseGoalsProvider.future);
+    final goal = goals[widget.record.exerciseId];
 
-    final prefs = await SharedPreferences.getInstance();
-    final goal = prefs.getDouble('$_prefKey${widget.record.exerciseId}');
-
+    if (!mounted) return;
     setState(() {
       _history = points; // already ASC by date from the query
-      _goalKg = goal;
+      _allSets = sets;
+      _goalKg = goal?.targetWeightKg;
+      _goalReps = goal?.targetReps ?? 5;
       _loading = false;
     });
   }
 
   Future<void> _showGoalDialog() async {
-    final ctrl = TextEditingController(
+    final weightCtrl = TextEditingController(
         text: _goalKg != null ? _fmtW(_goalKg!) : '');
+    final repsCtrl = TextEditingController(text: '$_goalReps');
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Set Goal Weight'),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(
-            labelText: 'Target weight',
-            suffixText: 'kg',
-            border: OutlineInputBorder(),
-          ),
+        title: Text('Target for ${widget.record.exerciseName}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: weightCtrl,
+              autofocus: true,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: 'Target Weight',
+                suffixText: 'kg',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: repsCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Target Reps',
+                suffixText: 'reps',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
         ),
         actions: [
           if (_goalKg != null)
@@ -84,16 +105,25 @@ class _ExerciseHistoryScreenState
     );
 
     if (confirmed == null) {
-      // Clear goal
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('$_prefKey${widget.record.exerciseId}');
-      setState(() => _goalKg = null);
+      await removeExerciseLiftGoal(widget.record.exerciseId);
+      ref.invalidate(exerciseGoalsProvider);
+      if (mounted) setState(() => _goalKg = null);
     } else if (confirmed == true) {
-      final v = double.tryParse(ctrl.text.replaceAll(',', '.'));
+      final v = double.tryParse(weightCtrl.text.replaceAll(',', '.'));
+      final r = (int.tryParse(repsCtrl.text.trim()) ?? 5).clamp(1, 50);
       if (v != null && v > 0) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setDouble('$_prefKey${widget.record.exerciseId}', v);
-        setState(() => _goalKg = v);
+        await saveExerciseLiftGoal(
+          exerciseId: widget.record.exerciseId,
+          targetWeightKg: v,
+          targetReps: r,
+        );
+        ref.invalidate(exerciseGoalsProvider);
+        if (mounted) {
+          setState(() {
+            _goalKg = v;
+            _goalReps = r;
+          });
+        }
       }
     }
   }
@@ -143,7 +173,7 @@ class _ExerciseHistoryScreenState
                         if (_goalKg != null) ...[
                           const SizedBox(width: 12),
                           _StatBox(
-                            label: 'Goal',
+                            label: 'Goal ($_goalReps reps)',
                             value: '${_fmtW(_goalKg!)} kg',
                             accent: Colors.green,
                           ),
@@ -170,6 +200,18 @@ class _ExerciseHistoryScreenState
                             goalKg: _goalKg,
                           ),
                         ),
+                      ),
+                    ),
+                  ),
+
+                // ── Rep-Max & Working Weight Table (Option 3) ─────────────
+                if (!pr.isTimed && pr.estimatedOneRm > 0)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                      child: _RepMaxTableCard(
+                        estimatedOneRm: pr.estimatedOneRm,
+                        sets: _allSets,
                       ),
                     ),
                   ),
@@ -530,3 +572,145 @@ class _HistoryTile extends StatelessWidget {
 
 String _fmtW(double w) =>
     w == w.roundToDouble() ? w.toInt().toString() : w.toStringAsFixed(1);
+
+// ─── Rep-Max & Working Weight Table ──────────────────────────────────────────
+
+class _RepMaxTableCard extends StatelessWidget {
+  final double estimatedOneRm;
+  final List<WorkoutSet> sets;
+
+  const _RepMaxTableCard({
+    required this.estimatedOneRm,
+    required this.sets,
+  });
+
+  static const _repTargets = [1, 3, 5, 8, 10, 12];
+
+  double _estimatedForReps(int reps) {
+    if (reps <= 1) return (estimatedOneRm * 2).round() / 2.0;
+    final raw = estimatedOneRm / (1.0 + reps / 30.0);
+    return (raw * 2).round() / 2.0;
+  }
+
+  WorkoutSet? _actualBestForReps(int minReps) {
+    WorkoutSet? best;
+    for (final s in sets) {
+      if (s.reps >= minReps && s.weightKg > 0) {
+        if (best == null ||
+            s.weightKg > best.weightKg ||
+            (s.weightKg == best.weightKg && s.reps > best.reps)) {
+          best = s;
+        }
+      }
+    }
+    return best;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    return LiquidGlassContainer(
+      borderRadius: 18,
+      blurSigma: 10,
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.calculate_outlined, size: 16, color: primary),
+              const SizedBox(width: 6),
+              Text(
+                'REP-MAX & WORKING WEIGHTS',
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.0,
+                  color: primary,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                'Est. Capability vs Logged Best',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.white.withValues(alpha: 0.45),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          GridView.count(
+            crossAxisCount: 3,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childAspectRatio: 1.55,
+            children: [
+              for (final r in _repTargets)
+                Builder(builder: (context) {
+                  final est = _estimatedForReps(r);
+                  final actual = _actualBestForReps(r);
+                  return Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.04),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: actual != null
+                            ? primary.withValues(alpha: 0.28)
+                            : Colors.white.withValues(alpha: 0.08),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '${r}RM',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                                color: primary,
+                              ),
+                            ),
+                            Text(
+                              '~${_fmtW(est)} kg',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          actual != null
+                              ? 'Best: ${_fmtW(actual.weightKg)} kg × ${actual.reps}'
+                              : 'Not logged yet',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w600,
+                            color: actual != null
+                                ? const Color(0xFF34D399)
+                                : Colors.white.withValues(alpha: 0.35),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}

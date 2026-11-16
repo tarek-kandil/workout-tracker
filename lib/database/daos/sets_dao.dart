@@ -238,6 +238,15 @@ class SetsDao extends DatabaseAccessor<AppDatabase> with _$SetsDaoMixin {
         .toList();
   }
 
+  /// All logged sets for a given exercise (used for rep-max breakdown).
+  Future<List<WorkoutSet>> getSetsForExercise(int exerciseId) =>
+      (select(workoutSets)
+            ..where((s) =>
+                s.exerciseId.equals(exerciseId) &
+                s.reps.isBiggerThanValue(0) &
+                s.weightKg.isBiggerThanValue(0)))
+          .get();
+
   /// Personal record (max weight) for a weighted exercise across all sessions.
   Future<double?> getPersonalRecord(int exerciseId) async {
     final result = await customSelect(
