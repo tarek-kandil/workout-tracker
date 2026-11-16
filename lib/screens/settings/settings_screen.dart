@@ -46,7 +46,7 @@ class SettingsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: const Text('Hub'),
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
       ),
@@ -453,35 +453,67 @@ class _DangerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const red = Color(0xFFFF453A);
+    const softRose = Color(0xFFF87171);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: red.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: red.withValues(alpha: 0.28)),
-        ),
+      child: LiquidGlassContainer(
+        borderRadius: 18,
+        blurSigma: 8,
+        tintColor: isDark
+            ? Colors.white.withValues(alpha: 0.05)
+            : Colors.white.withValues(alpha: 0.75),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
         child: Row(children: [
-          const Icon(Icons.delete, size: 26, color: Color(0xFFFF453A)),
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: softRose.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: softRose.withValues(alpha: 0.25)),
+            ),
+            child: const Icon(
+              Icons.delete_outline_rounded,
+              size: 19,
+              color: softRose,
+            ),
+          ),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Clear All Sessions & PRs',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Clear All Sessions & PRs',
                   style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w600,
-                      color: red)),
-              const SizedBox(height: 2),
-              Text('Permanently removes all history',
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Permanently removes workout history',
                   style: TextStyle(
-                      fontSize: 10.5,
-                      color: red.withValues(alpha: 0.6))),
-            ]),
+                    fontSize: 11,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.5),
+                  ),
+                ),
+              ],
+            ),
           ),
-          Icon(Icons.chevron_right_rounded,
-              size: 18, color: red.withValues(alpha: 0.4)),
+          Icon(
+            Icons.chevron_right_rounded,
+            size: 18,
+            color: Theme.of(context)
+                .colorScheme
+                .onSurface
+                .withValues(alpha: 0.35),
+          ),
         ]),
       ),
     );

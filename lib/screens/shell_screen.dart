@@ -24,9 +24,9 @@ class _ShellScreenState extends ConsumerState<ShellScreen> {
   ];
 
   static const _navItems = [
-    (Icons.fitness_center_outlined, Icons.fitness_center),
-    (Icons.emoji_events_outlined, Icons.emoji_events),
-    (Icons.settings_outlined, Icons.settings),
+    (Icons.bolt_outlined, Icons.bolt_rounded, 'Today'),
+    (Icons.insights_outlined, Icons.insights_rounded, 'Progress'),
+    (Icons.grid_view_outlined, Icons.grid_view_rounded, 'Hub'),
   ];
 
   @override
@@ -110,7 +110,7 @@ class _PageFlipTransition extends StatelessWidget {
 
 class _FloatingNavBar extends StatelessWidget {
   final int selectedIndex;
-  final List<(IconData, IconData)> navItems;
+  final List<(IconData, IconData, String)> navItems;
   final ValueChanged<int> onTap;
 
   const _FloatingNavBar({
@@ -127,84 +127,114 @@ class _FloatingNavBar extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 0, 20, max(bottomPad, 12) + 8),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(40),
+        borderRadius: BorderRadius.circular(36),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
           child: Container(
             decoration: BoxDecoration(
               color: isDark
-                  ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.75)
-                  : Colors.white.withValues(alpha: 0.88),
-              borderRadius: BorderRadius.circular(40),
+                  ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.78)
+                  : Colors.white.withValues(alpha: 0.90),
+              borderRadius: BorderRadius.circular(36),
               border: Border.all(
-                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.18),
+                color: Theme.of(context)
+                    .colorScheme
+                    .outline
+                    .withValues(alpha: 0.16),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.18),
+                  color: Colors.black.withValues(alpha: 0.22),
                   blurRadius: 20,
                   offset: const Offset(0, 6),
                 ),
               ],
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            padding: const EdgeInsets.all(6),
             child: SizedBox(
-              height: 52,
+              height: 44,
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final accent = Theme.of(context).colorScheme.primary;
                   final dimColor = Theme.of(context)
                       .colorScheme
                       .onSurface
-                      .withValues(alpha: 0.38);
-                  final itemWidth = constraints.maxWidth / navItems.length;
-                  const pillInset = 6.0;
+                      .withValues(alpha: 0.45);
+                  final totalW = constraints.maxWidth;
+                  final activeW = totalW * 0.44;
+                  final inactiveW =
+                      (totalW - activeW) / max(1, navItems.length - 1);
 
-                  return Stack(
+                  return Row(
                     children: [
-                      // ── Sliding pill ──────────────────────────────────
-                      AnimatedPositioned(
-                        duration: const Duration(milliseconds: 320),
-                        curve: Curves.easeOutCubic,
-                        left: selectedIndex * itemWidth + pillInset,
-                        width: itemWidth - pillInset * 2,
-                        top: pillInset,
-                        bottom: pillInset,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: accent,
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                        ),
-                      ),
-                      // ── Icons ─────────────────────────────────────────
-                      Row(
-                        children: [
-                          for (int i = 0; i < navItems.length; i++)
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () => onTap(i),
-                                behavior: HitTestBehavior.opaque,
+                      for (int i = 0; i < navItems.length; i++)
+                        Builder(builder: (context) {
+                          final isSelected = selectedIndex == i;
+                          return GestureDetector(
+                            onTap: () => onTap(i),
+                            behavior: HitTestBehavior.opaque,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 260),
+                              curve: Curves.easeOutCubic,
+                              width: isSelected ? activeW : inactiveW,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? accent
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(28),
+                                boxShadow: isSelected
+                                    ? [
+                                        BoxShadow(
+                                          color: accent.withValues(alpha: 0.35),
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 3),
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(28),
                                 child: Center(
-                                  child: AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 200),
-                                    child: Icon(
-                                      selectedIndex == i
-                                          ? navItems[i].$2
-                                          : navItems[i].$1,
-                                      key: ValueKey(
-                                          '${i}_${selectedIndex == i}'),
-                                      size: 22,
-                                      color: selectedIndex == i
-                                          ? Colors.white
-                                          : dimColor,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 12),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            isSelected
+                                                ? navItems[i].$2
+                                                : navItems[i].$1,
+                                            size: 20,
+                                            color: isSelected
+                                                ? Colors.white
+                                                : dimColor,
+                                          ),
+                                          if (isSelected) ...[
+                                            const SizedBox(width: 7),
+                                            Text(
+                                              navItems[i].$3,
+                                              maxLines: 1,
+                                              style: const TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w800,
+                                                color: Colors.white,
+                                                letterSpacing: 0.1,
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                        ],
-                      ),
+                          );
+                        }),
                     ],
                   );
                 },
