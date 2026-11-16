@@ -243,23 +243,34 @@ final progressiveOverloadProvider =
   final db = ref.watch(databaseProvider);
   ref.watch(pointsScoreProvider);
   final program = await ref.watch(activeProgramProvider.future);
+  if (program == null) {
+    return const ProgressiveOverloadSummary(
+      weightUpCount: 0,
+      repsOrTimeUpCount: 0,
+      heldCount: 0,
+      droppedCount: 0,
+      firstTimeCount: 0,
+    );
+  }
 
   final allExercises = await db.exercisesDao.getAllExercises();
   final exerciseMap = {for (final e in allExercises) e.id: e};
 
   final now = DateTime.now();
   final sevenDaysAgo = now.subtract(const Duration(days: 7));
-  final allSessions = await db.sessionsDao.getAllSessions(); // newest first
-  final recentSessionIds = allSessions
+  // Only evaluate sessions belonging to the active program (ordered oldest -> newest)
+  final programSessions =
+      await db.sessionsDao.getSessionsForProgram(program.id);
+  final recentSessionIds = programSessions
       .where((s) => !s.date.isBefore(sevenDaysAgo))
       .map((s) => s.id)
       .toSet();
 
-  // Map: exerciseId -> list of (sessionDate, sessionWeek, sets) ordered oldest -> newest
+  // Map: exerciseId -> list of (sessionId, date, week, sets) ordered oldest -> newest
   final historyByExercise =
       <int, List<({int sessionId, DateTime date, int week, List<WorkoutSet> sets})>>{};
 
-  for (final session in allSessions.reversed) {
+  for (final session in programSessions) {
     final sets = await db.setsDao.getSetsForSession(session.id);
     final byEx = <int, List<WorkoutSet>>{};
     for (final s in sets) {
@@ -308,50 +319,56 @@ final progressiveOverloadProvider =
             : b);
   }
 
-  // Program vs Week 1 calculation
+  // Program vs Week 1 calculation — Week 1 (or the exercise's first week in the
+  // program) strictly establishes the baseline reference. Overload is only
+  // measured from Week 2+ against that Week 1 baseline.
   double? vsWeek1Pct;
   final weekBars = <({int week, double pctGain})>[];
   final exVsWeek1 = <int, double>{};
+  final pctGains = <double>[];
+  final weekGainsMap = <int, List<double>>{};
 
-  if (program != null) {
-    final programSessions =
-        await db.sessionsDao.getSessionsForProgram(program.id);
-    final programSessionIds = programSessions.map((s) => s.id).toSet();
+  for (final entry in historyByExercise.entries) {
+    final ex = exerciseMap[entry.key];
+    if (ex == null) continue;
+    final progLogs = entry.value;
+    if (progLogs.isEmpty) continue;
 
-    final pctGains = <double>[];
-    final weekGainsMap = <int, List<double>>{};
+    final baselineWeek = progLogs.first.week;
+    final baselineSets = [
+      for (final l in progLogs.where((l) => l.week == baselineWeek)) ...l.sets,
+    ];
+    final baseline = bestMetric(ex, baselineSets);
+    if (baseline <= 0) continue;
 
-    for (final entry in historyByExercise.entries) {
-      final ex = exerciseMap[entry.key];
-      if (ex == null) continue;
-      final progLogs = entry.value
-          .where((l) => programSessionIds.contains(l.sessionId))
-          .toList();
-      if (progLogs.isEmpty) continue;
-
-      final baseline = bestMetric(ex, progLogs.first.sets);
-      if (baseline <= 0) continue;
-
-      for (final log in progLogs) {
-        final m = bestMetric(ex, log.sets);
-        final pct = ((m - baseline) / baseline) * 100.0;
-        (weekGainsMap[log.week] ??= []).add(pct);
-      }
-
-      if (progLogs.length >= 2) {
-        final latestMetric = bestMetric(ex, progLogs.last.sets);
-        final gain = ((latestMetric - baseline) / baseline) * 100.0;
-        pctGains.add(gain);
-        exVsWeek1[ex.id] = gain;
-      }
+    // Group logs by program week so each week gets one best metric per exercise
+    final setsByWeek = <int, List<WorkoutSet>>{};
+    for (final log in progLogs) {
+      (setsByWeek[log.week] ??= []).addAll(log.sets);
     }
 
-    if (pctGains.isNotEmpty) {
-      vsWeek1Pct =
-          pctGains.reduce((a, b) => a + b) / pctGains.length;
+    for (final wEntry in setsByWeek.entries) {
+      final m = bestMetric(ex, wEntry.value);
+      final pct = ((m - baseline) / baseline) * 100.0;
+      (weekGainsMap[wEntry.key] ??= []).add(pct);
     }
 
-    final sortedWeeks = weekGainsMap.keys.toList()..sort();
+    final latestWeek = progLogs.last.week;
+    if (latestWeek > 1 && latestWeek > baselineWeek) {
+      final latestWeekSets = setsByWeek[latestWeek] ?? progLogs.last.sets;
+      final latestMetric = bestMetric(ex, latestWeekSets);
+      final gain = ((latestMetric - baseline) / baseline) * 100.0;
+      pctGains.add(gain);
+      exVsWeek1[ex.id] = gain;
+    }
+  }
+
+  if (pctGains.isNotEmpty) {
+    vsWeek1Pct = pctGains.reduce((a, b) => a + b) / pctGains.length;
+  }
+
+  final sortedWeeks = weekGainsMap.keys.toList()..sort();
+  if (sortedWeeks.any((w) => w > 1)) {
     for (final w in sortedWeeks.reversed.take(5).toList().reversed) {
       final list = weekGainsMap[w]!;
       final avg = list.reduce((a, b) => a + b) / list.length;
@@ -374,13 +391,22 @@ final progressiveOverloadProvider =
     final latest = logs.last;
     if (!recentSessionIds.contains(latest.sessionId)) continue;
 
-    if (logs.length < 2) {
+    // Logs from earlier weeks in this program (prior to latest.week)
+    final priorWeekLogs =
+        logs.where((l) => l.week < latest.week).toList();
+
+    // Week 1 (or any exercise with no prior week in the program) is purely
+    // establishing the baseline reference — not enough info to overload yet.
+    if (latest.week <= 1 || priorWeekLogs.isEmpty) {
       firstTime++;
+      final weekSets = [
+        for (final l in logs.where((l) => l.week == latest.week)) ...l.sets,
+      ];
       final String curSummary;
       if (ex.isTimed) {
-        curSummary = _fmtSec(bestMetric(ex, latest.sets).round());
+        curSummary = _fmtSec(bestMetric(ex, weekSets).round());
       } else {
-        final curBest = bestWeightedSet(latest.sets);
+        final curBest = bestWeightedSet(weekSets);
         curSummary = '${_fmtKg(curBest.weightKg)} × ${curBest.reps}';
       }
       detailItems.add(ExerciseOverloadItem(
@@ -388,16 +414,25 @@ final progressiveOverloadProvider =
         bucket: OverloadBucket.firstTime,
         currentSummary: curSummary,
         previousSummary: null,
-        deltaLabel: 'Baseline',
-        vsWeek1Pct: exVsWeek1[ex.id],
+        deltaLabel: 'Week 1 Base',
+        vsWeek1Pct: null,
       ));
       continue;
     }
-    final prev = logs[logs.length - 2];
+
+    // Compare current week's best sets against the immediately preceding
+    // logged week's best sets in this program (e.g. Week 2 vs Week 1 base).
+    final prevWeek = priorWeekLogs.last.week;
+    final prevWeekSets = [
+      for (final l in priorWeekLogs.where((l) => l.week == prevWeek)) ...l.sets,
+    ];
+    final currentWeekSets = [
+      for (final l in logs.where((l) => l.week == latest.week)) ...l.sets,
+    ];
 
     if (ex.isTimed) {
-      final curDur = bestMetric(ex, latest.sets).round();
-      final prevDur = bestMetric(ex, prev.sets).round();
+      final curDur = bestMetric(ex, currentWeekSets).round();
+      final prevDur = bestMetric(ex, prevWeekSets).round();
       final diff = curDur - prevDur;
       final OverloadBucket bucket;
       final String deltaLabel;
@@ -423,10 +458,10 @@ final progressiveOverloadProvider =
         vsWeek1Pct: exVsWeek1[ex.id],
       ));
     } else {
-      final curBest = bestWeightedSet(latest.sets);
-      final prevBest = bestWeightedSet(prev.sets);
-      final curE1rm = bestMetric(ex, latest.sets);
-      final prevE1rm = bestMetric(ex, prev.sets);
+      final curBest = bestWeightedSet(currentWeekSets);
+      final prevBest = bestWeightedSet(prevWeekSets);
+      final curE1rm = bestMetric(ex, currentWeekSets);
+      final prevE1rm = bestMetric(ex, prevWeekSets);
       final wDiff = curBest.weightKg - prevBest.weightKg;
       final rDiff = curBest.reps - prevBest.reps;
 

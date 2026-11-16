@@ -9,7 +9,7 @@ import 'providers/database_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/weight_goal_providers.dart';
 import 'screens/shell_screen.dart';
-import 'screens/settings/program_setup_screen.dart';
+import 'screens/settings/program_list_screen.dart';
 import 'services/notification_service.dart';
 import 'theme/app_theme.dart';
 import 'utils/constants.dart';
@@ -215,7 +215,7 @@ class WorkoutTrackerApp extends ConsumerWidget {
           : ThemeMode.light,
       home: const _AppStartup(),
       routes: {
-        '/program-setup': (_) => const ProgramSetupScreen(),
+        '/program-setup': (_) => const ProgramListScreen(autoPromptCreate: true),
       },
     );
   }

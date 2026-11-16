@@ -8,6 +8,8 @@ import '../../providers/home_providers.dart';
 import '../../providers/session_providers.dart';
 import '../../widgets/glass_background.dart';
 import '../../widgets/glass_card.dart';
+import '../../widgets/glass_route.dart';
+import '../settings/program_list_screen.dart';
 import 'widgets/daily_task_home_card.dart';
 import 'widgets/flash_workout_home_card.dart';
 import 'widgets/next_workout_card.dart';
@@ -78,6 +80,10 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildNoProgramState(BuildContext context, WidgetRef ref,
       List<DailyTask> enabledTasks, List<WodTemplate> flashWorkouts) {
+    final allPrograms =
+        ref.watch(allProgramsProvider).valueOrNull ?? const <Program>[];
+    final hasLibraryPrograms = allPrograms.isNotEmpty;
+
     return SliverList(
       delegate: SliverChildListDelegate([
         GlassCard(
@@ -96,16 +102,25 @@ class HomeScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Set up a workout program to get started with guided training.',
+                hasLibraryPrograms
+                    ? 'You have ${allPrograms.length} saved program${allPrograms.length == 1 ? '' : 's'}. Activate one or create a new program to start training.'
+                    : 'Set up a workout program to get started with guided training.',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 24),
               FilledButton.icon(
-                onPressed: () =>
-                    Navigator.of(context).pushNamed('/program-setup'),
-                icon: const Icon(Icons.add),
-                label: const Text('Create Program'),
+                onPressed: () => Navigator.of(context).push(
+                  glassRoute(
+                    ProgramListScreen(autoPromptCreate: !hasLibraryPrograms),
+                  ),
+                ),
+                icon: Icon(hasLibraryPrograms
+                    ? Icons.playlist_play_rounded
+                    : Icons.add),
+                label: Text(hasLibraryPrograms
+                    ? 'Choose or Create Program'
+                    : 'Create Program'),
               ),
             ],
           ),

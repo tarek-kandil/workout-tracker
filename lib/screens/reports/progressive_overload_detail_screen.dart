@@ -70,35 +70,82 @@ class _ProgressiveOverloadDetailScreenState
                     ),
                   ),
                   if (summary.vsWeek1Pct != null)
-                    _VsWeek1Badge(pct: summary.vsWeek1Pct!),
+                    _VsWeek1Badge(pct: summary.vsWeek1Pct!)
+                  else if (summary.firstTimeCount > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF818CF8).withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color:
+                              const Color(0xFF818CF8).withValues(alpha: 0.35),
+                        ),
+                      ),
+                      child: const Text(
+                        'Baseline Week',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF818CF8),
+                        ),
+                      ),
+                    ),
                 ],
               ),
               const SizedBox(height: 10),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(
-                    '${summary.overloadRatePct}%',
-                    style: const TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -1,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Flexible(
-                    child: Text(
-                      '${summary.progressedCount} of ${summary.totalCompared} compared exercises progressed',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white.withValues(alpha: 0.65),
+              if (summary.totalCompared > 0)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      '${summary.overloadRatePct}%',
+                      style: const TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -1,
                       ),
                     ),
-                  ),
-                ],
-              ),
+                    const SizedBox(width: 10),
+                    Flexible(
+                      child: Text(
+                        '${summary.progressedCount} of ${summary.totalCompared} compared exercises progressed',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white.withValues(alpha: 0.65),
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              else
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      summary.firstTimeCount > 0
+                          ? '${summary.firstTimeCount} baseline exercise${summary.firstTimeCount == 1 ? '' : 's'} logged'
+                          : 'No workouts logged this week',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      summary.firstTimeCount > 0
+                          ? 'Week 1 establishes your reference base — progressive overload starts in Week 2'
+                          : 'Complete a session to track weight & rep overload',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white.withValues(alpha: 0.55),
+                      ),
+                    ),
+                  ],
+                ),
               const SizedBox(height: 14),
               // ── Filter Chips ───────────────────────────────────────────
               Wrap(
@@ -251,7 +298,7 @@ class _ExerciseOverloadTile extends StatelessWidget {
       OverloadBucket.firstTime => (
           const Color(0xFFA78BFA),
           const Color(0xFF2E1065),
-          'NEW'
+          'BASE'
         ),
     };
 
@@ -321,7 +368,9 @@ class _ExerciseOverloadTile extends StatelessWidget {
           Row(
             children: [
               _SetComparisonBox(
-                label: 'THIS SESSION',
+                label: item.bucket == OverloadBucket.firstTime
+                    ? 'WEEK 1 BASE'
+                    : 'THIS ROTATION',
                 value: item.currentSummary,
                 accentColor: accent,
                 highlight: true,
@@ -329,7 +378,7 @@ class _ExerciseOverloadTile extends StatelessWidget {
               const SizedBox(width: 8),
               if (item.previousSummary != null)
                 _SetComparisonBox(
-                  label: 'PREVIOUS SESSION',
+                  label: 'PREVIOUS ROTATION',
                   value: item.previousSummary!,
                   accentColor: Colors.white54,
                   highlight: false,

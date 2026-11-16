@@ -17,7 +17,12 @@ import 'wod_setup_screen.dart';
 
 class ProgramSetupScreen extends ConsumerStatefulWidget {
   final Program? existingProgram;
-  const ProgramSetupScreen({super.key, this.existingProgram});
+  final bool initialReadOnly;
+  const ProgramSetupScreen({
+    super.key,
+    this.existingProgram,
+    this.initialReadOnly = true,
+  });
 
   @override
   ConsumerState<ProgramSetupScreen> createState() =>
@@ -40,7 +45,7 @@ class _ProgramSetupScreenState extends ConsumerState<ProgramSetupScreen> {
     _nameCtrl =
         TextEditingController(text: widget.existingProgram?.name ?? '');
     _durationCtrl = TextEditingController(text: '12');
-    _readOnly = _isEditing;
+    _readOnly = _isEditing ? widget.initialReadOnly : false;
     if (_isEditing) _loadPhaseId();
   }
 
@@ -248,7 +253,7 @@ class _ProgramSetupScreenState extends ConsumerState<ProgramSetupScreen> {
           else
             TextButton(
               onPressed: _save,
-              child: const Text('Save'),
+              child: const Text('Done'),
             ),
         ],
       ),
@@ -386,9 +391,19 @@ class _ProgramSetupScreenState extends ConsumerState<ProgramSetupScreen> {
                     ),
                   ),
 
+                // ── Done button (edit mode) ────────────────────────────
+                if (!_readOnly) ...[
+                  const SizedBox(height: 24),
+                  FilledButton.icon(
+                    onPressed: _saving ? null : _save,
+                    icon: const Icon(Icons.check_rounded),
+                    label: const Text('Done'),
+                  ),
+                ],
+
                 // ── Activate button (draft programs) ───────────────────
                 if (_isEditing && widget.existingProgram!.status == 2) ...[
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 12),
                   OutlinedButton.icon(
                     onPressed: _activate,
                     icon: const Icon(Icons.play_arrow),
@@ -450,60 +465,32 @@ class _WodListState extends ConsumerState<_WodList> {
     if (mounted) setState(() => _wods = wods);
   }
 
-  Future<void> _addWod(BuildContext context) async {
+  Future<void> _addWod() async {
     final nameCtrl = TextEditingController(text: 'WOD ${(_wods?.length ?? 0) + 1}');
-    int restSeconds = 90;
+    const int restSeconds = 90;
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('New Workout'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Workout Name',
-                  hintText: 'e.g. WOD 1 – Push',
-                  border: OutlineInputBorder(),
-                ),
-                autofocus: true,
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  const Icon(Icons.timer_outlined, size: 18),
-                  const SizedBox(width: 8),
-                  const Text('Rest'),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.remove, size: 16),
-                    onPressed: restSeconds > 15
-                        ? () => setDialogState(() => restSeconds = (restSeconds - 15).clamp(15, 600))
-                        : null,
-                    style: IconButton.styleFrom(minimumSize: const Size(32, 32), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                  ),
-                  SizedBox(
-                    width: 52,
-                    child: Text('${restSeconds}s', textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w600)),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add, size: 16),
-                    onPressed: restSeconds < 600
-                        ? () => setDialogState(() => restSeconds = (restSeconds + 15).clamp(15, 600))
-                        : null,
-                    style: IconButton.styleFrom(minimumSize: const Size(32, 32), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                  ),
-                ],
-              ),
-            ],
+      builder: (ctx) => AlertDialog(
+        title: const Text('New Workout'),
+        content: TextField(
+          controller: nameCtrl,
+          decoration: const InputDecoration(
+            labelText: 'Workout Name',
+            hintText: 'e.g. WOD 1 – Push',
+            border: OutlineInputBorder(),
           ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Add')),
-          ],
+          autofocus: true,
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Add'),
+          ),
+        ],
       ),
     );
     if (confirmed != true || !mounted) return;
@@ -515,7 +502,7 @@ class _WodListState extends ConsumerState<_WodList> {
         phaseId: Value(widget.phaseId),
         wodNumber: Value(wods.length + 1),
         name: Value(nameCtrl.text.trim()),
-        restSeconds: Value(restSeconds),
+        restSeconds: const Value(restSeconds),
       ),
     );
     await _load();
@@ -566,13 +553,26 @@ class _WodListState extends ConsumerState<_WodList> {
     if (wods.isEmpty) {
       return Padding(
         padding: const EdgeInsets.only(top: 8),
-        child: Text(
-          widget.readOnly
-              ? 'No workouts in this program.'
-              : 'No workouts yet — tap + New Workout to add.',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.white.withValues(alpha: 0.4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.readOnly
+                  ? 'No workouts in this program.'
+                  : 'No workouts yet — add your first workout below.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.4),
+                  ),
+            ),
+            if (!widget.readOnly) ...[
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: _addWod,
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('New Workout'),
               ),
+            ],
+          ],
         ),
       );
     }
@@ -602,7 +602,7 @@ class _WodListState extends ConsumerState<_WodList> {
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: TextButton.icon(
-                onPressed: () => _addWod(context),
+                onPressed: _addWod,
                 icon: const Icon(Icons.add, size: 16),
                 label: const Text('New Workout'),
               ),

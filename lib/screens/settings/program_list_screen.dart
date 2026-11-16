@@ -1,8 +1,10 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../database/app_database.dart';
 import '../../providers/program_providers.dart';
 import '../../providers/database_provider.dart';
+import '../../providers/next_workout_provider.dart';
 import '../../widgets/glass_background.dart';
 import '../../widgets/glass_route.dart';
 import 'program_setup_screen.dart';
@@ -14,11 +16,32 @@ const _blue = Color(0xFF32ADE6);
 const _blueLight = Color(0xFF67C9E8);
 const _red = Color(0xFFFF453A);
 
-class ProgramListScreen extends ConsumerWidget {
-  const ProgramListScreen({super.key});
+class ProgramListScreen extends ConsumerStatefulWidget {
+  final bool autoPromptCreate;
+  const ProgramListScreen({super.key, this.autoPromptCreate = false});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProgramListScreen> createState() => _ProgramListScreenState();
+}
+
+class _ProgramListScreenState extends ConsumerState<ProgramListScreen> {
+  bool _autoPrompted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.autoPromptCreate) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_autoPrompted) {
+          _autoPrompted = true;
+          _createNew(context);
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final programsAsync = ref.watch(allProgramsProvider);
 
     return Scaffold(
@@ -86,7 +109,7 @@ class ProgramListScreen extends ConsumerWidget {
               if (library.isNotEmpty) {
                 items.add(_SectionLabel(active.isNotEmpty
                     ? 'Library'
-                    : 'Library'));
+                    : 'Choose a Program to Activate'));
                 for (final p in library) {
                   items.add(_ProgramTile(program: p));
                 }
@@ -104,8 +127,94 @@ class ProgramListScreen extends ConsumerWidget {
     );
   }
 
-  void _createNew(BuildContext context) {
-    Navigator.of(context).push(glassRoute(const ProgramSetupScreen()));
+  Future<void> _createNew(BuildContext context) async {
+    final nameCtrl = TextEditingController();
+    final weeksCtrl = TextEditingController(text: '12');
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dlgCtx) => StatefulBuilder(
+        builder: (ctx, setDlgState) {
+          final canCreate = nameCtrl.text.trim().isNotEmpty &&
+              (int.tryParse(weeksCtrl.text.trim()) ?? 0) >= 1;
+          return AlertDialog(
+            title: const Text('New Program'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameCtrl,
+                  autofocus: true,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    labelText: 'Program Name',
+                    hintText: 'e.g. 12-Week PPL',
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (_) => setDlgState(() {}),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: weeksCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Duration',
+                    suffixText: 'weeks',
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (_) => setDlgState(() {}),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: canCreate ? () => Navigator.pop(ctx, true) : null,
+                child: const Text('Create & Add Workouts'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    final name = nameCtrl.text.trim();
+    final weeks = (int.tryParse(weeksCtrl.text.trim()) ?? 12).clamp(1, 520);
+    final db = ref.read(databaseProvider);
+
+    final programId = await db.programsDao.insertProgram(ProgramsCompanion(
+      name: Value(name),
+      status: const Value(2),
+    ));
+    await db.programsDao.insertPhase(ProgramPhasesCompanion(
+      programId: Value(programId),
+      phaseNumber: const Value(1),
+      name: const Value('Main'),
+      durationWeeks: Value(weeks),
+    ));
+
+    ref.invalidate(allProgramsProvider);
+    ref.invalidate(activeProgramProvider);
+
+    final all = await db.programsDao.getAllPrograms();
+    final created = all.where((p) => p.id == programId).firstOrNull;
+    if (created != null && context.mounted) {
+      await Navigator.of(context).push(
+        glassRoute(
+          ProgramSetupScreen(
+            existingProgram: created,
+            initialReadOnly: false,
+          ),
+        ),
+      );
+      ref.invalidate(allProgramsProvider);
+      ref.invalidate(activeProgramProvider);
+    }
   }
 }
 
@@ -255,6 +364,30 @@ class _ProgramTileState extends ConsumerState<_ProgramTile> {
                                   ),
                                 ),
                                 const SizedBox(width: 8),
+                                if (status != 0)
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 4),
+                                    child: FilledButton.tonalIcon(
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor:
+                                            _indigo.withValues(alpha: 0.22),
+                                        foregroundColor: _indigoLight,
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 10, vertical: 6),
+                                        minimumSize: const Size(0, 32),
+                                        tapTargetSize:
+                                            MaterialTapTargetSize.shrinkWrap,
+                                        textStyle: const TextStyle(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                      onPressed: () => _activateProgram(context),
+                                      icon: const Icon(Icons.play_arrow_rounded,
+                                          size: 15),
+                                      label: const Text('Activate'),
+                                    ),
+                                  ),
                                 IconButton(
                                   constraints:
                                       const BoxConstraints(),
@@ -298,6 +431,25 @@ class _ProgramTileState extends ConsumerState<_ProgramTile> {
         ),
       ),
     );
+  }
+
+  Future<void> _activateProgram(BuildContext context) async {
+    final db = ref.read(databaseProvider);
+    final allPrograms = await db.programsDao.getAllPrograms();
+    for (final p in allPrograms) {
+      if (p.status == 0) {
+        await db.programsDao.updateProgramStatus(p.id, 2);
+      }
+    }
+    await db.programsDao.updateProgramStatus(widget.program.id, 0);
+    ref.invalidate(allProgramsProvider);
+    ref.invalidate(activeProgramProvider);
+    ref.invalidate(nextWodProvider);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('"${widget.program.name}" is now active.')),
+      );
+    }
   }
 
   Future<void> _confirmDelete(BuildContext context) async {
