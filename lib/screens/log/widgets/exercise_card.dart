@@ -196,16 +196,17 @@ class ExerciseCard extends StatelessWidget {
           ],
           // Set rows
           ...List.generate(te.targetSets, (setIdx) {
-            final isSetActive = isActive && setIdx == currentSetIdx;
-            final isSetDone = (isActive && setIdx < currentSetIdx) ||
-                (isDone && !skippedSets.contains(setIdx));
             final isSetSkipped = skippedSets.contains(setIdx);
+            final isSetActive = isActive && setIdx == currentSetIdx;
+            final isSetDone = (!isSetSkipped && setIdx < currentSetIdx) ||
+                (isDone && !isSetSkipped);
             return SetRowItem(
               key: ValueKey('set-${te.exerciseId}-$itemIndex-$setIdx'),
               setIndex: setIdx, isTimed: isTimed,
               isActive: isSetActive, isDone: isSetDone, isSkipped: isSetSkipped,
               canSkip: !isSetActive && !isSetDone && !isSetSkipped && isActive,
               data: setIdx < setData.length ? setData[setIdx] : SetData(weightKg: 0, reps: 0),
+              suggestion: entry.suggestion,
               onChanged: isSetActive ? (data) => onSetDataChanged(setIdx, data) : null,
               onSkip: () => onSkipSet(setIdx),
               onEdit: isSetDone ? () => onEditSet(setIdx) : null,

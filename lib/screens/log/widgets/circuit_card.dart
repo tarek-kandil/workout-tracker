@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../database/app_database.dart';
 import '../../../models/next_wod_result.dart';
+import '../../../models/weight_suggestion.dart';
 import '../../../models/wod_item.dart';
 import '../models/session_models.dart';
 import '../session_formatters.dart';
@@ -15,13 +16,16 @@ class RoundRowItem extends StatelessWidget {
   final bool isActive;
   final bool isDone;
   final SetData data;
+  final WeightSuggestion? suggestion;
   final void Function(SetData)? onChanged;
   final VoidCallback? onEdit;
 
   const RoundRowItem({super.key, 
     required this.roundIndex, required this.isTimed,
     required this.isActive, required this.isDone,
-    required this.data, required this.onChanged, this.onEdit,
+    required this.data,
+    this.suggestion,
+    required this.onChanged, this.onEdit,
   });
 
   @override
@@ -45,7 +49,9 @@ class RoundRowItem extends StatelessWidget {
             Expanded(child: SetRow(
               key: ValueKey('round-input-$roundIndex'),
               setNumber: roundIndex + 1, isTimed: isTimed,
-              data: data, onChanged: onChanged!,
+              data: data,
+              suggestion: suggestion,
+              onChanged: onChanged!,
             ))
           else ...[
             if (!isTimed) ...[
@@ -123,11 +129,17 @@ class CircuitExerciseSection extends StatelessWidget {
               style: TextStyle(fontSize: 10, color: Colors.white.withValues(alpha: 0.45)),
             ),
           ])),
-          IconButton(
-            icon: const Icon(Icons.more_horiz, size: 18),
-            onPressed: onShowActions,
-            padding: EdgeInsets.zero,
-            style: IconButton.styleFrom(minimumSize: const Size(28, 28), tapTargetSize: MaterialTapTargetSize.shrinkWrap, foregroundColor: Colors.white38),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.more_horiz, size: 18),
+                onPressed: onShowActions,
+                padding: EdgeInsets.zero,
+                style: IconButton.styleFrom(minimumSize: const Size(28, 28), tapTargetSize: MaterialTapTargetSize.shrinkWrap, foregroundColor: Colors.white38),
+              ),
+              SuggestionBadge(suggestion: exercise.suggestion),
+            ],
           ),
         ]),
         const SizedBox(height: 6),
@@ -147,6 +159,7 @@ class CircuitExerciseSection extends StatelessWidget {
               isActive: isRoundActive,
               isDone: isRoundDone,
               data: r < setData.length ? setData[r] : SetData(weightKg: 0, reps: 0),
+              suggestion: exercise.suggestion,
               onChanged: isRoundActive ? (d) => onSetDataChanged(r, d) : null,
               onEdit: (isRoundDone && !isRoundActive && onEditRound != null)
                   ? () => onEditRound!(r)

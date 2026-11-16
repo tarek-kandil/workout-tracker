@@ -339,4 +339,98 @@ void main() {
     await tester.pump(Duration.zero);
     await db.close();
   });
+
+  test('computeWeightSuggestion combines weight action, target reps, and RIR', () {
+    WorkoutSet makeSet(int setNum, double kg, int reps, {double? rir}) => WorkoutSet(
+          id: setNum,
+          sessionId: 1,
+          exerciseId: 1,
+          setNumber: setNum,
+          weightKg: kg,
+          reps: reps,
+          rir: rir,
+        );
+
+    // 1. Hit top of range (10) at target RIR (2.0) -> Increase weight, reset reps to 8
+    final inc = computeWeightSuggestion(
+      lastSets: [
+        makeSet(1, 80, 10, rir: 2.0),
+        makeSet(2, 80, 10, rir: 2.0),
+      ],
+      repRangeMin: 8,
+      repRangeMax: 10,
+      targetRir: 2.0,
+    );
+    expect(inc.type, SuggestionType.increase);
+    expect(inc.suggestedKg, 80);
+    expect(inc.suggestedReps, 8);
+
+    // 2. Hit top of range (10) at very easy RIR (4.0 vs target 2.0) -> Increase weight, aim for 10
+    final incEasy = computeWeightSuggestion(
+      lastSets: [
+        makeSet(1, 80, 10, rir: 4.0),
+        makeSet(2, 80, 10, rir: 4.0),
+      ],
+      repRangeMin: 8,
+      repRangeMax: 10,
+      targetRir: 2.0,
+    );
+    expect(incEasy.type, SuggestionType.increase);
+    expect(incEasy.suggestedReps, 10);
+
+    // 3. Hit top of range (10) at RIR 0 failure grind -> Hold weight & reps
+    final hold = computeWeightSuggestion(
+      lastSets: [
+        makeSet(1, 80, 10, rir: 0.0),
+        makeSet(2, 80, 10, rir: 0.0),
+      ],
+      repRangeMin: 8,
+      repRangeMax: 10,
+      targetRir: 2.0,
+    );
+    expect(hold.type, SuggestionType.maintain);
+    expect(hold.suggestedKg, 80);
+    expect(hold.suggestedReps, 10);
+
+    // 4. Inside rep range (8 in 8-10) at normal RIR 2.0 -> Increase reps (+1 -> 9)
+    final upReps = computeWeightSuggestion(
+      lastSets: [
+        makeSet(1, 80, 8, rir: 2.0),
+        makeSet(2, 80, 8, rir: 2.0),
+      ],
+      repRangeMin: 8,
+      repRangeMax: 10,
+      targetRir: 2.0,
+    );
+    expect(upReps.type, SuggestionType.increaseReps);
+    expect(upReps.suggestedKg, 80);
+    expect(upReps.suggestedReps, 9);
+
+    // 5. Inside rep range (8 in 8-10) at easy RIR 4.0 -> Increase reps (+2 -> 10)
+    final upRepsEasy = computeWeightSuggestion(
+      lastSets: [
+        makeSet(1, 80, 8, rir: 4.0),
+        makeSet(2, 80, 8, rir: 4.0),
+      ],
+      repRangeMin: 8,
+      repRangeMax: 10,
+      targetRir: 2.0,
+    );
+    expect(upRepsEasy.type, SuggestionType.increaseReps);
+    expect(upRepsEasy.suggestedReps, 10);
+
+    // 6. Below repRangeMin (6 < 8) -> Decrease weight, aim for 8
+    final dec = computeWeightSuggestion(
+      lastSets: [
+        makeSet(1, 80, 6, rir: 0.5),
+        makeSet(2, 80, 5, rir: 0.0),
+      ],
+      repRangeMin: 8,
+      repRangeMax: 10,
+      targetRir: 2.0,
+    );
+    expect(dec.type, SuggestionType.decrease);
+    expect(dec.suggestedKg, 80);
+    expect(dec.suggestedReps, 8);
+  });
 }

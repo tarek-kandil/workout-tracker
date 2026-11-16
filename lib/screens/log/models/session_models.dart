@@ -22,6 +22,10 @@ class SessionItem {
   /// variation): the exercise it replaced, so its history can still be shown.
   int? originalExerciseId;
   final Set<int> skippedSets;
+  /// Preserves partial set/round progress if this item is reordered out of the
+  /// active slot before all of its sets are finished.
+  int savedSetIdx;
+  int savedCircuitExIdx;
 
   SessionItem({
     required this.id,
@@ -29,6 +33,8 @@ class SessionItem {
     this.skipped = false,
     this.isAdHoc = false,
     this.originalExerciseId,
+    this.savedSetIdx = 0,
+    this.savedCircuitExIdx = 0,
   }) : skippedSets = {};
 }
 

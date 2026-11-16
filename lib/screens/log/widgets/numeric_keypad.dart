@@ -145,6 +145,7 @@ class NumericKeypadSheet extends StatefulWidget {
 
 class _NumericKeypadSheetState extends State<NumericKeypadSheet> {
   late NumericKeypadBuffer _buffer;
+  bool _replaceOnFirstInput = true;
 
   @override
   void initState() {
@@ -164,29 +165,50 @@ class _NumericKeypadSheetState extends State<NumericKeypadSheet> {
 
   void _digit(String d) {
     HapticFeedback.selectionClick();
-    setState(() => _buffer = _buffer.withDigit(d));
+    setState(() {
+      final base = _replaceOnFirstInput
+          ? NumericKeypadBuffer('', allowDecimal: widget.allowDecimal)
+          : _buffer;
+      _replaceOnFirstInput = false;
+      _buffer = base.withDigit(d);
+    });
   }
 
   void _decimal() {
     if (!widget.allowDecimal) return;
     HapticFeedback.selectionClick();
-    setState(() => _buffer = _buffer.withDecimalPoint());
+    setState(() {
+      final base = _replaceOnFirstInput
+          ? NumericKeypadBuffer('', allowDecimal: widget.allowDecimal)
+          : _buffer;
+      _replaceOnFirstInput = false;
+      _buffer = base.withDecimalPoint();
+    });
   }
 
   void _backspace() {
     HapticFeedback.selectionClick();
-    setState(() => _buffer = _buffer.backspace());
+    setState(() {
+      _replaceOnFirstInput = false;
+      _buffer = _buffer.backspace();
+    });
   }
 
   void _clear() {
     HapticFeedback.mediumImpact();
-    setState(() => _buffer = _buffer.clear());
+    setState(() {
+      _replaceOnFirstInput = false;
+      _buffer = _buffer.clear();
+    });
   }
 
   void _quickAdjust(double delta) {
     HapticFeedback.selectionClick();
     final next = clampNumericValue(_clampedValue + delta, min: widget.min, max: widget.max, allowDecimal: widget.allowDecimal);
-    setState(() => _buffer = NumericKeypadBuffer(_formatSeed(next), allowDecimal: widget.allowDecimal));
+    setState(() {
+      _replaceOnFirstInput = false;
+      _buffer = NumericKeypadBuffer(_formatSeed(next), allowDecimal: widget.allowDecimal);
+    });
   }
 
   void _confirm({required bool moveNext}) {

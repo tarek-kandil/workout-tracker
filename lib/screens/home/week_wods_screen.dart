@@ -488,44 +488,85 @@ class _SuggestionChip extends StatelessWidget {
       return Text('—', style: Theme.of(context).textTheme.bodySmall);
     }
 
-    Color color;
-    IconData icon;
+    final isTimed = suggestion.suggestedDurationSeconds != null;
+    final Color accent;
+    final Color bgTint;
+    final String tagLabel;
+
     switch (suggestion.type) {
       case SuggestionType.increase:
-        color = Colors.green;
-        icon = Icons.trending_up;
-      case SuggestionType.decrease:
-        color = Colors.orange;
-        icon = Icons.trending_down;
+        accent = const Color(0xFF34D399);
+        bgTint = const Color(0xFF064E3B);
+        tagLabel = isTimed ? '↑ TIME' : '↑ WEIGHT';
+      case SuggestionType.increaseReps:
+        accent = const Color(0xFF38BDF8);
+        bgTint = const Color(0xFF0C4A6E);
+        tagLabel = '↑ REPS';
       case SuggestionType.maintain:
-        color = Theme.of(context).colorScheme.secondary;
-        icon = Icons.trending_flat;
       case SuggestionType.noHistory:
-        color = Colors.white;
-        icon = Icons.remove;
+        accent = const Color(0xFF818CF8);
+        bgTint = const Color(0xFF1E1B4B);
+        tagLabel = 'HOLD';
+      case SuggestionType.decrease:
+        accent = const Color(0xFFFBBF24);
+        bgTint = const Color(0xFF451A03);
+        tagLabel = isTimed ? '↓ TIME' : '↓ WEIGHT';
     }
 
-    final label = suggestion.suggestedKg != null
-        ? '${suggestion.suggestedKg!.toStringAsFixed(1)}kg'
-        : '—';
+    final String targetLabel;
+    if (isTimed) {
+      final s = suggestion.suggestedDurationSeconds!;
+      final m = s ~/ 60;
+      final rem = s % 60;
+      targetLabel = m > 0 ? '${m}m ${rem}s' : '${s}s';
+    } else if (suggestion.suggestedReps != null) {
+      targetLabel = '× ${suggestion.suggestedReps}';
+    } else if (suggestion.suggestedKg != null) {
+      targetLabel = '${suggestion.suggestedKg!.toStringAsFixed(1)}kg';
+    } else {
+      targetLabel = '—';
+    }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
+        color: bgTint.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(9),
+        border: Border.all(color: accent.withValues(alpha: 0.38)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 4),
-          Text(label,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.22),
+              borderRadius: BorderRadius.circular(5),
+            ),
+            child: Text(
+              tagLabel,
               style: TextStyle(
-                  fontSize: 12,
-                  color: color,
-                  fontWeight: FontWeight.w600)),
+                fontSize: 9.5,
+                fontWeight: FontWeight.w900,
+                color: accent,
+                letterSpacing: 0.4,
+              ),
+            ),
+          ),
+          if (targetLabel.isNotEmpty) ...[
+            const SizedBox(width: 5),
+            Padding(
+              padding: const EdgeInsets.only(right: 2),
+              child: Text(
+                targetLabel,
+                style: const TextStyle(
+                  fontSize: 11.5,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

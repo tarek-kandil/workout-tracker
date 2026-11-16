@@ -45,10 +45,11 @@ Future<List<WodItem>> buildWodItems(
                   repRangeMin: te.repRangeMin,
                   repRangeMax: te.repRangeMax,
                 )
-              : _computeSuggestion(
+              : computeWeightSuggestion(
                   lastSets: lastSets,
                   repRangeMin: te.repRangeMin,
                   repRangeMax: te.repRangeMax,
+                  targetRir: effectiveRir(te.targetRir, te.targetRpe),
                 ),
         ),
         restSeconds: te.restSeconds,
@@ -74,10 +75,11 @@ Future<List<WodItem>> buildWodItems(
                 repRangeMin: te.repRangeMin,
                 repRangeMax: te.repRangeMax,
               )
-            : _computeSuggestion(
+            : computeWeightSuggestion(
                 lastSets: lastSets,
                 repRangeMin: te.repRangeMin,
                 repRangeMax: te.repRangeMax,
+                targetRir: effectiveRir(te.targetRir, te.targetRpe),
               ),
       ));
     }
@@ -215,51 +217,89 @@ final nextWodProvider = FutureProvider<NextWodResult?>((ref) async {
   );
 });
 
-WeightSuggestion _computeSuggestion({
+WeightSuggestion computeWeightSuggestion({
   required List<WorkoutSet> lastSets,
   required int repRangeMin,
   required int repRangeMax,
-  double incrementKg = 2.5,
+  double? targetRir,
 }) {
-  final validSets = lastSets.where((s) => s.reps > 0 && s.weightKg > 0).toList();
+  final validSets =
+      lastSets.where((s) => s.reps > 0 && s.weightKg > 0).toList();
   if (validSets.isEmpty) return WeightSuggestion.noHistory;
 
-  // Best set = highest weight × reps (volume), which reflects peak effort
-  // better than always using set #1 (which is often a lighter opener).
+  final lowRep = min(repRangeMin, repRangeMax);
+  final highRep = max(repRangeMin, repRangeMax);
+
+  // Best set = highest weight × reps (volume), breaking ties by higher weight.
   final bestSet = validSets.reduce(
-    (a, b) => a.weightKg * a.reps >= b.weightKg * b.reps ? a : b,
+    (a, b) => (a.weightKg * a.reps > b.weightKg * b.reps ||
+            (a.weightKg * a.reps == b.weightKg * b.reps &&
+                a.weightKg >= b.weightKg))
+        ? a
+        : b,
   );
   final bestWeight = bestSet.weightKg;
   final bestRir = effectiveRir(bestSet.rir, bestSet.rpe); // null if not logged
+  final effectiveTargetRir = targetRir ?? 2.0;
 
   final minReps = validSets.map((s) => s.reps).reduce(min);
   final maxReps = validSets.map((s) => s.reps).reduce(max);
 
-  // RIR ≥ 2.5 means they had clear room left (was RPE ≤ 7.5) — don't push
-  // the weight up yet even if the rep count looks good. Lower RIR = harder,
-  // so this condition is inverted from the old RPE-based check.
-  final easyEffort = bestRir != null && bestRir >= 2.5;
+  // Grind effort: logged RIR <= 0.5 when target RIR was >= 1.5 (all-out failure)
+  final grindEffort =
+      bestRir != null && bestRir <= 0.5 && effectiveTargetRir >= 1.5;
+  // Very easy effort: logged RIR is at least 1.5 RIR easier than target RIR
+  final veryEasyEffort =
+      bestRir != null && (bestRir - effectiveTargetRir) >= 1.5;
   final rirStr = bestRir != null ? ' @ RIR ${fmtRir(bestRir)}' : '';
 
-  if (minReps >= repRangeMax && !easyEffort) {
+  if (minReps >= highRep) {
+    if (grindEffort) {
+      // Hit top of rep range, but only by grinding to failure — consolidate first
+      return WeightSuggestion(
+        type: SuggestionType.maintain,
+        suggestedKg: bestWeight,
+        suggestedReps: highRep,
+        message:
+            'Hit $maxReps reps$rirStr — own ${bestWeight}kg × $highRep cleanly',
+      );
+    }
+    // Ready to increase weight! Reset to bottom of range (or top if very easy)
+    final nextReps = veryEasyEffort ? highRep : lowRep;
     return WeightSuggestion(
       type: SuggestionType.increase,
-      suggestedKg: bestWeight + incrementKg,
-      message: 'Hit $maxReps reps$rirStr — increase to ${bestWeight + incrementKg}kg',
+      suggestedKg: bestWeight,
+      suggestedReps: nextReps,
+      message:
+          'Hit $maxReps reps$rirStr — increase weight × $nextReps reps',
     );
-  } else if (maxReps < repRangeMin) {
+  } else if (maxReps < lowRep) {
     return WeightSuggestion(
       type: SuggestionType.decrease,
-      suggestedKg: (bestWeight - incrementKg).clamp(0.0, double.infinity),
-      message: 'Only $minReps reps$rirStr — reduce to ${bestWeight - incrementKg}kg',
+      suggestedKg: bestWeight,
+      suggestedReps: lowRep,
+      message:
+          'Only $minReps reps$rirStr — reduce weight × $lowRep reps',
     );
   } else {
+    if (grindEffort && minReps == maxReps) {
+      return WeightSuggestion(
+        type: SuggestionType.maintain,
+        suggestedKg: bestWeight,
+        suggestedReps: maxReps,
+        message:
+            'Hard effort$rirStr — hold ${bestWeight}kg × $maxReps reps',
+      );
+    }
+    final step = veryEasyEffort ? 2 : 1;
+    final baseReps = maxReps < highRep ? maxReps : minReps;
+    final nextReps = (baseReps + step).clamp(lowRep, highRep);
     return WeightSuggestion(
-      type: SuggestionType.maintain,
+      type: SuggestionType.increaseReps,
       suggestedKg: bestWeight,
-      message: easyEffort
-          ? 'Easy effort$rirStr — maintain ${bestWeight}kg, push to $repRangeMax reps'
-          : 'Stay at ${bestWeight}kg, aim for $repRangeMax reps',
+      suggestedReps: nextReps,
+      message:
+          'Stay at ${bestWeight}kg$rirStr — push to $nextReps reps',
     );
   }
 }

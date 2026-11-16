@@ -1,9 +1,10 @@
-enum SuggestionType { noHistory, increase, maintain, decrease }
+enum SuggestionType { noHistory, increase, increaseReps, maintain, decrease }
 
-/// Coaching suggestion for weight or duration on the next session of an exercise.
+/// Coaching suggestion for weight, reps, or duration on the next session of an exercise.
 class WeightSuggestion {
   final SuggestionType type;
   final double? suggestedKg;
+  final int? suggestedReps;
   final int? suggestedDurationSeconds;
   final String message;
 
@@ -11,6 +12,7 @@ class WeightSuggestion {
     required this.type,
     required this.message,
     this.suggestedKg,
+    this.suggestedReps,
     this.suggestedDurationSeconds,
   });
 

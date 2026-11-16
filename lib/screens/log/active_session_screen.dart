@@ -176,16 +176,42 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   bool _standaloneSetLogged(int itemIdx, int setIdx) =>
       itemIdx < _currentItemIdx ||
       (_allExercisesDone && itemIdx == _currentItemIdx) ||
-      (itemIdx == _currentItemIdx && setIdx < _currentSetIdx);
+      (itemIdx == _currentItemIdx && setIdx < _currentSetIdx) ||
+      (itemIdx > _currentItemIdx &&
+          setIdx < _sessionItems[itemIdx].savedSetIdx);
 
   /// Whether a circuit slot (a given exercise in a given round) has been passed
   /// by the progress cursor. Handles the multi-exercise / multi-round structure.
-  bool _circuitSlotLogged(int itemIdx, int round, int exIdx) =>
-      itemIdx < _currentItemIdx ||
-      (_allExercisesDone && itemIdx == _currentItemIdx) ||
-      (itemIdx == _currentItemIdx &&
-          (round < _currentSetIdx ||
-              (round == _currentSetIdx && exIdx < _circuitExerciseIdx)));
+  bool _circuitSlotLogged(int itemIdx, int round, int exIdx) {
+    if (itemIdx < _currentItemIdx ||
+        (_allExercisesDone && itemIdx == _currentItemIdx)) {
+      return true;
+    }
+    final setIdx = itemIdx == _currentItemIdx
+        ? _currentSetIdx
+        : _sessionItems[itemIdx].savedSetIdx;
+    final circuitExIdx = itemIdx == _currentItemIdx
+        ? _circuitExerciseIdx
+        : _sessionItems[itemIdx].savedCircuitExIdx;
+    return round < setIdx || (round == setIdx && exIdx < circuitExIdx);
+  }
+
+  void _activateItemAt(int nextItemIdx) {
+    _currentItemIdx = nextItemIdx;
+    if (nextItemIdx >= 0 && nextItemIdx < _sessionItems.length) {
+      final si = _sessionItems[nextItemIdx];
+      final totalSets = switch (si.wodItem) {
+        StandaloneWodExercise(:final entry) => entry.templateExercise.targetSets,
+        WodCircuit(:final rounds) => rounds,
+      };
+      _currentSetIdx = _nextNonSkippedSet(nextItemIdx, si.savedSetIdx, totalSets)
+          .clamp(0, (totalSets - 1).clamp(0, 999));
+      _circuitExerciseIdx = si.savedCircuitExIdx;
+    } else {
+      _currentSetIdx = 0;
+      _circuitExerciseIdx = 0;
+    }
+  }
 
   WodExerciseEntry get _currentEntry {
     final item = _sessionItems[_currentItemIdx].wodItem;
@@ -305,14 +331,17 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
           final ls = lastSets[idx];
           return SetData(
             weightKg: ls.weightKg,
-            reps: isTimed ? 0 : ls.reps,
+            reps: isTimed ? 0 : (entry.suggestion.suggestedReps ?? ls.reps),
             durationSeconds: isTimed
                 ? (entry.suggestion.suggestedDurationSeconds ?? ls.durationSeconds ?? te.repRangeMin)
                 : 0,
           );
         }
         if (idx == 0 && !isTimed) {
-          return SetData(weightKg: entry.suggestion.suggestedKg ?? 0.0, reps: (te.repRangeMax * 0.8).round());
+          return SetData(
+            weightKg: entry.suggestion.suggestedKg ?? 0.0,
+            reps: entry.suggestion.suggestedReps ?? (te.repRangeMax * 0.8).round(),
+          );
         }
         if (isTimed) {
           return SetData(
@@ -376,7 +405,23 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   // ── Set change ────────────────────────────────────────────────────────────────
 
   void _onSetChanged(int exerciseId, int setIndex, SetData data) {
-    setState(() => _setData[exerciseId]![setIndex] = data);
+    setState(() {
+      final list = _setData[exerciseId]!;
+      final oldWeight = list[setIndex].weightKg;
+      list[setIndex] = data;
+      if (setIndex == _currentSetIdx && data.weightKg != oldWeight) {
+        for (int i = setIndex + 1; i < list.length; i++) {
+          if (list[i].weightKg == oldWeight) {
+            list[i] = SetData(
+              weightKg: data.weightKg,
+              reps: list[i].reps,
+              durationSeconds: list[i].durationSeconds,
+              rir: list[i].rir,
+            );
+          }
+        }
+      }
+    });
   }
 
   // ── Done set ──────────────────────────────────────────────────────────────────
@@ -530,15 +575,12 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
             final next = _nextNonSkippedSet(_currentItemIdx, _currentSetIdx + 1, targetSets);
             if (next < targetSets) {
               _currentSetIdx = next;
+              _sessionItems[_currentItemIdx].savedSetIdx = next;
             } else if (!isLastItem) {
-              _currentItemIdx++;
-              _currentSetIdx = 0;
-              _circuitExerciseIdx = 0;
+              _activateItemAt(_currentItemIdx + 1);
             }
           } else if (!isLastItem) {
-            _currentItemIdx++;
-            _currentSetIdx = 0;
-            _circuitExerciseIdx = 0;
+            _activateItemAt(_currentItemIdx + 1);
           }
           _timedRunning = false;
           _timedStopped = false;
@@ -562,13 +604,19 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
           _exerciseTicker?.cancel();
           if (!isLastInRound) {
             _circuitExerciseIdx++;
+            _sessionItems[_currentItemIdx].savedCircuitExIdx = _circuitExerciseIdx;
           } else if (!isLastRound) {
             _circuitExerciseIdx = 0;
             _currentSetIdx++;
+            _sessionItems[_currentItemIdx].savedCircuitExIdx = 0;
+            _sessionItems[_currentItemIdx].savedSetIdx = _currentSetIdx;
           } else {
-            _circuitExerciseIdx = 0;
-            _currentSetIdx = 0;
-            if (!isLastItem) _currentItemIdx++;
+            if (!isLastItem) {
+              _activateItemAt(_currentItemIdx + 1);
+            } else {
+              _circuitExerciseIdx = 0;
+              _currentSetIdx = 0;
+            }
           }
         });
         final circuitDone = isLastInRound && isLastRound;
@@ -1203,9 +1251,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
         int next = _currentItemIdx + 1;
         while (next < _sessionItems.length && _sessionItems[next].skipped) next++;
         if (next < _sessionItems.length) {
-          _currentItemIdx = next;
-          _currentSetIdx = 0;
-          _circuitExerciseIdx = 0;
+          _activateItemAt(next);
         }
       }
     });
@@ -1227,12 +1273,11 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
         if (next >= totalSets) {
           final nextItem = _currentItemIdx + 1;
           if (nextItem < _sessionItems.length) {
-            _currentItemIdx = nextItem;
-            _currentSetIdx = 0;
-            _circuitExerciseIdx = 0;
+            _activateItemAt(nextItem);
           }
         } else {
           _currentSetIdx = next;
+          _sessionItems[itemIdx].savedSetIdx = next;
         }
       }
     });
@@ -1321,8 +1366,21 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     if (newIndex < _currentItemIdx) newIndex = _currentItemIdx;
     if (newIndex == oldIndex) return;
     setState(() {
+      final prevActive = _sessionItems[_currentItemIdx];
+      prevActive.savedSetIdx = _currentSetIdx;
+      prevActive.savedCircuitExIdx = _circuitExerciseIdx;
+
       final item = _sessionItems.removeAt(oldIndex);
       _sessionItems.insert(newIndex, item);
+
+      final newActive = _sessionItems[_currentItemIdx];
+      if (!identical(newActive, prevActive)) {
+        _activateItemAt(_currentItemIdx);
+        _timedRunning = false;
+        _timedStopped = false;
+        _timedElapsed = 0;
+        _exerciseTicker?.cancel();
+      }
     });
     _saveProgress();
   }
@@ -2233,7 +2291,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                         itemIndex: itemIdx,
                         dragIndex: state == CardState.completed ? null : itemIdx,
                         setData: _setData[entry.templateExercise.exerciseId] ?? [],
-                        currentSetIdx: itemIdx == _currentItemIdx ? _currentSetIdx : -1,
+                        currentSetIdx: itemIdx == _currentItemIdx ? _currentSetIdx : si.savedSetIdx,
                         lastSets: _lastSets[entry.templateExercise.exerciseId] ?? [],
                         prKg: _prData[entry.templateExercise.exerciseId],
                         prDurationSeconds: _prDurationData[entry.templateExercise.exerciseId],

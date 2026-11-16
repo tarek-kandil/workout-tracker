@@ -131,6 +131,41 @@ void main() {
       expect(result!.moveNext, isFalse);
     });
 
+    testWidgets('first digit typed immediately replaces the seeded value without needing backspace', (tester) async {
+      NumericKeypadResult? result;
+      await tester.pumpWidget(MaterialApp(
+        home: Builder(builder: (context) {
+          return ElevatedButton(
+            onPressed: () async {
+              result = await showNumericKeypadSheet(
+                context,
+                title: 'Weight',
+                initialValue: 27.5,
+                allowDecimal: true,
+                unit: 'kg',
+                quickAdjusts: const [-2.5, 2.5],
+                min: 0,
+              );
+            },
+            child: const Text('open'),
+          );
+        }),
+      ));
+
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      // Immediately type "32" without clearing first.
+      await tester.tap(find.text('3'));
+      await tester.tap(find.text('2'));
+      await tester.pump();
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+
+      expect(result, isNotNull);
+      expect(result!.value, 32.0);
+    });
+
     testWidgets('deleting every digit with backspace leaves the display empty', (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: Builder(builder: (context) {
