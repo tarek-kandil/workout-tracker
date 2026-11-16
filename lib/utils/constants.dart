@@ -61,30 +61,32 @@ const Map<String, double> kMuscleRoleWeights = {
   kMuscleRoleSecondary: 0.5,
 };
 
-/// Weekly effective-set landmarks (MV/MEV/MAV/MRV) per muscle, from the
-/// spec's Intermediate landmark table. Code-owned, not stored in SQLite.
+/// Effective-set landmarks (MV/MEV/MAV/MRV) per sub-muscle per program
+/// rotation / week. Calibrated for the 21 sub-muscle split so a standard
+/// 1-rotation split reaches Optimal on trained muscles and flags excessive
+/// single-muscle volume as Overtrained.
 const Map<String, VolumeLandmark> kVolumeLandmarks = {
-  'Chest': VolumeLandmark(mv: 4, mev: 8, mavLow: 12, mavHigh: 18, mrv: 22),
-  'Lats': VolumeLandmark(mv: 4, mev: 8, mavLow: 12, mavHigh: 18, mrv: 22),
-  'Upper Back': VolumeLandmark(mv: 4, mev: 8, mavLow: 12, mavHigh: 20, mrv: 24),
-  'Traps': VolumeLandmark(mv: 2, mev: 6, mavLow: 10, mavHigh: 16, mrv: 20),
-  'Spinal Erectors': VolumeLandmark(mv: 2, mev: 4, mavLow: 6, mavHigh: 10, mrv: 12),
-  'Front Delts': VolumeLandmark(mv: 2, mev: 4, mavLow: 6, mavHigh: 10, mrv: 12),
-  'Side Delts': VolumeLandmark(mv: 4, mev: 8, mavLow: 12, mavHigh: 20, mrv: 26),
-  'Rear Delts': VolumeLandmark(mv: 4, mev: 8, mavLow: 12, mavHigh: 20, mrv: 24),
-  'Biceps': VolumeLandmark(mv: 4, mev: 8, mavLow: 12, mavHigh: 18, mrv: 22),
-  'Triceps': VolumeLandmark(mv: 4, mev: 8, mavLow: 12, mavHigh: 18, mrv: 22),
-  'Forearms': VolumeLandmark(mv: 2, mev: 6, mavLow: 8, mavHigh: 14, mrv: 18),
-  'Quads': VolumeLandmark(mv: 4, mev: 8, mavLow: 12, mavHigh: 18, mrv: 22),
-  'Hamstrings': VolumeLandmark(mv: 4, mev: 8, mavLow: 10, mavHigh: 16, mrv: 20),
-  'Glutes': VolumeLandmark(mv: 4, mev: 8, mavLow: 10, mavHigh: 18, mrv: 22),
-  'Adductors': VolumeLandmark(mv: 2, mev: 4, mavLow: 6, mavHigh: 10, mrv: 14),
-  'Abductors': VolumeLandmark(mv: 2, mev: 4, mavLow: 6, mavHigh: 10, mrv: 14),
-  'Hip Flexors': VolumeLandmark(mv: 2, mev: 4, mavLow: 6, mavHigh: 10, mrv: 14),
-  'Calves': VolumeLandmark(mv: 4, mev: 8, mavLow: 12, mavHigh: 20, mrv: 24),
-  'Abs': VolumeLandmark(mv: 4, mev: 8, mavLow: 10, mavHigh: 16, mrv: 20),
-  'Obliques': VolumeLandmark(mv: 2, mev: 6, mavLow: 8, mavHigh: 14, mrv: 18),
-  'Neck': VolumeLandmark(mv: 0, mev: 2, mavLow: 4, mavHigh: 8, mrv: 10),
+  'Chest': VolumeLandmark(mv: 2, mev: 3, mavLow: 6, mavHigh: 12, mrv: 16),
+  'Lats': VolumeLandmark(mv: 2, mev: 3, mavLow: 6, mavHigh: 12, mrv: 16),
+  'Upper Back': VolumeLandmark(mv: 2, mev: 3, mavLow: 6, mavHigh: 12, mrv: 16),
+  'Traps': VolumeLandmark(mv: 1, mev: 1.5, mavLow: 3, mavHigh: 8, mrv: 12),
+  'Spinal Erectors': VolumeLandmark(mv: 1, mev: 1.5, mavLow: 3, mavHigh: 8, mrv: 10),
+  'Front Delts': VolumeLandmark(mv: 1, mev: 1.5, mavLow: 3, mavHigh: 8, mrv: 12),
+  'Side Delts': VolumeLandmark(mv: 2, mev: 3, mavLow: 5, mavHigh: 10, mrv: 14),
+  'Rear Delts': VolumeLandmark(mv: 1, mev: 1.5, mavLow: 3, mavHigh: 8, mrv: 12),
+  'Biceps': VolumeLandmark(mv: 2, mev: 3, mavLow: 5, mavHigh: 10, mrv: 14),
+  'Triceps': VolumeLandmark(mv: 2, mev: 3, mavLow: 5, mavHigh: 10, mrv: 14),
+  'Forearms': VolumeLandmark(mv: 1, mev: 1.5, mavLow: 3, mavHigh: 7, mrv: 10),
+  'Quads': VolumeLandmark(mv: 2, mev: 3, mavLow: 6, mavHigh: 12, mrv: 16),
+  'Hamstrings': VolumeLandmark(mv: 2, mev: 3, mavLow: 5, mavHigh: 10, mrv: 14),
+  'Glutes': VolumeLandmark(mv: 1, mev: 1.5, mavLow: 4, mavHigh: 9, mrv: 14),
+  'Adductors': VolumeLandmark(mv: 1, mev: 1.5, mavLow: 3, mavHigh: 7, mrv: 10),
+  'Abductors': VolumeLandmark(mv: 1, mev: 1.5, mavLow: 3, mavHigh: 7, mrv: 10),
+  'Hip Flexors': VolumeLandmark(mv: 1, mev: 1.5, mavLow: 3, mavHigh: 7, mrv: 10),
+  'Calves': VolumeLandmark(mv: 2, mev: 3, mavLow: 5, mavHigh: 10, mrv: 14),
+  'Abs': VolumeLandmark(mv: 2, mev: 3, mavLow: 5, mavHigh: 10, mrv: 14),
+  'Obliques': VolumeLandmark(mv: 1, mev: 1.5, mavLow: 3, mavHigh: 7, mrv: 10),
+  'Neck': VolumeLandmark(mv: 0, mev: 1.5, mavLow: 3, mavHigh: 6, mrv: 9),
 };
 
 // ─── Legacy taxonomy (pre-v20; kept only for reference in tests/migration) ─

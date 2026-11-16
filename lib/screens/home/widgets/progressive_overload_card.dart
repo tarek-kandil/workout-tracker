@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../providers/home_providers.dart';
+import '../../../widgets/glass_route.dart';
 import '../../../widgets/liquid_glass_container.dart';
+import '../../reports/progressive_overload_detail_screen.dart';
 
 class ProgressiveOverloadCard extends ConsumerWidget {
   const ProgressiveOverloadCard({super.key});
@@ -22,7 +24,13 @@ class ProgressiveOverloadCard extends ConsumerWidget {
         child: const SizedBox(height: 120),
       ),
       error: (_, _) => const SizedBox.shrink(),
-      data: (summary) => _OverloadBody(summary: summary, isDark: isDark),
+      data: (summary) => GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => Navigator.of(context).push(
+          glassRoute(const ProgressiveOverloadDetailScreen()),
+        ),
+        child: _OverloadBody(summary: summary, isDark: isDark),
+      ),
     );
   }
 }
@@ -209,27 +217,59 @@ class _OverloadBody extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             // ── Breakdown Pills ────────────────────────────────────────────
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
+            Row(
               children: [
-                _BucketPill(
-                  label: '↑ ${summary.weightUpCount} Weight Up',
-                  color: const Color(0xFF34D399),
-                ),
-                _BucketPill(
-                  label: '↑ ${summary.repsOrTimeUpCount} Reps/Time Up',
-                  color: const Color(0xFF38BDF8),
-                ),
-                _BucketPill(
-                  label: '= ${summary.heldCount} Held',
-                  color: const Color(0xFF818CF8),
-                ),
-                if (summary.droppedCount > 0)
-                  _BucketPill(
-                    label: '↓ ${summary.droppedCount} Dropped',
-                    color: const Color(0xFFFBBF24),
+                Expanded(
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      _BucketPill(
+                        label: '↑ ${summary.weightUpCount} Weight Up',
+                        color: const Color(0xFF34D399),
+                        onTap: () => Navigator.of(context).push(
+                          glassRoute(const ProgressiveOverloadDetailScreen(
+                            initialFilter: OverloadBucket.weightUp,
+                          )),
+                        ),
+                      ),
+                      _BucketPill(
+                        label: '↑ ${summary.repsOrTimeUpCount} Reps/Time Up',
+                        color: const Color(0xFF38BDF8),
+                        onTap: () => Navigator.of(context).push(
+                          glassRoute(const ProgressiveOverloadDetailScreen(
+                            initialFilter: OverloadBucket.repsOrTimeUp,
+                          )),
+                        ),
+                      ),
+                      _BucketPill(
+                        label: '= ${summary.heldCount} Held',
+                        color: const Color(0xFF818CF8),
+                        onTap: () => Navigator.of(context).push(
+                          glassRoute(const ProgressiveOverloadDetailScreen(
+                            initialFilter: OverloadBucket.held,
+                          )),
+                        ),
+                      ),
+                      if (summary.droppedCount > 0)
+                        _BucketPill(
+                          label: '↓ ${summary.droppedCount} Dropped',
+                          color: const Color(0xFFFBBF24),
+                          onTap: () => Navigator.of(context).push(
+                            glassRoute(const ProgressiveOverloadDetailScreen(
+                              initialFilter: OverloadBucket.dropped,
+                            )),
+                          ),
+                        ),
+                    ],
                   ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 18,
+                  color: Colors.white.withValues(alpha: 0.35),
+                ),
               ],
             ),
           ],
@@ -270,23 +310,27 @@ class _VsWeek1Pill extends StatelessWidget {
 class _BucketPill extends StatelessWidget {
   final String label;
   final Color color;
-  const _BucketPill({required this.label, required this.color});
+  final VoidCallback? onTap;
+  const _BucketPill({required this.label, required this.color, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.32)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 10.5,
-          fontWeight: FontWeight.w800,
-          color: color,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withValues(alpha: 0.32)),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 10.5,
+            fontWeight: FontWeight.w800,
+            color: color,
+          ),
         ),
       ),
     );

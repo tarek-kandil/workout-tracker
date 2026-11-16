@@ -179,6 +179,26 @@ final weeklyPRsProvider = FutureProvider<List<WeeklyPREntry>>((ref) async {
   return db.setsDao.getPRsBreakingThisWeek(thisMonday, nextMonday);
 });
 
+enum OverloadBucket { weightUp, repsOrTimeUp, held, dropped, firstTime }
+
+class ExerciseOverloadItem {
+  final Exercise exercise;
+  final OverloadBucket bucket;
+  final String currentSummary;
+  final String? previousSummary;
+  final String deltaLabel;
+  final double? vsWeek1Pct;
+
+  const ExerciseOverloadItem({
+    required this.exercise,
+    required this.bucket,
+    required this.currentSummary,
+    this.previousSummary,
+    required this.deltaLabel,
+    this.vsWeek1Pct,
+  });
+}
+
 class ProgressiveOverloadSummary {
   final int weightUpCount;
   final int repsOrTimeUpCount;
@@ -187,6 +207,7 @@ class ProgressiveOverloadSummary {
   final int firstTimeCount;
   final double? vsWeek1Pct;
   final List<({int week, double pctGain})> weekBars;
+  final List<ExerciseOverloadItem> items;
 
   const ProgressiveOverloadSummary({
     required this.weightUpCount,
@@ -196,6 +217,7 @@ class ProgressiveOverloadSummary {
     required this.firstTimeCount,
     this.vsWeek1Pct,
     this.weekBars = const [],
+    this.items = const [],
   });
 
   int get totalCompared =>
@@ -205,6 +227,15 @@ class ProgressiveOverloadSummary {
 
   int get overloadRatePct =>
       totalCompared == 0 ? 0 : ((progressedCount / totalCompared) * 100).round();
+}
+
+String _fmtKg(double v) =>
+    v == v.roundToDouble() ? '${v.toInt()} kg' : '${v.toStringAsFixed(1)} kg';
+
+String _fmtSec(int sec) {
+  final m = sec ~/ 60;
+  final s = sec % 60;
+  return m > 0 ? '${m}m ${s}s' : '${s}s';
 }
 
 final progressiveOverloadProvider =
@@ -250,12 +281,6 @@ final progressiveOverloadProvider =
     }
   }
 
-  int weightUp = 0;
-  int repsOrTimeUp = 0;
-  int held = 0;
-  int dropped = 0;
-  int firstTime = 0;
-
   double bestMetric(Exercise ex, List<WorkoutSet> sets) {
     if (ex.isTimed) {
       var best = 0;
@@ -283,55 +308,10 @@ final progressiveOverloadProvider =
             : b);
   }
 
-  for (final entry in historyByExercise.entries) {
-    final ex = exerciseMap[entry.key];
-    if (ex == null) continue;
-    final logs = entry.value;
-    if (logs.isEmpty) continue;
-    final latest = logs.last;
-    if (!recentSessionIds.contains(latest.sessionId)) continue;
-
-    if (logs.length < 2) {
-      firstTime++;
-      continue;
-    }
-    final prev = logs[logs.length - 2];
-
-    if (ex.isTimed) {
-      final curDur = bestMetric(ex, latest.sets).round();
-      final prevDur = bestMetric(ex, prev.sets).round();
-      if (curDur > prevDur) {
-        repsOrTimeUp++;
-      } else if (curDur == prevDur) {
-        held++;
-      } else {
-        dropped++;
-      }
-    } else {
-      final curBest = bestWeightedSet(latest.sets);
-      final prevBest = bestWeightedSet(prev.sets);
-      final curE1rm = bestMetric(ex, latest.sets);
-      final prevE1rm = bestMetric(ex, prev.sets);
-
-      if (curBest.weightKg > prevBest.weightKg &&
-          curBest.reps >= (prevBest.reps * 0.75).floor()) {
-        weightUp++;
-      } else if ((curBest.weightKg == prevBest.weightKg &&
-              curBest.reps > prevBest.reps) ||
-          curE1rm > prevE1rm + 0.01) {
-        repsOrTimeUp++;
-      } else if (curBest.weightKg == prevBest.weightKg &&
-          curBest.reps == prevBest.reps) {
-        held++;
-      } else {
-        dropped++;
-      }
-    }
-  }
-
   // Program vs Week 1 calculation
   double? vsWeek1Pct;
   final weekBars = <({int week, double pctGain})>[];
+  final exVsWeek1 = <int, double>{};
 
   if (program != null) {
     final programSessions =
@@ -360,7 +340,9 @@ final progressiveOverloadProvider =
 
       if (progLogs.length >= 2) {
         final latestMetric = bestMetric(ex, progLogs.last.sets);
-        pctGains.add(((latestMetric - baseline) / baseline) * 100.0);
+        final gain = ((latestMetric - baseline) / baseline) * 100.0;
+        pctGains.add(gain);
+        exVsWeek1[ex.id] = gain;
       }
     }
 
@@ -377,6 +359,128 @@ final progressiveOverloadProvider =
     }
   }
 
+  int weightUp = 0;
+  int repsOrTimeUp = 0;
+  int held = 0;
+  int dropped = 0;
+  int firstTime = 0;
+  final detailItems = <ExerciseOverloadItem>[];
+
+  for (final entry in historyByExercise.entries) {
+    final ex = exerciseMap[entry.key];
+    if (ex == null) continue;
+    final logs = entry.value;
+    if (logs.isEmpty) continue;
+    final latest = logs.last;
+    if (!recentSessionIds.contains(latest.sessionId)) continue;
+
+    if (logs.length < 2) {
+      firstTime++;
+      final String curSummary;
+      if (ex.isTimed) {
+        curSummary = _fmtSec(bestMetric(ex, latest.sets).round());
+      } else {
+        final curBest = bestWeightedSet(latest.sets);
+        curSummary = '${_fmtKg(curBest.weightKg)} × ${curBest.reps}';
+      }
+      detailItems.add(ExerciseOverloadItem(
+        exercise: ex,
+        bucket: OverloadBucket.firstTime,
+        currentSummary: curSummary,
+        previousSummary: null,
+        deltaLabel: 'Baseline',
+        vsWeek1Pct: exVsWeek1[ex.id],
+      ));
+      continue;
+    }
+    final prev = logs[logs.length - 2];
+
+    if (ex.isTimed) {
+      final curDur = bestMetric(ex, latest.sets).round();
+      final prevDur = bestMetric(ex, prev.sets).round();
+      final diff = curDur - prevDur;
+      final OverloadBucket bucket;
+      final String deltaLabel;
+      if (diff > 0) {
+        repsOrTimeUp++;
+        bucket = OverloadBucket.repsOrTimeUp;
+        deltaLabel = '↑ +${diff}s';
+      } else if (diff == 0) {
+        held++;
+        bucket = OverloadBucket.held;
+        deltaLabel = '= Same time';
+      } else {
+        dropped++;
+        bucket = OverloadBucket.dropped;
+        deltaLabel = '↓ ${diff}s';
+      }
+      detailItems.add(ExerciseOverloadItem(
+        exercise: ex,
+        bucket: bucket,
+        currentSummary: _fmtSec(curDur),
+        previousSummary: _fmtSec(prevDur),
+        deltaLabel: deltaLabel,
+        vsWeek1Pct: exVsWeek1[ex.id],
+      ));
+    } else {
+      final curBest = bestWeightedSet(latest.sets);
+      final prevBest = bestWeightedSet(prev.sets);
+      final curE1rm = bestMetric(ex, latest.sets);
+      final prevE1rm = bestMetric(ex, prev.sets);
+      final wDiff = curBest.weightKg - prevBest.weightKg;
+      final rDiff = curBest.reps - prevBest.reps;
+
+      final OverloadBucket bucket;
+      final String deltaLabel;
+      if (curBest.weightKg > prevBest.weightKg &&
+          curBest.reps >= (prevBest.reps * 0.75).floor()) {
+        weightUp++;
+        bucket = OverloadBucket.weightUp;
+        deltaLabel = '↑ +${_fmtKg(wDiff)}';
+      } else if ((curBest.weightKg == prevBest.weightKg &&
+              curBest.reps > prevBest.reps) ||
+          curE1rm > prevE1rm + 0.01) {
+        repsOrTimeUp++;
+        bucket = OverloadBucket.repsOrTimeUp;
+        deltaLabel = rDiff > 0 ? '↑ +$rDiff rep${rDiff == 1 ? '' : 's'}' : '↑ e1RM';
+      } else if (curBest.weightKg == prevBest.weightKg &&
+          curBest.reps == prevBest.reps) {
+        held++;
+        bucket = OverloadBucket.held;
+        deltaLabel = '= Held';
+      } else {
+        dropped++;
+        bucket = OverloadBucket.dropped;
+        if (wDiff < 0) {
+          deltaLabel = '↓ -${_fmtKg(wDiff.abs())}';
+        } else {
+          deltaLabel = '↓ $rDiff rep${rDiff.abs() == 1 ? '' : 's'}';
+        }
+      }
+      detailItems.add(ExerciseOverloadItem(
+        exercise: ex,
+        bucket: bucket,
+        currentSummary: '${_fmtKg(curBest.weightKg)} × ${curBest.reps}',
+        previousSummary: '${_fmtKg(prevBest.weightKg)} × ${prevBest.reps}',
+        deltaLabel: deltaLabel,
+        vsWeek1Pct: exVsWeek1[ex.id],
+      ));
+    }
+  }
+
+  // Order detail items: dropped first (attention), then weightUp, repsOrTimeUp, held, firstTime
+  int bucketOrder(OverloadBucket b) => switch (b) {
+        OverloadBucket.dropped => 0,
+        OverloadBucket.weightUp => 1,
+        OverloadBucket.repsOrTimeUp => 2,
+        OverloadBucket.held => 3,
+        OverloadBucket.firstTime => 4,
+      };
+  detailItems.sort((a, b) {
+    final c = bucketOrder(a.bucket).compareTo(bucketOrder(b.bucket));
+    return c != 0 ? c : a.exercise.name.compareTo(b.exercise.name);
+  });
+
   return ProgressiveOverloadSummary(
     weightUpCount: weightUp,
     repsOrTimeUpCount: repsOrTimeUp,
@@ -385,5 +489,6 @@ final progressiveOverloadProvider =
     firstTimeCount: firstTime,
     vsWeek1Pct: vsWeek1Pct,
     weekBars: weekBars,
+    items: detailItems,
   );
 });
