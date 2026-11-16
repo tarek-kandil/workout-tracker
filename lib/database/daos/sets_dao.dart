@@ -218,8 +218,10 @@ class SetsDao extends DatabaseAccessor<AppDatabase> with _$SetsDaoMixin {
       'CASE WHEN e.is_timed = 1 THEN MAX(ws.duration_seconds) ELSE NULL END AS max_duration '
       'FROM workout_sets ws '
       'JOIN exercises e ON ws.exercise_id = e.id '
-      'WHERE (e.is_timed = 0 AND ws.reps > 0 AND ws.weight_kg > 0) '
-      '   OR (e.is_timed = 1 AND ws.duration_seconds IS NOT NULL AND ws.duration_seconds > 0) '
+      'WHERE e.archived = 0 AND ('
+      '  (e.is_timed = 0 AND ws.reps > 0 AND ws.weight_kg > 0) '
+      '  OR (e.is_timed = 1 AND ws.duration_seconds IS NOT NULL AND ws.duration_seconds > 0)'
+      ') '
       'GROUP BY ws.exercise_id '
       'ORDER BY e.category ASC, e.name ASC',
       readsFrom: {workoutSets},
@@ -374,7 +376,7 @@ class SetsDao extends DatabaseAccessor<AppDatabase> with _$SetsDaoMixin {
       'JOIN workout_sessions s ON ws.session_id = s.id '
       'JOIN exercises e ON ws.exercise_id = e.id '
       'WHERE s.date >= ? AND s.date < ? '
-      '  AND ws.weight_kg > 0 AND e.is_timed = 0 '
+      '  AND ws.weight_kg > 0 AND e.is_timed = 0 AND e.archived = 0 '
       'GROUP BY ws.exercise_id '
       'HAVING this_week_max > COALESCE(('
       '  SELECT MAX(ws2.weight_kg) '

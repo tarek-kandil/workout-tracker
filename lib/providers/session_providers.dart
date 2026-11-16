@@ -65,6 +65,78 @@ Future<void> removeExerciseLiftGoal(int exerciseId) async {
   await prefs.remove('$kExerciseGoalRepsPrefix$exerciseId');
 }
 
+class MilestonePrefs {
+  final List<int> orderedIds;
+  final Set<int> hiddenIds;
+  final Set<int> includedIds;
+
+  const MilestonePrefs({
+    this.orderedIds = const [],
+    this.hiddenIds = const {},
+    this.includedIds = const {},
+  });
+}
+
+const _kMilestoneOrderKey = 'bw_milestone_order_ids';
+const _kMilestoneHiddenKey = 'bw_milestone_hidden_ids';
+const _kMilestoneIncludedKey = 'bw_milestone_included_ids';
+
+final milestonePrefsProvider = FutureProvider<MilestonePrefs>((ref) async {
+  final prefs = await SharedPreferences.getInstance();
+  final ordered = (prefs.getStringList(_kMilestoneOrderKey) ?? const [])
+      .map(int.tryParse)
+      .whereType<int>()
+      .toList();
+  final hidden = (prefs.getStringList(_kMilestoneHiddenKey) ?? const [])
+      .map(int.tryParse)
+      .whereType<int>()
+      .toSet();
+  final included = (prefs.getStringList(_kMilestoneIncludedKey) ?? const [])
+      .map(int.tryParse)
+      .whereType<int>()
+      .toSet();
+  return MilestonePrefs(
+    orderedIds: ordered,
+    hiddenIds: hidden,
+    includedIds: included,
+  );
+});
+
+Future<void> saveMilestoneOrder(List<int> orderedIds) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setStringList(
+    _kMilestoneOrderKey,
+    orderedIds.map((e) => e.toString()).toList(),
+  );
+}
+
+Future<void> removeMilestoneLift(int exerciseId) async {
+  final prefs = await SharedPreferences.getInstance();
+  final hidden = (prefs.getStringList(_kMilestoneHiddenKey) ?? const []).toSet()
+    ..add(exerciseId.toString());
+  final included =
+      (prefs.getStringList(_kMilestoneIncludedKey) ?? const []).toSet()
+        ..remove(exerciseId.toString());
+  await prefs.setStringList(_kMilestoneHiddenKey, hidden.toList());
+  await prefs.setStringList(_kMilestoneIncludedKey, included.toList());
+}
+
+Future<void> addOrRestoreMilestoneLift(int exerciseId) async {
+  final prefs = await SharedPreferences.getInstance();
+  final hidden = (prefs.getStringList(_kMilestoneHiddenKey) ?? const []).toSet()
+    ..remove(exerciseId.toString());
+  final included =
+      (prefs.getStringList(_kMilestoneIncludedKey) ?? const []).toSet()
+        ..add(exerciseId.toString());
+  final order = (prefs.getStringList(_kMilestoneOrderKey) ?? const []).toList();
+  if (!order.contains(exerciseId.toString())) {
+    order.insert(0, exerciseId.toString());
+    await prefs.setStringList(_kMilestoneOrderKey, order);
+  }
+  await prefs.setStringList(_kMilestoneHiddenKey, hidden.toList());
+  await prefs.setStringList(_kMilestoneIncludedKey, included.toList());
+}
+
 /// Stream of all sessions, most recent first. Used by the History tab.
 final recentSessionsProvider = StreamProvider<List<WorkoutSession>>((ref) {
   return ref.watch(databaseProvider).sessionsDao.watchRecentSessions(limit: 200);
