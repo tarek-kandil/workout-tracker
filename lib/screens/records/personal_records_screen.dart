@@ -1250,7 +1250,7 @@ class _SegmentedBar extends StatelessWidget {
 
   static const _labels = [
     (Icons.flag_rounded, 'Goals'),
-    (Icons.workspace_premium_rounded, 'Milestones'),
+    (Icons.workspace_premium_rounded, 'BW Ratio'),
     (Icons.fitness_center_rounded, 'All Lifts'),
     (Icons.history_rounded, 'Log'),
   ];
@@ -1274,7 +1274,8 @@ class _SegmentedBar extends StatelessWidget {
                 onTap: () => onChanged(i),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
                   decoration: BoxDecoration(
                     color: selectedIndex == i
                         ? accent.withValues(alpha: 0.22)
@@ -1284,21 +1285,21 @@ class _SegmentedBar extends StatelessWidget {
                         ? Border.all(color: accent.withValues(alpha: 0.5))
                         : null,
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        _labels[i].$1,
-                        size: 13.5,
-                        color: selectedIndex == i
-                            ? accent
-                            : Colors.white.withValues(alpha: 0.55),
-                      ),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          _labels[i].$1,
+                          size: 13.5,
+                          color: selectedIndex == i
+                              ? accent
+                              : Colors.white.withValues(alpha: 0.55),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
                           _labels[i].$2,
-                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 11.5,
                             fontWeight: selectedIndex == i
@@ -1309,8 +1310,8 @@ class _SegmentedBar extends StatelessWidget {
                                 : Colors.white.withValues(alpha: 0.6),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -1930,27 +1931,41 @@ class _LiftRecordTile extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          record.isTimed
-                              ? _fmtSec(record.maxDurationSeconds ?? 0)
-                              : '${_fmtW(record.maxWeightKg)} kg',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
-                          ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 9, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: accent.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: accent.withValues(alpha: 0.35),
                         ),
-                        Text(
-                          'PR',
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w800,
-                            color: accent,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'PR',
+                            style: TextStyle(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
+                              color: accent,
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 5),
+                          Text(
+                            record.isTimed
+                                ? _fmtSec(record.maxDurationSeconds ?? 0)
+                                : '${_fmtW(record.maxWeightKg)} kg',
+                            style: const TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     if (!record.isTimed) ...[
                       const SizedBox(width: 4),
