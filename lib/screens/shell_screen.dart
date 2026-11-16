@@ -25,7 +25,7 @@ class _ShellScreenState extends ConsumerState<ShellScreen> {
 
   static const _navItems = [
     (Icons.bolt_outlined, Icons.bolt_rounded, 'Today'),
-    (Icons.insights_outlined, Icons.insights_rounded, 'Progress'),
+    (Icons.show_chart_rounded, Icons.show_chart_rounded, 'Progress'),
     (Icons.grid_view_outlined, Icons.grid_view_rounded, 'Hub'),
   ];
 
@@ -152,89 +152,77 @@ class _FloatingNavBar extends StatelessWidget {
             ),
             padding: const EdgeInsets.all(6),
             child: SizedBox(
-              height: 44,
+              height: 48,
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final accent = Theme.of(context).colorScheme.primary;
                   final dimColor = Theme.of(context)
                       .colorScheme
                       .onSurface
-                      .withValues(alpha: 0.45);
-                  final totalW = constraints.maxWidth;
-                  final activeW = totalW * 0.44;
-                  final inactiveW =
-                      (totalW - activeW) / max(1, navItems.length - 1);
+                      .withValues(alpha: 0.50);
+                  final itemWidth = constraints.maxWidth / navItems.length;
 
-                  return Row(
+                  return Stack(
                     children: [
-                      for (int i = 0; i < navItems.length; i++)
-                        Builder(builder: (context) {
-                          final isSelected = selectedIndex == i;
-                          return GestureDetector(
-                            onTap: () => onTap(i),
-                            behavior: HitTestBehavior.opaque,
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 260),
-                              curve: Curves.easeOutCubic,
-                              width: isSelected ? activeW : inactiveW,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? accent
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(28),
-                                boxShadow: isSelected
-                                    ? [
-                                        BoxShadow(
-                                          color: accent.withValues(alpha: 0.35),
-                                          blurRadius: 12,
-                                          offset: const Offset(0, 3),
-                                        ),
-                                      ]
-                                    : null,
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(28),
-                                child: Center(
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 12),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            isSelected
-                                                ? navItems[i].$2
-                                                : navItems[i].$1,
-                                            size: 20,
-                                            color: isSelected
-                                                ? Colors.white
-                                                : dimColor,
-                                          ),
-                                          if (isSelected) ...[
-                                            const SizedBox(width: 7),
-                                            Text(
-                                              navItems[i].$3,
-                                              maxLines: 1,
-                                              style: const TextStyle(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w800,
-                                                color: Colors.white,
-                                                letterSpacing: 0.1,
-                                              ),
-                                            ),
-                                          ],
-                                        ],
+                      // ── Smooth sliding soft-tinted pill (no layout thrashing) ─
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 220),
+                        curve: Curves.easeOutCubic,
+                        left: selectedIndex * itemWidth,
+                        width: itemWidth,
+                        top: 0,
+                        bottom: 0,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: accent.withValues(alpha: 0.20),
+                            borderRadius: BorderRadius.circular(28),
+                            border: Border.all(
+                              color: accent.withValues(alpha: 0.45),
+                            ),
+                          ),
+                        ),
+                      ),
+                      // ── Fixed 3-column icons + micro-labels ───────────────
+                      Row(
+                        children: [
+                          for (int i = 0; i < navItems.length; i++)
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => onTap(i),
+                                behavior: HitTestBehavior.opaque,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      selectedIndex == i
+                                          ? navItems[i].$2
+                                          : navItems[i].$1,
+                                      size: 20,
+                                      color: selectedIndex == i
+                                          ? accent
+                                          : dimColor,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      navItems[i].$3,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 10.5,
+                                        fontWeight: selectedIndex == i
+                                            ? FontWeight.w800
+                                            : FontWeight.w600,
+                                        color: selectedIndex == i
+                                            ? Colors.white
+                                            : dimColor,
                                       ),
                                     ),
-                                  ),
+                                  ],
                                 ),
                               ),
                             ),
-                          );
-                        }),
+                        ],
+                      ),
                     ],
                   );
                 },
