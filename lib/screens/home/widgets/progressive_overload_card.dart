@@ -60,14 +60,23 @@ class _OverloadBody extends StatelessWidget {
           Row(
             children: [
               const Expanded(
-                child: Text(
-                  'PROGRESSIVE OVERLOAD · THIS WEEK',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.1,
-                    color: Colors.white54,
-                  ),
+                child: Row(
+                  children: [
+                    Text('📈', style: TextStyle(fontSize: 15)),
+                    SizedBox(width: 7),
+                    Flexible(
+                      child: Text(
+                        'PROGRESSIVE OVERLOAD',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.9,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               if (vsW1 != null)

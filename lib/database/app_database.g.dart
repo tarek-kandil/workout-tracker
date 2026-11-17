@@ -4594,6 +4594,24 @@ class $DailyTasksTable extends DailyTasks
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _doseMeta = const VerificationMeta('dose');
+  @override
+  late final GeneratedColumn<String> dose = GeneratedColumn<String>(
+    'dose',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _timingMeta = const VerificationMeta('timing');
+  @override
+  late final GeneratedColumn<String> timing = GeneratedColumn<String>(
+    'timing',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _reminderHourMeta = const VerificationMeta(
     'reminderHour',
   );
@@ -4659,6 +4677,8 @@ class $DailyTasksTable extends DailyTasks
     id,
     name,
     iconName,
+    dose,
+    timing,
     reminderHour,
     reminderMinute,
     reminderDays,
@@ -4692,6 +4712,18 @@ class $DailyTasksTable extends DailyTasks
       context.handle(
         _iconNameMeta,
         iconName.isAcceptableOrUnknown(data['icon_name']!, _iconNameMeta),
+      );
+    }
+    if (data.containsKey('dose')) {
+      context.handle(
+        _doseMeta,
+        dose.isAcceptableOrUnknown(data['dose']!, _doseMeta),
+      );
+    }
+    if (data.containsKey('timing')) {
+      context.handle(
+        _timingMeta,
+        timing.isAcceptableOrUnknown(data['timing']!, _timingMeta),
       );
     }
     if (data.containsKey('reminder_hour')) {
@@ -4754,6 +4786,14 @@ class $DailyTasksTable extends DailyTasks
         DriftSqlType.string,
         data['${effectivePrefix}icon_name'],
       ),
+      dose: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}dose'],
+      ),
+      timing: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}timing'],
+      ),
       reminderHour: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}reminder_hour'],
@@ -4787,6 +4827,8 @@ class DailyTask extends DataClass implements Insertable<DailyTask> {
   final int id;
   final String name;
   final String? iconName;
+  final String? dose;
+  final String? timing;
   final int? reminderHour;
   final int? reminderMinute;
 
@@ -4798,6 +4840,8 @@ class DailyTask extends DataClass implements Insertable<DailyTask> {
     required this.id,
     required this.name,
     this.iconName,
+    this.dose,
+    this.timing,
     this.reminderHour,
     this.reminderMinute,
     this.reminderDays,
@@ -4811,6 +4855,12 @@ class DailyTask extends DataClass implements Insertable<DailyTask> {
     map['name'] = Variable<String>(name);
     if (!nullToAbsent || iconName != null) {
       map['icon_name'] = Variable<String>(iconName);
+    }
+    if (!nullToAbsent || dose != null) {
+      map['dose'] = Variable<String>(dose);
+    }
+    if (!nullToAbsent || timing != null) {
+      map['timing'] = Variable<String>(timing);
     }
     if (!nullToAbsent || reminderHour != null) {
       map['reminder_hour'] = Variable<int>(reminderHour);
@@ -4833,6 +4883,10 @@ class DailyTask extends DataClass implements Insertable<DailyTask> {
       iconName: iconName == null && nullToAbsent
           ? const Value.absent()
           : Value(iconName),
+      dose: dose == null && nullToAbsent ? const Value.absent() : Value(dose),
+      timing: timing == null && nullToAbsent
+          ? const Value.absent()
+          : Value(timing),
       reminderHour: reminderHour == null && nullToAbsent
           ? const Value.absent()
           : Value(reminderHour),
@@ -4856,6 +4910,8 @@ class DailyTask extends DataClass implements Insertable<DailyTask> {
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       iconName: serializer.fromJson<String?>(json['iconName']),
+      dose: serializer.fromJson<String?>(json['dose']),
+      timing: serializer.fromJson<String?>(json['timing']),
       reminderHour: serializer.fromJson<int?>(json['reminderHour']),
       reminderMinute: serializer.fromJson<int?>(json['reminderMinute']),
       reminderDays: serializer.fromJson<int?>(json['reminderDays']),
@@ -4870,6 +4926,8 @@ class DailyTask extends DataClass implements Insertable<DailyTask> {
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
       'iconName': serializer.toJson<String?>(iconName),
+      'dose': serializer.toJson<String?>(dose),
+      'timing': serializer.toJson<String?>(timing),
       'reminderHour': serializer.toJson<int?>(reminderHour),
       'reminderMinute': serializer.toJson<int?>(reminderMinute),
       'reminderDays': serializer.toJson<int?>(reminderDays),
@@ -4882,6 +4940,8 @@ class DailyTask extends DataClass implements Insertable<DailyTask> {
     int? id,
     String? name,
     Value<String?> iconName = const Value.absent(),
+    Value<String?> dose = const Value.absent(),
+    Value<String?> timing = const Value.absent(),
     Value<int?> reminderHour = const Value.absent(),
     Value<int?> reminderMinute = const Value.absent(),
     Value<int?> reminderDays = const Value.absent(),
@@ -4891,6 +4951,8 @@ class DailyTask extends DataClass implements Insertable<DailyTask> {
     id: id ?? this.id,
     name: name ?? this.name,
     iconName: iconName.present ? iconName.value : this.iconName,
+    dose: dose.present ? dose.value : this.dose,
+    timing: timing.present ? timing.value : this.timing,
     reminderHour: reminderHour.present ? reminderHour.value : this.reminderHour,
     reminderMinute: reminderMinute.present
         ? reminderMinute.value
@@ -4904,6 +4966,8 @@ class DailyTask extends DataClass implements Insertable<DailyTask> {
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
       iconName: data.iconName.present ? data.iconName.value : this.iconName,
+      dose: data.dose.present ? data.dose.value : this.dose,
+      timing: data.timing.present ? data.timing.value : this.timing,
       reminderHour: data.reminderHour.present
           ? data.reminderHour.value
           : this.reminderHour,
@@ -4924,6 +4988,8 @@ class DailyTask extends DataClass implements Insertable<DailyTask> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('iconName: $iconName, ')
+          ..write('dose: $dose, ')
+          ..write('timing: $timing, ')
           ..write('reminderHour: $reminderHour, ')
           ..write('reminderMinute: $reminderMinute, ')
           ..write('reminderDays: $reminderDays, ')
@@ -4938,6 +5004,8 @@ class DailyTask extends DataClass implements Insertable<DailyTask> {
     id,
     name,
     iconName,
+    dose,
+    timing,
     reminderHour,
     reminderMinute,
     reminderDays,
@@ -4951,6 +5019,8 @@ class DailyTask extends DataClass implements Insertable<DailyTask> {
           other.id == this.id &&
           other.name == this.name &&
           other.iconName == this.iconName &&
+          other.dose == this.dose &&
+          other.timing == this.timing &&
           other.reminderHour == this.reminderHour &&
           other.reminderMinute == this.reminderMinute &&
           other.reminderDays == this.reminderDays &&
@@ -4962,6 +5032,8 @@ class DailyTasksCompanion extends UpdateCompanion<DailyTask> {
   final Value<int> id;
   final Value<String> name;
   final Value<String?> iconName;
+  final Value<String?> dose;
+  final Value<String?> timing;
   final Value<int?> reminderHour;
   final Value<int?> reminderMinute;
   final Value<int?> reminderDays;
@@ -4971,6 +5043,8 @@ class DailyTasksCompanion extends UpdateCompanion<DailyTask> {
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.iconName = const Value.absent(),
+    this.dose = const Value.absent(),
+    this.timing = const Value.absent(),
     this.reminderHour = const Value.absent(),
     this.reminderMinute = const Value.absent(),
     this.reminderDays = const Value.absent(),
@@ -4981,6 +5055,8 @@ class DailyTasksCompanion extends UpdateCompanion<DailyTask> {
     this.id = const Value.absent(),
     required String name,
     this.iconName = const Value.absent(),
+    this.dose = const Value.absent(),
+    this.timing = const Value.absent(),
     this.reminderHour = const Value.absent(),
     this.reminderMinute = const Value.absent(),
     this.reminderDays = const Value.absent(),
@@ -4991,6 +5067,8 @@ class DailyTasksCompanion extends UpdateCompanion<DailyTask> {
     Expression<int>? id,
     Expression<String>? name,
     Expression<String>? iconName,
+    Expression<String>? dose,
+    Expression<String>? timing,
     Expression<int>? reminderHour,
     Expression<int>? reminderMinute,
     Expression<int>? reminderDays,
@@ -5001,6 +5079,8 @@ class DailyTasksCompanion extends UpdateCompanion<DailyTask> {
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (iconName != null) 'icon_name': iconName,
+      if (dose != null) 'dose': dose,
+      if (timing != null) 'timing': timing,
       if (reminderHour != null) 'reminder_hour': reminderHour,
       if (reminderMinute != null) 'reminder_minute': reminderMinute,
       if (reminderDays != null) 'reminder_days': reminderDays,
@@ -5013,6 +5093,8 @@ class DailyTasksCompanion extends UpdateCompanion<DailyTask> {
     Value<int>? id,
     Value<String>? name,
     Value<String?>? iconName,
+    Value<String?>? dose,
+    Value<String?>? timing,
     Value<int?>? reminderHour,
     Value<int?>? reminderMinute,
     Value<int?>? reminderDays,
@@ -5023,6 +5105,8 @@ class DailyTasksCompanion extends UpdateCompanion<DailyTask> {
       id: id ?? this.id,
       name: name ?? this.name,
       iconName: iconName ?? this.iconName,
+      dose: dose ?? this.dose,
+      timing: timing ?? this.timing,
       reminderHour: reminderHour ?? this.reminderHour,
       reminderMinute: reminderMinute ?? this.reminderMinute,
       reminderDays: reminderDays ?? this.reminderDays,
@@ -5042,6 +5126,12 @@ class DailyTasksCompanion extends UpdateCompanion<DailyTask> {
     }
     if (iconName.present) {
       map['icon_name'] = Variable<String>(iconName.value);
+    }
+    if (dose.present) {
+      map['dose'] = Variable<String>(dose.value);
+    }
+    if (timing.present) {
+      map['timing'] = Variable<String>(timing.value);
     }
     if (reminderHour.present) {
       map['reminder_hour'] = Variable<int>(reminderHour.value);
@@ -5067,6 +5157,8 @@ class DailyTasksCompanion extends UpdateCompanion<DailyTask> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('iconName: $iconName, ')
+          ..write('dose: $dose, ')
+          ..write('timing: $timing, ')
           ..write('reminderHour: $reminderHour, ')
           ..write('reminderMinute: $reminderMinute, ')
           ..write('reminderDays: $reminderDays, ')
@@ -13555,6 +13647,8 @@ typedef $$DailyTasksTableCreateCompanionBuilder =
       Value<int> id,
       required String name,
       Value<String?> iconName,
+      Value<String?> dose,
+      Value<String?> timing,
       Value<int?> reminderHour,
       Value<int?> reminderMinute,
       Value<int?> reminderDays,
@@ -13566,6 +13660,8 @@ typedef $$DailyTasksTableUpdateCompanionBuilder =
       Value<int> id,
       Value<String> name,
       Value<String?> iconName,
+      Value<String?> dose,
+      Value<String?> timing,
       Value<int?> reminderHour,
       Value<int?> reminderMinute,
       Value<int?> reminderDays,
@@ -13594,6 +13690,16 @@ class $$DailyTasksTableFilterComposer
 
   ColumnFilters<String> get iconName => $composableBuilder(
     column: $table.iconName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get dose => $composableBuilder(
+    column: $table.dose,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get timing => $composableBuilder(
+    column: $table.timing,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -13647,6 +13753,16 @@ class $$DailyTasksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get dose => $composableBuilder(
+    column: $table.dose,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get timing => $composableBuilder(
+    column: $table.timing,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get reminderHour => $composableBuilder(
     column: $table.reminderHour,
     builder: (column) => ColumnOrderings(column),
@@ -13690,6 +13806,12 @@ class $$DailyTasksTableAnnotationComposer
 
   GeneratedColumn<String> get iconName =>
       $composableBuilder(column: $table.iconName, builder: (column) => column);
+
+  GeneratedColumn<String> get dose =>
+      $composableBuilder(column: $table.dose, builder: (column) => column);
+
+  GeneratedColumn<String> get timing =>
+      $composableBuilder(column: $table.timing, builder: (column) => column);
 
   GeneratedColumn<int> get reminderHour => $composableBuilder(
     column: $table.reminderHour,
@@ -13747,6 +13869,8 @@ class $$DailyTasksTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String?> iconName = const Value.absent(),
+                Value<String?> dose = const Value.absent(),
+                Value<String?> timing = const Value.absent(),
                 Value<int?> reminderHour = const Value.absent(),
                 Value<int?> reminderMinute = const Value.absent(),
                 Value<int?> reminderDays = const Value.absent(),
@@ -13756,6 +13880,8 @@ class $$DailyTasksTableTableManager
                 id: id,
                 name: name,
                 iconName: iconName,
+                dose: dose,
+                timing: timing,
                 reminderHour: reminderHour,
                 reminderMinute: reminderMinute,
                 reminderDays: reminderDays,
@@ -13767,6 +13893,8 @@ class $$DailyTasksTableTableManager
                 Value<int> id = const Value.absent(),
                 required String name,
                 Value<String?> iconName = const Value.absent(),
+                Value<String?> dose = const Value.absent(),
+                Value<String?> timing = const Value.absent(),
                 Value<int?> reminderHour = const Value.absent(),
                 Value<int?> reminderMinute = const Value.absent(),
                 Value<int?> reminderDays = const Value.absent(),
@@ -13776,6 +13904,8 @@ class $$DailyTasksTableTableManager
                 id: id,
                 name: name,
                 iconName: iconName,
+                dose: dose,
+                timing: timing,
                 reminderHour: reminderHour,
                 reminderMinute: reminderMinute,
                 reminderDays: reminderDays,

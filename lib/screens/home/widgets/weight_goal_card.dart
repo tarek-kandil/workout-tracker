@@ -27,8 +27,8 @@ class WeightGoalCard extends ConsumerWidget {
             ? const WeightHubScreen()
             : const WeightGoalSetupScreen()),
       ),
-      child: SizedBox(
-        height: 132,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 132),
         child: GlassCard(
           child: vm.hasPlan ? _PlanBody(vm: vm, style: style) : _EmptyBody(style: style),
         ),
@@ -90,6 +90,22 @@ class _PlanBody extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const Row(
+          children: [
+            Text('⚖️', style: TextStyle(fontSize: 15)),
+            SizedBox(width: 7),
+            Text(
+              'BODYWEIGHT',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.9,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
         Row(
           children: [
             Expanded(
@@ -122,7 +138,7 @@ class _PlanBody extends StatelessWidget {
                 style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: style.color)),
           ],
         ),
-        const Spacer(),
+        const SizedBox(height: 12),
         Wrap(
           spacing: 8,
           runSpacing: 6,

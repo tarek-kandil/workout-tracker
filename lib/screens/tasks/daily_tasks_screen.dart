@@ -23,11 +23,11 @@ class DailyTasksScreen extends ConsumerWidget {
     final completionsAsync = ref.watch(todayCompletionsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Daily Tasks')),
+      appBar: AppBar(title: const Text('Supplements')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showTaskDialog(context, ref, null),
         icon: const Icon(Icons.add),
-        label: const Text('Add Task'),
+        label: const Text('Add Supplement'),
       ),
       body: Stack(
         children: [
@@ -190,11 +190,21 @@ class _TaskDialog extends ConsumerStatefulWidget {
 
 class _TaskDialogState extends ConsumerState<_TaskDialog> {
   late final TextEditingController _nameCtrl;
+  late final TextEditingController _doseCtrl;
+  String? _selectedTiming;
   bool _reminderEnabled = false;
   int _reminderHour = 8;
   int _reminderMinute = 30;
   int _reminderDays = 0x7F;
   String? _selectedIcon;
+
+  static const _timings = [
+    'Morning',
+    'Midday',
+    'Pre-Workout',
+    'Post-Workout',
+    'Evening',
+  ];
 
   bool get _isEditing => widget.existingTask != null;
 
@@ -203,6 +213,8 @@ class _TaskDialogState extends ConsumerState<_TaskDialog> {
     super.initState();
     final task = widget.existingTask;
     _nameCtrl = TextEditingController(text: task?.name ?? '');
+    _doseCtrl = TextEditingController(text: task?.dose ?? '');
+    _selectedTiming = task?.timing;
     _reminderHour = task?.reminderHour ?? 8;
     _reminderMinute = task?.reminderMinute ?? 30;
     _reminderDays = task?.reminderDays ?? 0x7F;
@@ -215,12 +227,14 @@ class _TaskDialogState extends ConsumerState<_TaskDialog> {
   @override
   void dispose() {
     _nameCtrl.dispose();
+    _doseCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) return;
+    final dose = _doseCtrl.text.trim().isEmpty ? null : _doseCtrl.text.trim();
 
     final int? hour = _reminderEnabled ? _reminderHour : null;
     final int? minute = _reminderEnabled ? _reminderMinute : null;
@@ -231,6 +245,8 @@ class _TaskDialogState extends ConsumerState<_TaskDialog> {
     if (!_isEditing) {
       final id = await dao.insertTask(DailyTasksCompanion.insert(
         name: name,
+        dose: Value(dose),
+        timing: Value(_selectedTiming),
         iconName: Value(_selectedIcon),
         reminderHour: Value(hour),
         reminderMinute: Value(minute),
@@ -251,6 +267,8 @@ class _TaskDialogState extends ConsumerState<_TaskDialog> {
       await dao.updateTask(DailyTasksCompanion(
         id: Value(task.id),
         name: Value(name),
+        dose: Value(dose),
+        timing: Value(_selectedTiming),
         iconName: Value(_selectedIcon),
         reminderHour: Value(hour),
         reminderMinute: Value(minute),
@@ -279,7 +297,7 @@ class _TaskDialogState extends ConsumerState<_TaskDialog> {
     final scheme = Theme.of(context).colorScheme;
 
     return AlertDialog(
-      title: Text(_isEditing ? 'Edit Task' : 'Add Task'),
+      title: Text(_isEditing ? 'Edit Supplement' : 'Add Supplement'),
       content: SingleChildScrollView(
         child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -290,9 +308,35 @@ class _TaskDialogState extends ConsumerState<_TaskDialog> {
             autofocus: true,
             textCapitalization: TextCapitalization.sentences,
             decoration: const InputDecoration(
-              labelText: 'Task name',
-              hintText: 'e.g. Morning vitamins',
+              labelText: 'Supplement name',
+              hintText: 'e.g. Creatine Monohydrate',
             ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _doseCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Dose (optional)',
+              hintText: 'e.g. 5g, 2 caps, 2000 IU',
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text('Timing', style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: scheme.onSurface.withValues(alpha: 0.6),
+          )),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final t in _timings)
+                ChoiceChip(
+                  label: Text(t, style: const TextStyle(fontSize: 11.5)),
+                  selected: _selectedTiming == t,
+                  onSelected: (sel) =>
+                      setState(() => _selectedTiming = sel ? t : null),
+                ),
+            ],
           ),
           const SizedBox(height: 20),
           // ── Icon picker ───────────────────────────────────────────────

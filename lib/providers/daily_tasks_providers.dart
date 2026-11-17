@@ -37,3 +37,13 @@ final taskConsistencyProvider =
       .dailyTasksDao
       .getConsistencyForTask(taskId);
 });
+
+/// Live consistency stats + Mon..Sun current-week flags for a supplement/task.
+final taskConsistencyStatsProvider = StreamProvider.family<
+    ({int streak, int last7Count, int last30Count, List<bool> thisWeekDone}),
+    int>((ref, taskId) {
+  return ref
+      .watch(databaseProvider)
+      .dailyTasksDao
+      .watchTaskConsistencyStats(taskId);
+});

@@ -57,7 +57,7 @@ class _ChallengesHomeSectionState extends ConsumerState<ChallengesHomeSection> {
           ),
           child: Row(
             children: [
-              const Text('🏁', style: TextStyle(fontSize: 16)),
+              const Text('🏁', style: TextStyle(fontSize: 15)),
               const SizedBox(width: 7),
               const Text(
                 'CHALLENGES',

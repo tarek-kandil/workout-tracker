@@ -91,10 +91,10 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   ),
                   _NavItem(
-                    icon: Icons.task_alt,
+                    icon: Icons.medication_outlined,
                     color: const Color(0xFF34C759),
-                    title: 'Daily Tasks',
-                    subtitle: 'Your goals',
+                    title: 'Supplements',
+                    subtitle: 'Stack & log',
                     onTap: () => Navigator.of(context).push(
                       glassRoute(const DailyTasksScreen()),
                     ),

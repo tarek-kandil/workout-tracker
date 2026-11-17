@@ -21,11 +21,6 @@ String _lastDoneLabel(DateTime? date) {
   return 'Last done: ${diff}d ago';
 }
 
-String _exerciseMeta(NextWodResult result) {
-  final count = result.allExercises.length;
-  return '$count exercise${count == 1 ? '' : 's'}';
-}
-
 class NextWorkoutCard extends ConsumerWidget {
   const NextWorkoutCard({super.key});
 
@@ -143,81 +138,124 @@ class _NextWodContentState extends ConsumerState<_NextWodContent> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final lastDone = _lastDoneLabel(widget.result.lastSessionDate);
-    final meta = _exerciseMeta(widget.result);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final tint = isDark
-        ? Colors.white.withValues(alpha: 0.10)
-        : Colors.white.withValues(alpha: 0.80);
+    const ember = Color(0xFFFF6B35);
+    const violet = Color(0xFF7C5CFF);
 
-    return LiquidGlassContainer(
-      borderRadius: 28,
-      blurSigma: 10,
-      tintColor: tint,
-      padding: const EdgeInsets.all(20),
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(26),
+        gradient: LinearGradient(
+          begin: Alignment.bottomLeft,
+          end: Alignment.topRight,
+          colors: isDark
+              ? [
+                  violet.withValues(alpha: 0.14),
+                  Colors.white.withValues(alpha: 0.06),
+                  ember.withValues(alpha: 0.14),
+                ]
+              : [
+                  violet.withValues(alpha: 0.10),
+                  Colors.white.withValues(alpha: 0.90),
+                  ember.withValues(alpha: 0.10),
+                ],
+        ),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.12)
+              : Colors.black.withValues(alpha: 0.08),
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Label row ─────────────────────────────────────────────────────
+          // ── Label row: WEEK N pill + Switch pill ─────────────────────────
           Row(
             children: [
-              Text(
-                'UP NEXT  ·  WEEK ${widget.result.weekNumberInProgram}',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.2,
-                  color: cs.onSurface.withValues(alpha: 0.38),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.black.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  'WEEK ${widget.result.weekNumberInProgram}',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                    color: cs.onSurface.withValues(alpha: 0.75),
+                  ),
                 ),
               ),
               const Spacer(),
               GestureDetector(
                 onTap: () => Navigator.of(context)
                     .push(glassRoute(const WeekWodsScreen())),
-                child: Icon(
-                  Icons.swap_vert_rounded,
-                  size: 20,
-                  color: cs.onSurface.withValues(alpha: 0.35),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.07)
+                        : Colors.black.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.10)
+                          : Colors.black.withValues(alpha: 0.08),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.swap_vert_rounded,
+                        size: 14,
+                        color: cs.onSurface.withValues(alpha: 0.65),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Switch',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: cs.onSurface.withValues(alpha: 0.65),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
           // ── Workout name ──────────────────────────────────────────────────
           Text(
             widget.result.wodTemplate.name,
-            style: Theme.of(context).textTheme.headlineSmall!.copyWith(
+            style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                  fontSize: 21,
                   fontWeight: FontWeight.w700,
                 ),
           ),
-          const SizedBox(height: 6),
 
-          // ── Meta row ──────────────────────────────────────────────────────
-          Row(
-            children: [
-              Text(
-                meta,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: cs.onSurface.withValues(alpha: 0.45),
-                ),
+          // ── Last done subtitle ────────────────────────────────────────────
+          if (lastDone.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              lastDone,
+              style: TextStyle(
+                fontSize: 12.5,
+                color: cs.onSurface.withValues(alpha: 0.55),
               ),
-              if (lastDone.isNotEmpty) ...[
-                Text(
-                  '  ·  ',
-                  style: TextStyle(color: cs.onSurface.withValues(alpha: 0.25)),
-                ),
-                Text(
-                  lastDone,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: cs.onSurface.withValues(alpha: 0.45),
-                  ),
-                ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 20),
+            ),
+          ],
+          const SizedBox(height: 14),
 
           // ── Action buttons ────────────────────────────────────────────────
           if (_hasProgress) ...[
@@ -276,15 +314,45 @@ class _PillButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final button = FilledButton.icon(
-      onPressed: onPressed,
-      style: FilledButton.styleFrom(
-        minimumSize: const Size(0, 52),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-        textStyle: GoogleFonts.spaceGrotesk(fontSize: 15, fontWeight: FontWeight.w600),
+    final button = Container(
+      height: 50,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFFF7847), Color(0xFFFF512F)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFF5C35).withValues(alpha: 0.35),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
-      icon: Icon(icon, size: 20),
-      label: Text(label),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(999),
+          onTap: onPressed,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 20, color: Colors.white),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
     if (fullWidth) return SizedBox(width: double.infinity, child: button);
     return button;

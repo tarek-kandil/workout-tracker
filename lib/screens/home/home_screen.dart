@@ -9,7 +9,7 @@ import '../../widgets/glass_card.dart';
 import '../../widgets/glass_route.dart';
 import '../settings/program_list_screen.dart';
 import 'widgets/challenges_home_section.dart';
-import 'widgets/daily_task_home_card.dart';
+import 'widgets/supplements_home_card.dart';
 import 'widgets/flash_workout_home_card.dart';
 import 'widgets/next_workout_card.dart';
 import 'widgets/progressive_overload_card.dart';
@@ -31,7 +31,22 @@ class HomeScreen extends ConsumerWidget {
         CustomScrollView(
           slivers: [
             const SliverAppBar(
-              title: Text('Today'),
+              title: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('🔥', style: TextStyle(fontSize: 15)),
+                  SizedBox(width: 7),
+                  Text(
+                    'TRAIN',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.9,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
               floating: true,
               snap: true,
               backgroundColor: Colors.transparent,
@@ -132,12 +147,7 @@ class HomeScreen extends ConsumerWidget {
         ],
         if (enabledTasks.isNotEmpty) ...[
           const SizedBox(height: 26),
-          const _SectionLabel(emoji: '✓', label: 'DAILY TASKS'),
-          const SizedBox(height: 12),
-          ...enabledTasks.expand((t) => [
-                DailyTaskHomeCard(task: t),
-                const SizedBox(height: 8),
-              ]),
+          SupplementsHomeCard(tasks: enabledTasks),
         ],
         const SizedBox(height: 16),
       ]),
@@ -167,15 +177,10 @@ class HomeScreen extends ConsumerWidget {
           ..._buildFlashWorkoutsSection(flashWorkouts),
         ],
 
-        // ── Daily tasks ──────────────────────────────────────────────────
+        // ── Supplements ──────────────────────────────────────────────────
         if (enabledTasks.isNotEmpty) ...[
           const SizedBox(height: 28),
-          const _SectionLabel(emoji: '✓', label: 'DAILY TASKS'),
-          const SizedBox(height: 12),
-          ...enabledTasks.expand((t) => [
-                DailyTaskHomeCard(task: t),
-                const SizedBox(height: 8),
-              ]),
+          SupplementsHomeCard(tasks: enabledTasks),
         ],
         const SizedBox(height: 24),
       ]),
