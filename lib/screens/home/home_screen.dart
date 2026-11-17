@@ -68,8 +68,8 @@ class HomeScreen extends ConsumerWidget {
   List<Widget> _buildFlashWorkoutsSection(List<WodTemplate> flashWorkouts) {
     if (flashWorkouts.isEmpty) return const [];
     return [
-      const _SectionLabel(label: 'FLASH WORKOUTS'),
-      const SizedBox(height: 8),
+      const _SectionLabel(emoji: '⚡', label: 'FLASH WORKOUTS'),
+      const SizedBox(height: 12),
       ...flashWorkouts.expand((w) => [
             FlashWorkoutHomeCard(wod: w),
             const SizedBox(height: 8),
@@ -124,16 +124,16 @@ class HomeScreen extends ConsumerWidget {
             ],
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 24),
         const ChallengesHomeSection(),
         if (flashWorkouts.isNotEmpty) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: 26),
           ..._buildFlashWorkoutsSection(flashWorkouts),
         ],
         if (enabledTasks.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          const _SectionLabel(label: 'DAILY TASKS'),
-          const SizedBox(height: 8),
+          const SizedBox(height: 26),
+          const _SectionLabel(emoji: '✓', label: 'DAILY TASKS'),
+          const SizedBox(height: 12),
           ...enabledTasks.expand((t) => [
                 DailyTaskHomeCard(task: t),
                 const SizedBox(height: 8),
@@ -150,28 +150,28 @@ class HomeScreen extends ConsumerWidget {
       delegate: SliverChildListDelegate([
         // ── Hero card ────────────────────────────────────────────────────
         const NextWorkoutCard(),
-        const SizedBox(height: 14),
-        const ChallengesHomeSection(),
         const SizedBox(height: 12),
         const ProgressiveOverloadCard(),
         const SizedBox(height: 10),
         const WeightGoalCard(),
         const SizedBox(height: 10),
         const WeeklyPRCard(),
-        const SizedBox(height: 20),
+        const SizedBox(height: 28),
+
+        // ── Challenges ───────────────────────────────────────────────────
+        const ChallengesHomeSection(),
 
         // ── Flash workouts ───────────────────────────────────────────────
-        const SizedBox(height: 14),
-        const ChallengesHomeSection(),
         if (flashWorkouts.isNotEmpty) ...[
+          const SizedBox(height: 28),
           ..._buildFlashWorkoutsSection(flashWorkouts),
-          const SizedBox(height: 12),
         ],
 
         // ── Daily tasks ──────────────────────────────────────────────────
         if (enabledTasks.isNotEmpty) ...[
-          const _SectionLabel(label: 'DAILY TASKS'),
-          const SizedBox(height: 8),
+          const SizedBox(height: 28),
+          const _SectionLabel(emoji: '✓', label: 'DAILY TASKS'),
+          const SizedBox(height: 12),
           ...enabledTasks.expand((t) => [
                 DailyTaskHomeCard(task: t),
                 const SizedBox(height: 8),
@@ -186,21 +186,38 @@ class HomeScreen extends ConsumerWidget {
 // ─── Section label ────────────────────────────────────────────────────────────
 
 class _SectionLabel extends StatelessWidget {
+  final String? emoji;
   final String label;
-  const _SectionLabel({required this.label});
+  const _SectionLabel({this.emoji, required this.label});
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: Theme.of(context)
-                .colorScheme
-                .onSurface
-                .withValues(alpha: 0.45),
-            letterSpacing: 1.2,
-            fontWeight: FontWeight.w700,
+    return Container(
+      padding: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: Colors.white.withValues(alpha: 0.08),
           ),
+        ),
+      ),
+      child: Row(
+        children: [
+          if (emoji != null) ...[
+            Text(emoji!, style: const TextStyle(fontSize: 15)),
+            const SizedBox(width: 7),
+          ],
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.9,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

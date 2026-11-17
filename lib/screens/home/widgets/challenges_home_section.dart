@@ -7,8 +7,17 @@ import '../../challenges/challenge_attempt_sheet.dart';
 import '../../challenges/challenge_detail_screen.dart';
 import '../../challenges/create_challenge_flow.dart';
 
-class ChallengesHomeSection extends ConsumerWidget {
+class ChallengesHomeSection extends ConsumerStatefulWidget {
   const ChallengesHomeSection({super.key});
+
+  @override
+  ConsumerState<ChallengesHomeSection> createState() =>
+      _ChallengesHomeSectionState();
+}
+
+class _ChallengesHomeSectionState extends ConsumerState<ChallengesHomeSection> {
+  final _scrollCtrl = ScrollController();
+  int _pageIndex = 0;
 
   static const _cardColors = [
     Color(0xFF38BDF8), // Electric Cyan
@@ -19,7 +28,13 @@ class ChallengesHomeSection extends ConsumerWidget {
   ];
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void dispose() {
+    _scrollCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final activeAsync = ref.watch(activeChallengesProvider);
     final completedAsync = ref.watch(completedChallengesProvider);
 
@@ -30,66 +45,78 @@ class ChallengesHomeSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const Text(
-              '🏁 CHALLENGES',
-              style: TextStyle(
-                fontSize: 10.5,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.1,
-                color: Colors.white70,
+        // ── Prominent Section Header with Bottom Divider ─────────────────────
+        Container(
+          padding: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: Colors.white.withValues(alpha: 0.08),
               ),
             ),
-            const Spacer(),
-            if (completed.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: GestureDetector(
-                  onTap: () => _showCompletedSheet(context, completed),
-                  child: Text(
-                    'Done (${completed.length})',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white.withValues(alpha: 0.55),
-                    ),
-                  ),
+          ),
+          child: Row(
+            children: [
+              const Text('🏁', style: TextStyle(fontSize: 16)),
+              const SizedBox(width: 7),
+              const Text(
+                'CHALLENGES',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.9,
+                  color: Colors.white,
                 ),
               ),
-            // Crisp Frosted White "+ New" pill (distinct from tile colors)
-            GestureDetector(
-              onTap: () => showCreateChallengeFlow(context, ref),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(99),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.35),
-                  ),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.add_rounded, size: 14, color: Colors.white),
-                    SizedBox(width: 3),
-                    Text(
-                      'New',
+              const Spacer(),
+              if (completed.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(right: 10),
+                  child: GestureDetector(
+                    onTap: () => _showCompletedSheet(context, completed),
+                    child: Text(
+                      'Done (${completed.length})',
                       style: TextStyle(
                         fontSize: 11.5,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white.withValues(alpha: 0.55),
                       ),
                     ),
-                  ],
+                  ),
+                ),
+              GestureDetector(
+                onTap: () => showCreateChallengeFlow(context, ref),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.30),
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.add_rounded, size: 14, color: Colors.white),
+                      SizedBox(width: 3),
+                      Text(
+                        'New',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
 
         if (active.isEmpty)
           GestureDetector(
@@ -101,7 +128,7 @@ class ChallengesHomeSection extends ConsumerWidget {
                 color: Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.12),
+                  color: Colors.white.withValues(alpha: 0.11),
                 ),
               ),
               child: Row(
@@ -129,8 +156,8 @@ class ChallengesHomeSection extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  Icon(Icons.add_circle_outline_rounded,
-                      size: 20, color: Colors.white.withValues(alpha: 0.7)),
+                  Icon(Icons.chevron_right_rounded,
+                      size: 20, color: Colors.white.withValues(alpha: 0.45)),
                 ],
               ),
             ),
@@ -150,20 +177,71 @@ class ChallengesHomeSection extends ConsumerWidget {
             ],
           )
         else
-          SizedBox(
-            height: 196,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: active.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 10),
-              itemBuilder: (_, i) => SizedBox(
-                width: 168,
-                child: _NeonRingChallengeCard(
-                  data: active[i],
-                  accentColor: _cardColors[i % _cardColors.length],
-                ),
-              ),
-            ),
+          // Option B: Peek Horizontal Scroll (~44% card width) + Indicator Dots
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final cardWidth = (constraints.maxWidth - 16) * 0.44;
+              final dotCount = (active.length - 1).clamp(2, 6);
+              return Column(
+                children: [
+                  NotificationListener<ScrollNotification>(
+                    onNotification: (n) {
+                      if (n is ScrollUpdateNotification &&
+                          _scrollCtrl.hasClients &&
+                          _scrollCtrl.position.maxScrollExtent > 0) {
+                        final ratio = (_scrollCtrl.offset /
+                                _scrollCtrl.position.maxScrollExtent)
+                            .clamp(0.0, 1.0);
+                        final nextIdx =
+                            (ratio * (dotCount - 1)).round();
+                        if (nextIdx != _pageIndex) {
+                          setState(() => _pageIndex = nextIdx);
+                        }
+                      }
+                      return false;
+                    },
+                    child: SingleChildScrollView(
+                      controller: _scrollCtrl,
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          for (int i = 0; i < active.length; i++) ...[
+                            if (i > 0) const SizedBox(width: 10),
+                            SizedBox(
+                              width: cardWidth,
+                              child: _NeonRingChallengeCard(
+                                data: active[i],
+                                accentColor:
+                                    _cardColors[i % _cardColors.length],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      for (int d = 0; d < dotCount; d++)
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          margin: const EdgeInsets.symmetric(horizontal: 3),
+                          width: d == _pageIndex ? 18 : 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: d == _pageIndex
+                                ? const Color(0xFF38BDF8)
+                                : Colors.white.withValues(alpha: 0.22),
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              );
+            },
           ),
       ],
     );
@@ -274,7 +352,6 @@ class _NeonRingChallengeCard extends ConsumerWidget {
         ),
         child: Stack(
           children: [
-            // Corner Medal Badge when targets have been conquered
             if (data.conqueredCount > 0)
               Positioned(
                 top: 0,
@@ -306,17 +383,17 @@ class _NeonRingChallengeCard extends ConsumerWidget {
               children: [
                 const SizedBox(height: 2),
                 SizedBox(
-                  width: 60,
-                  height: 60,
+                  width: 56,
+                  height: 56,
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
                       SizedBox(
-                        width: 56,
-                        height: 56,
+                        width: 52,
+                        height: 52,
                         child: CircularProgressIndicator(
                           value: data.progressFraction,
-                          strokeWidth: 5,
+                          strokeWidth: 4.5,
                           backgroundColor: Colors.white.withValues(alpha: 0.10),
                           valueColor:
                               AlwaysStoppedAnimation<Color>(accentColor),
@@ -326,7 +403,7 @@ class _NeonRingChallengeCard extends ConsumerWidget {
                       Text(
                         '${data.progressPct}%',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 12.5,
                           fontWeight: FontWeight.w900,
                           color: accentColor,
                         ),
@@ -341,7 +418,7 @@ class _NeonRingChallengeCard extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    fontSize: 14,
+                    fontSize: 13.5,
                     fontWeight: FontWeight.w800,
                     color: Colors.white,
                   ),
@@ -353,7 +430,7 @@ class _NeonRingChallengeCard extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 11.5,
+                    fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: Colors.white.withValues(alpha: 0.72),
                   ),
@@ -372,7 +449,7 @@ class _NeonRingChallengeCard extends ConsumerWidget {
                       isTimed ? '⏱ Attempt' : '+ Attempt',
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: 11.5,
                         fontWeight: FontWeight.w900,
                         color: Color(0xFF082F49),
                       ),
