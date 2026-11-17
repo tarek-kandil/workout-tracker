@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../database/app_database.dart';
+import '../../../models/exercise_tracking_mode.dart';
 import '../../../utils/rir_conversion.dart';
 import '../models/session_models.dart';
 import '../session_formatters.dart';
@@ -7,6 +8,7 @@ import '../session_formatters.dart';
 class HistoryChipRow extends StatefulWidget {
   final List<WorkoutSet> lastSets;
   final bool isTimed;
+  final ExerciseTrackingMode trackingMode;
   final double? prKg;
   final int? prDurationSeconds;
   final bool expanded;
@@ -18,11 +20,16 @@ class HistoryChipRow extends StatefulWidget {
   final List<ExerciseHistory> tabs;
 
   const HistoryChipRow({super.key,
-    required this.lastSets, required this.isTimed,
+    required this.lastSets,
+    this.isTimed = false,
+    ExerciseTrackingMode? trackingMode,
     required this.prKg, required this.prDurationSeconds,
     required this.expanded, required this.onToggle,
     this.tabs = const [],
-  });
+  }) : trackingMode = trackingMode ??
+            (isTimed
+                ? ExerciseTrackingMode.timed
+                : ExerciseTrackingMode.weightedReps);
 
   @override
   State<HistoryChipRow> createState() => _HistoryChipRowState();
@@ -37,9 +44,22 @@ class _HistoryChipRowState extends State<HistoryChipRow> {
   Widget build(BuildContext context) {
     final tabs = _tabs;
     final hasHistory = tabs.isNotEmpty || widget.lastSets.isNotEmpty;
-    final prStr = widget.isTimed
-        ? (widget.prDurationSeconds != null && widget.prDurationSeconds! > 0 ? fmtSec(widget.prDurationSeconds!) : null)
-        : (widget.prKg != null && widget.prKg! > 0 ? '${fmtW(widget.prKg!)} kg' : null);
+    final String? prStr;
+    switch (widget.trackingMode) {
+      case ExerciseTrackingMode.timed:
+        prStr = (widget.prDurationSeconds != null &&
+                widget.prDurationSeconds! > 0)
+            ? fmtSec(widget.prDurationSeconds!)
+            : null;
+      case ExerciseTrackingMode.bodyweightReps:
+        final bestReps = widget.lastSets.fold<int>(
+            0, (m, s) => s.reps > m ? s.reps : m);
+        prStr = bestReps > 0 ? '$bestReps reps' : null;
+      case ExerciseTrackingMode.weightedReps:
+        prStr = (widget.prKg != null && widget.prKg! > 0)
+            ? '${fmtW(widget.prKg!)} kg'
+            : null;
+    }
 
     if (!hasHistory && prStr == null) return const SizedBox.shrink();
 
@@ -99,7 +119,7 @@ class _HistoryChipRowState extends State<HistoryChipRow> {
               ),
             _SetsTable(
               sets: tabs.isNotEmpty ? tabs[tabIdx].sets : widget.lastSets,
-              isTimed: widget.isTimed,
+              trackingMode: widget.trackingMode,
             ),
           ]),
         ),
@@ -155,22 +175,24 @@ class _HistorySwitch extends StatelessWidget {
 
 class _SetsTable extends StatelessWidget {
   final List<WorkoutSet> sets;
-  final bool isTimed;
-  const _SetsTable({required this.sets, required this.isTimed});
+  final ExerciseTrackingMode trackingMode;
+  const _SetsTable({required this.sets, required this.trackingMode});
 
   @override
   Widget build(BuildContext context) {
+    final isTimed = trackingMode == ExerciseTrackingMode.timed;
+    final showWeight = trackingMode == ExerciseTrackingMode.weightedReps;
     return Column(children: [
       for (int i = 0; i < sets.length; i++)
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 2),
           child: Row(children: [
             SizedBox(width: 46, child: Text('Set ${i + 1}', style: const TextStyle(fontSize: 10, color: Colors.white38))),
-            if (!isTimed)
+            if (showWeight)
               Expanded(child: Text('${fmtW(sets[i].weightKg)} kg',
                   style: const TextStyle(fontSize: 11, color: Colors.white60, fontWeight: FontWeight.w600))),
             Expanded(child: Text(
-              isTimed ? fmtSec(sets[i].durationSeconds ?? 0) : '× ${sets[i].reps} reps',
+              isTimed ? fmtSec(sets[i].durationSeconds ?? 0) : '${showWeight ? '× ' : ''}${sets[i].reps} reps',
               style: const TextStyle(fontSize: 11, color: Colors.white54),
             )),
             if (effectiveRir(sets[i].rir, sets[i].rpe) != null)

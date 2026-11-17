@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../database/app_database.dart';
+import '../models/exercise_tracking_mode.dart';
 import '../models/weight_history_point.dart';
 import '../models/weekly_progress_data.dart';
 import '../models/weekly_pr_entry.dart';
@@ -276,9 +277,11 @@ final progressiveOverloadProvider =
     for (final s in sets) {
       final ex = exerciseMap[s.exerciseId];
       if (ex == null) continue;
-      final valid = ex.isTimed
-          ? (s.durationSeconds ?? 0) > 0
-          : (s.reps > 0 && s.weightKg > 0);
+      final valid = switch (ex.mode) {
+        ExerciseTrackingMode.timed => (s.durationSeconds ?? 0) > 0,
+        ExerciseTrackingMode.bodyweightReps => s.reps > 0,
+        ExerciseTrackingMode.weightedReps => s.reps > 0 && s.weightKg > 0,
+      };
       if (!valid) continue;
       (byEx[s.exerciseId] ??= []).add(s);
     }
@@ -293,20 +296,27 @@ final progressiveOverloadProvider =
   }
 
   double bestMetric(Exercise ex, List<WorkoutSet> sets) {
-    if (ex.isTimed) {
-      var best = 0;
-      for (final s in sets) {
-        final d = s.durationSeconds ?? 0;
-        if (d > best) best = d;
-      }
-      return best.toDouble();
-    } else {
-      var best = 0.0;
-      for (final s in sets) {
-        final e1rm = s.weightKg * (1.0 + s.reps / 30.0);
-        if (e1rm > best) best = e1rm;
-      }
-      return best;
+    switch (ex.mode) {
+      case ExerciseTrackingMode.timed:
+        var best = 0;
+        for (final s in sets) {
+          final d = s.durationSeconds ?? 0;
+          if (d > best) best = d;
+        }
+        return best.toDouble();
+      case ExerciseTrackingMode.bodyweightReps:
+        var best = 0;
+        for (final s in sets) {
+          if (s.reps > best) best = s.reps;
+        }
+        return best.toDouble();
+      case ExerciseTrackingMode.weightedReps:
+        var best = 0.0;
+        for (final s in sets) {
+          final e1rm = s.weightKg * (1.0 + s.reps / 30.0);
+          if (e1rm > best) best = e1rm;
+        }
+        return best;
     }
   }
 
@@ -402,13 +412,16 @@ final progressiveOverloadProvider =
       final weekSets = [
         for (final l in logs.where((l) => l.week == latest.week)) ...l.sets,
       ];
-      final String curSummary;
-      if (ex.isTimed) {
-        curSummary = _fmtSec(bestMetric(ex, weekSets).round());
-      } else {
-        final curBest = bestWeightedSet(weekSets);
-        curSummary = '${_fmtKg(curBest.weightKg)} × ${curBest.reps}';
-      }
+      final String curSummary = switch (ex.mode) {
+        ExerciseTrackingMode.timed =>
+          _fmtSec(bestMetric(ex, weekSets).round()),
+        ExerciseTrackingMode.bodyweightReps =>
+          '${bestMetric(ex, weekSets).round()} reps',
+        ExerciseTrackingMode.weightedReps => () {
+            final curBest = bestWeightedSet(weekSets);
+            return '${_fmtKg(curBest.weightKg)} × ${curBest.reps}';
+          }(),
+      };
       detailItems.add(ExerciseOverloadItem(
         exercise: ex,
         bucket: OverloadBucket.firstTime,
@@ -430,7 +443,7 @@ final progressiveOverloadProvider =
       for (final l in logs.where((l) => l.week == latest.week)) ...l.sets,
     ];
 
-    if (ex.isTimed) {
+    if (ex.isTimedMode) {
       final curDur = bestMetric(ex, currentWeekSets).round();
       final prevDur = bestMetric(ex, prevWeekSets).round();
       final diff = curDur - prevDur;
@@ -454,6 +467,33 @@ final progressiveOverloadProvider =
         bucket: bucket,
         currentSummary: _fmtSec(curDur),
         previousSummary: _fmtSec(prevDur),
+        deltaLabel: deltaLabel,
+        vsWeek1Pct: exVsWeek1[ex.id],
+      ));
+    } else if (ex.isBodyweightReps) {
+      final curReps = bestMetric(ex, currentWeekSets).round();
+      final prevReps = bestMetric(ex, prevWeekSets).round();
+      final diff = curReps - prevReps;
+      final OverloadBucket bucket;
+      final String deltaLabel;
+      if (diff > 0) {
+        repsOrTimeUp++;
+        bucket = OverloadBucket.repsOrTimeUp;
+        deltaLabel = '↑ +$diff rep${diff == 1 ? '' : 's'}';
+      } else if (diff == 0) {
+        held++;
+        bucket = OverloadBucket.held;
+        deltaLabel = '= Held';
+      } else {
+        dropped++;
+        bucket = OverloadBucket.dropped;
+        deltaLabel = '↓ $diff rep${diff.abs() == 1 ? '' : 's'}';
+      }
+      detailItems.add(ExerciseOverloadItem(
+        exercise: ex,
+        bucket: bucket,
+        currentSummary: '$curReps reps',
+        previousSummary: '$prevReps reps',
         deltaLabel: deltaLabel,
         vsWeek1Pct: exVsWeek1[ex.id],
       ));

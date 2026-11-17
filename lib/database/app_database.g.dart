@@ -71,6 +71,18 @@ class $ExercisesTable extends Exercises
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _trackingModeMeta = const VerificationMeta(
+    'trackingMode',
+  );
+  @override
+  late final GeneratedColumn<String> trackingMode = GeneratedColumn<String>(
+    'tracking_mode',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('weighted_reps'),
+  );
   static const VerificationMeta _muscleNeedsReviewMeta = const VerificationMeta(
     'muscleNeedsReview',
   );
@@ -119,6 +131,7 @@ class $ExercisesTable extends Exercises
     category,
     notes,
     isTimed,
+    trackingMode,
     muscleNeedsReview,
     muscleReviewNote,
     archived,
@@ -162,6 +175,15 @@ class $ExercisesTable extends Exercises
       context.handle(
         _isTimedMeta,
         isTimed.isAcceptableOrUnknown(data['is_timed']!, _isTimedMeta),
+      );
+    }
+    if (data.containsKey('tracking_mode')) {
+      context.handle(
+        _trackingModeMeta,
+        trackingMode.isAcceptableOrUnknown(
+          data['tracking_mode']!,
+          _trackingModeMeta,
+        ),
       );
     }
     if (data.containsKey('muscle_needs_review')) {
@@ -217,6 +239,10 @@ class $ExercisesTable extends Exercises
         DriftSqlType.bool,
         data['${effectivePrefix}is_timed'],
       )!,
+      trackingMode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tracking_mode'],
+      )!,
       muscleNeedsReview: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}muscle_needs_review'],
@@ -244,6 +270,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
   final String category;
   final String? notes;
   final bool isTimed;
+  final String trackingMode;
   final bool muscleNeedsReview;
   final String? muscleReviewNote;
   final bool archived;
@@ -253,6 +280,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     required this.category,
     this.notes,
     required this.isTimed,
+    required this.trackingMode,
     required this.muscleNeedsReview,
     this.muscleReviewNote,
     required this.archived,
@@ -267,6 +295,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       map['notes'] = Variable<String>(notes);
     }
     map['is_timed'] = Variable<bool>(isTimed);
+    map['tracking_mode'] = Variable<String>(trackingMode);
     map['muscle_needs_review'] = Variable<bool>(muscleNeedsReview);
     if (!nullToAbsent || muscleReviewNote != null) {
       map['muscle_review_note'] = Variable<String>(muscleReviewNote);
@@ -284,6 +313,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           ? const Value.absent()
           : Value(notes),
       isTimed: Value(isTimed),
+      trackingMode: Value(trackingMode),
       muscleNeedsReview: Value(muscleNeedsReview),
       muscleReviewNote: muscleReviewNote == null && nullToAbsent
           ? const Value.absent()
@@ -303,6 +333,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       category: serializer.fromJson<String>(json['category']),
       notes: serializer.fromJson<String?>(json['notes']),
       isTimed: serializer.fromJson<bool>(json['isTimed']),
+      trackingMode: serializer.fromJson<String>(json['trackingMode']),
       muscleNeedsReview: serializer.fromJson<bool>(json['muscleNeedsReview']),
       muscleReviewNote: serializer.fromJson<String?>(json['muscleReviewNote']),
       archived: serializer.fromJson<bool>(json['archived']),
@@ -317,6 +348,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       'category': serializer.toJson<String>(category),
       'notes': serializer.toJson<String?>(notes),
       'isTimed': serializer.toJson<bool>(isTimed),
+      'trackingMode': serializer.toJson<String>(trackingMode),
       'muscleNeedsReview': serializer.toJson<bool>(muscleNeedsReview),
       'muscleReviewNote': serializer.toJson<String?>(muscleReviewNote),
       'archived': serializer.toJson<bool>(archived),
@@ -329,6 +361,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     String? category,
     Value<String?> notes = const Value.absent(),
     bool? isTimed,
+    String? trackingMode,
     bool? muscleNeedsReview,
     Value<String?> muscleReviewNote = const Value.absent(),
     bool? archived,
@@ -338,6 +371,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     category: category ?? this.category,
     notes: notes.present ? notes.value : this.notes,
     isTimed: isTimed ?? this.isTimed,
+    trackingMode: trackingMode ?? this.trackingMode,
     muscleNeedsReview: muscleNeedsReview ?? this.muscleNeedsReview,
     muscleReviewNote: muscleReviewNote.present
         ? muscleReviewNote.value
@@ -351,6 +385,9 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       category: data.category.present ? data.category.value : this.category,
       notes: data.notes.present ? data.notes.value : this.notes,
       isTimed: data.isTimed.present ? data.isTimed.value : this.isTimed,
+      trackingMode: data.trackingMode.present
+          ? data.trackingMode.value
+          : this.trackingMode,
       muscleNeedsReview: data.muscleNeedsReview.present
           ? data.muscleNeedsReview.value
           : this.muscleNeedsReview,
@@ -369,6 +406,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           ..write('category: $category, ')
           ..write('notes: $notes, ')
           ..write('isTimed: $isTimed, ')
+          ..write('trackingMode: $trackingMode, ')
           ..write('muscleNeedsReview: $muscleNeedsReview, ')
           ..write('muscleReviewNote: $muscleReviewNote, ')
           ..write('archived: $archived')
@@ -383,6 +421,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     category,
     notes,
     isTimed,
+    trackingMode,
     muscleNeedsReview,
     muscleReviewNote,
     archived,
@@ -396,6 +435,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           other.category == this.category &&
           other.notes == this.notes &&
           other.isTimed == this.isTimed &&
+          other.trackingMode == this.trackingMode &&
           other.muscleNeedsReview == this.muscleNeedsReview &&
           other.muscleReviewNote == this.muscleReviewNote &&
           other.archived == this.archived);
@@ -407,6 +447,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
   final Value<String> category;
   final Value<String?> notes;
   final Value<bool> isTimed;
+  final Value<String> trackingMode;
   final Value<bool> muscleNeedsReview;
   final Value<String?> muscleReviewNote;
   final Value<bool> archived;
@@ -416,6 +457,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     this.category = const Value.absent(),
     this.notes = const Value.absent(),
     this.isTimed = const Value.absent(),
+    this.trackingMode = const Value.absent(),
     this.muscleNeedsReview = const Value.absent(),
     this.muscleReviewNote = const Value.absent(),
     this.archived = const Value.absent(),
@@ -426,6 +468,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     this.category = const Value.absent(),
     this.notes = const Value.absent(),
     this.isTimed = const Value.absent(),
+    this.trackingMode = const Value.absent(),
     this.muscleNeedsReview = const Value.absent(),
     this.muscleReviewNote = const Value.absent(),
     this.archived = const Value.absent(),
@@ -436,6 +479,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     Expression<String>? category,
     Expression<String>? notes,
     Expression<bool>? isTimed,
+    Expression<String>? trackingMode,
     Expression<bool>? muscleNeedsReview,
     Expression<String>? muscleReviewNote,
     Expression<bool>? archived,
@@ -446,6 +490,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
       if (category != null) 'category': category,
       if (notes != null) 'notes': notes,
       if (isTimed != null) 'is_timed': isTimed,
+      if (trackingMode != null) 'tracking_mode': trackingMode,
       if (muscleNeedsReview != null) 'muscle_needs_review': muscleNeedsReview,
       if (muscleReviewNote != null) 'muscle_review_note': muscleReviewNote,
       if (archived != null) 'archived': archived,
@@ -458,6 +503,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     Value<String>? category,
     Value<String?>? notes,
     Value<bool>? isTimed,
+    Value<String>? trackingMode,
     Value<bool>? muscleNeedsReview,
     Value<String?>? muscleReviewNote,
     Value<bool>? archived,
@@ -468,6 +514,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
       category: category ?? this.category,
       notes: notes ?? this.notes,
       isTimed: isTimed ?? this.isTimed,
+      trackingMode: trackingMode ?? this.trackingMode,
       muscleNeedsReview: muscleNeedsReview ?? this.muscleNeedsReview,
       muscleReviewNote: muscleReviewNote ?? this.muscleReviewNote,
       archived: archived ?? this.archived,
@@ -492,6 +539,9 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     if (isTimed.present) {
       map['is_timed'] = Variable<bool>(isTimed.value);
     }
+    if (trackingMode.present) {
+      map['tracking_mode'] = Variable<String>(trackingMode.value);
+    }
     if (muscleNeedsReview.present) {
       map['muscle_needs_review'] = Variable<bool>(muscleNeedsReview.value);
     }
@@ -512,6 +562,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
           ..write('category: $category, ')
           ..write('notes: $notes, ')
           ..write('isTimed: $isTimed, ')
+          ..write('trackingMode: $trackingMode, ')
           ..write('muscleNeedsReview: $muscleNeedsReview, ')
           ..write('muscleReviewNote: $muscleReviewNote, ')
           ..write('archived: $archived')
@@ -7338,6 +7389,7 @@ typedef $$ExercisesTableCreateCompanionBuilder =
       Value<String> category,
       Value<String?> notes,
       Value<bool> isTimed,
+      Value<String> trackingMode,
       Value<bool> muscleNeedsReview,
       Value<String?> muscleReviewNote,
       Value<bool> archived,
@@ -7349,6 +7401,7 @@ typedef $$ExercisesTableUpdateCompanionBuilder =
       Value<String> category,
       Value<String?> notes,
       Value<bool> isTimed,
+      Value<String> trackingMode,
       Value<bool> muscleNeedsReview,
       Value<String?> muscleReviewNote,
       Value<bool> archived,
@@ -7532,6 +7585,11 @@ class $$ExercisesTableFilterComposer
 
   ColumnFilters<bool> get isTimed => $composableBuilder(
     column: $table.isTimed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get trackingMode => $composableBuilder(
+    column: $table.trackingMode,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7735,6 +7793,11 @@ class $$ExercisesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get trackingMode => $composableBuilder(
+    column: $table.trackingMode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get muscleNeedsReview => $composableBuilder(
     column: $table.muscleNeedsReview,
     builder: (column) => ColumnOrderings(column),
@@ -7774,6 +7837,11 @@ class $$ExercisesTableAnnotationComposer
 
   GeneratedColumn<bool> get isTimed =>
       $composableBuilder(column: $table.isTimed, builder: (column) => column);
+
+  GeneratedColumn<String> get trackingMode => $composableBuilder(
+    column: $table.trackingMode,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<bool> get muscleNeedsReview => $composableBuilder(
     column: $table.muscleNeedsReview,
@@ -7982,6 +8050,7 @@ class $$ExercisesTableTableManager
                 Value<String> category = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<bool> isTimed = const Value.absent(),
+                Value<String> trackingMode = const Value.absent(),
                 Value<bool> muscleNeedsReview = const Value.absent(),
                 Value<String?> muscleReviewNote = const Value.absent(),
                 Value<bool> archived = const Value.absent(),
@@ -7991,6 +8060,7 @@ class $$ExercisesTableTableManager
                 category: category,
                 notes: notes,
                 isTimed: isTimed,
+                trackingMode: trackingMode,
                 muscleNeedsReview: muscleNeedsReview,
                 muscleReviewNote: muscleReviewNote,
                 archived: archived,
@@ -8002,6 +8072,7 @@ class $$ExercisesTableTableManager
                 Value<String> category = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<bool> isTimed = const Value.absent(),
+                Value<String> trackingMode = const Value.absent(),
                 Value<bool> muscleNeedsReview = const Value.absent(),
                 Value<String?> muscleReviewNote = const Value.absent(),
                 Value<bool> archived = const Value.absent(),
@@ -8011,6 +8082,7 @@ class $$ExercisesTableTableManager
                 category: category,
                 notes: notes,
                 isTimed: isTimed,
+                trackingMode: trackingMode,
                 muscleNeedsReview: muscleNeedsReview,
                 muscleReviewNote: muscleReviewNote,
                 archived: archived,

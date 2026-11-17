@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../database/app_database.dart';
 import '../../services/notification_service.dart';
 import '../../services/personal_record_detection.dart';
+import '../../models/exercise_tracking_mode.dart';
 import '../../models/next_wod_result.dart';
 import '../../models/weight_suggestion.dart';
 import '../../models/wod_item.dart';
@@ -315,22 +316,29 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       final exerciseId = te.exerciseId;
       final lastSets = await db.setsDao.getLastSetsForExerciseInWod(exerciseId, wodId);
       _lastSets[exerciseId] = lastSets;
-      if (entry.exercise.isTimed) {
-        _prDurationData[exerciseId] = await db.setsDao.getPersonalRecordDuration(exerciseId);
-      } else {
-        final pr = await db.setsDao.getPersonalRecord(exerciseId);
-        _prData[exerciseId] = pr;
-        if (pr != null && pr > 0) {
-          _prBestReps[exerciseId] = await db.setsDao.getBestRepsAtWeight(exerciseId, pr);
-        }
+      switch (entry.exercise.mode) {
+        case ExerciseTrackingMode.timed:
+          _prDurationData[exerciseId] =
+              await db.setsDao.getPersonalRecordDuration(exerciseId);
+        case ExerciseTrackingMode.bodyweightReps:
+          _prBestReps[exerciseId] =
+              await db.setsDao.getBestRepsAtWeight(exerciseId, 0.0);
+        case ExerciseTrackingMode.weightedReps:
+          final pr = await db.setsDao.getPersonalRecord(exerciseId);
+          _prData[exerciseId] = pr;
+          if (pr != null && pr > 0) {
+            _prBestReps[exerciseId] =
+                await db.setsDao.getBestRepsAtWeight(exerciseId, pr);
+          }
       }
       final numSets = slotsNeeded[exerciseId] ?? te.targetSets;
-      final isTimed = entry.exercise.isTimed;
+      final isTimed = entry.exercise.isTimedMode;
+      final isBw = entry.exercise.isBodyweightReps;
       _setData[exerciseId] = List.generate(numSets, (idx) {
         if (idx < lastSets.length) {
           final ls = lastSets[idx];
           return SetData(
-            weightKg: ls.weightKg,
+            weightKg: (isTimed || isBw) ? 0.0 : ls.weightKg,
             reps: isTimed ? 0 : (entry.suggestion.suggestedReps ?? ls.reps),
             durationSeconds: isTimed
                 ? (entry.suggestion.suggestedDurationSeconds ?? ls.durationSeconds ?? te.repRangeMin)
@@ -339,7 +347,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
         }
         if (idx == 0 && !isTimed) {
           return SetData(
-            weightKg: entry.suggestion.suggestedKg ?? 0.0,
+            weightKg: isBw ? 0.0 : (entry.suggestion.suggestedKg ?? 0.0),
             reps: entry.suggestion.suggestedReps ?? (te.repRangeMax * 0.8).round(),
           );
         }
@@ -633,7 +641,10 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     }
 
     // ── PR overlay ───────────────────────────────────────────────────────────
-    if (!isTimed && loggedData != null && loggedData.reps > 0 && mounted) {
+    if (entry.exercise.isWeightedReps &&
+        loggedData != null &&
+        loggedData.reps > 0 &&
+        mounted) {
       final oldPrKg = _prData[exerciseId];
       if (_checkPrAndUpdate(exerciseId, loggedData.weightKg, loggedData.reps)) {
         HapticFeedback.heavyImpact();
@@ -644,6 +655,24 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
             newWeightKg: loggedData.weightKg,
             reps: loggedData.reps,
             oldWeightKg: oldPrKg,
+          );
+        }
+      }
+    } else if (entry.exercise.isBodyweightReps &&
+        loggedData != null &&
+        loggedData.reps > 0 &&
+        mounted) {
+      final oldReps = _prBestReps[exerciseId];
+      if (loggedData.reps > (oldReps ?? 0)) {
+        _prBestReps[exerciseId] = loggedData.reps;
+        HapticFeedback.heavyImpact();
+        if (mounted) {
+          await showPrOverlay(
+            context,
+            exerciseName: capturedName,
+            isBodyweight: true,
+            reps: loggedData.reps,
+            oldReps: oldReps,
           );
         }
       }
@@ -1208,7 +1237,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       };
       for (final (entry, skippedSets) in entries) {
         final exerciseId = entry.templateExercise.exerciseId;
-        final isTimed = entry.exercise.isTimed;
+        final isTimed = entry.exercise.isTimedMode;
+        final isWeighted = entry.exercise.isWeightedReps;
         final sets = _setData[exerciseId] ?? [];
         for (int i = 0; i < sets.length; i++) {
           if (skippedSets.contains(i)) continue;
@@ -1219,7 +1249,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
             exerciseId: exerciseId,
             setNumber: i + 1,
             reps: isTimed ? 0 : s.reps,
-            weightKg: s.weightKg,
+            weightKg: isWeighted ? s.weightKg : 0.0,
             // Dual-write for one release: rir is the source of truth, rpe is
             // derived so legacy code paths/exports still see a valid value.
             rir: Value(s.rir),
@@ -1320,12 +1350,13 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
         title: 'Edit $unitLabel ${setIdx + 1}',
         exerciseName: entry.exercise.name,
         isTimed: isTimed,
+        trackingMode: entry.exercise.mode,
         current: current,
       ),
     );
 
     if (saved != null && mounted) {
-      final changed = !isTimed &&
+      final changed = entry.exercise.isWeightedReps &&
           (!sameRecordWeight(saved.weightKg, current.weightKg) ||
               saved.reps != current.reps);
       final baseline = changed ? await _calculatePrBaseline(exerciseId) : null;
@@ -2389,14 +2420,19 @@ class _EditSetSheet extends StatefulWidget {
   final String title;
   final String exerciseName;
   final bool isTimed;
+  final ExerciseTrackingMode trackingMode;
   final SetData current;
 
   const _EditSetSheet({
     required this.title,
     required this.exerciseName,
-    required this.isTimed,
+    this.isTimed = false,
+    ExerciseTrackingMode? trackingMode,
     required this.current,
-  });
+  }) : trackingMode = trackingMode ??
+            (isTimed
+                ? ExerciseTrackingMode.timed
+                : ExerciseTrackingMode.weightedReps);
 
   @override
   State<_EditSetSheet> createState() => _EditSetSheetState();
@@ -2426,7 +2462,8 @@ class _EditSetSheetState extends State<_EditSetSheet> {
 
   @override
   Widget build(BuildContext ctx) {
-    final isTimed = widget.isTimed;
+    final isTimed = widget.trackingMode == ExerciseTrackingMode.timed;
+    final showWeight = widget.trackingMode == ExerciseTrackingMode.weightedReps;
     final current = widget.current;
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
@@ -2441,7 +2478,7 @@ class _EditSetSheetState extends State<_EditSetSheet> {
           const SizedBox(height: 4),
           Text(widget.exerciseName, style: const TextStyle(fontSize: 12, color: Colors.white54)),
           const SizedBox(height: 20),
-          if (!isTimed) ...[
+          if (showWeight) ...[
             TextField(
               controller: weightCtrl,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -2454,7 +2491,7 @@ class _EditSetSheetState extends State<_EditSetSheet> {
           TextField(
             controller: secondaryCtrl,
             keyboardType: TextInputType.number,
-            autofocus: isTimed,
+            autofocus: !showWeight,
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
               labelText: isTimed ? 'Duration (seconds)' : 'Reps',
@@ -2473,7 +2510,7 @@ class _EditSetSheetState extends State<_EditSetSheet> {
                 final w = double.tryParse(weightCtrl.text.replaceAll(',', '.')) ?? current.weightKg;
                 final s = int.tryParse(secondaryCtrl.text);
                 Navigator.pop(ctx, SetData(
-                  weightKg: isTimed ? 0 : w,
+                  weightKg: showWeight ? w : 0,
                   reps: isTimed ? 0 : (s ?? current.reps),
                   durationSeconds: isTimed ? (s ?? current.durationSeconds) : 0,
                   rir: current.rir,

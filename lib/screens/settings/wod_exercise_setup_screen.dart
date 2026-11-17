@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' show Value;
 import '../../database/app_database.dart';
 import '../../models/exercise_muscle_seed.dart';
+import '../../models/exercise_tracking_mode.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/exercise_providers.dart';
 import '../../utils/constants.dart';
@@ -140,7 +141,7 @@ class _WodExerciseSetupScreenState
   }
 
   Future<Exercise?> _createAndPickExercise(
-      String name, List<ExerciseMuscleSeed> muscles, bool isTimed) async {
+      String name, List<ExerciseMuscleSeed> muscles, ExerciseTrackingMode mode) async {
     final db = ref.read(databaseProvider);
     final primary = muscles
         .where((m) => m.role == ExerciseMuscleRole.primary)
@@ -151,7 +152,8 @@ class _WodExerciseSetupScreenState
     final id = await db.exercisesDao.insertExercise(ExercisesCompanion(
       name: Value(name),
       category: Value(category),
-      isTimed: Value(isTimed),
+      isTimed: Value(mode == ExerciseTrackingMode.timed),
+      trackingMode: Value(mode.dbValue),
     ));
     await db.exercisesDao.setMusclesForExercise(id, muscles);
     ref.invalidate(exercisesProvider);
@@ -1074,7 +1076,7 @@ class _RestStepperState extends State<_RestStepper> {
 class _ExercisePickerSheet extends StatefulWidget {
   final List<Exercise> exercises;
   final Future<Exercise?> Function(
-      String name, List<ExerciseMuscleSeed> muscles, bool isTimed) onCreateNew;
+      String name, List<ExerciseMuscleSeed> muscles, ExerciseTrackingMode mode) onCreateNew;
 
   const _ExercisePickerSheet({
     required this.exercises,
@@ -1152,7 +1154,7 @@ class _ExercisePickerSheetState extends State<_ExercisePickerSheet> {
 
   Future<void> _promptCreateNew(BuildContext sheetCtx) async {
     List<ExerciseMuscleSeed> assignments = [];
-    bool isTimed = false;
+    ExerciseTrackingMode trackingMode = ExerciseTrackingMode.weightedReps;
     final name = _query.trim();
 
     final confirmed = await showDialog<bool>(
@@ -1223,12 +1225,39 @@ class _ExercisePickerSheetState extends State<_ExercisePickerSheet> {
                   label: Text(
                       assignments.isEmpty ? 'Assign muscles' : 'Edit muscles'),
                 ),
-                const SizedBox(height: 8),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Timed exercise'),
-                  value: isTimed,
-                  onChanged: (v) => setDlgState(() => isTimed = v),
+                const SizedBox(height: 12),
+                Text(
+                  'TRACKING MODE',
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1,
+                    color: Colors.white.withValues(alpha: 0.45),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                SizedBox(
+                  width: double.infinity,
+                  child: SegmentedButton<ExerciseTrackingMode>(
+                    showSelectedIcon: false,
+                    segments: const [
+                      ButtonSegment(
+                        value: ExerciseTrackingMode.weightedReps,
+                        label: Text('Weighted', style: TextStyle(fontSize: 11)),
+                      ),
+                      ButtonSegment(
+                        value: ExerciseTrackingMode.bodyweightReps,
+                        label: Text('Bodyweight', style: TextStyle(fontSize: 11)),
+                      ),
+                      ButtonSegment(
+                        value: ExerciseTrackingMode.timed,
+                        label: Text('Timed', style: TextStyle(fontSize: 11)),
+                      ),
+                    ],
+                    selected: {trackingMode},
+                    onSelectionChanged: (sel) =>
+                        setDlgState(() => trackingMode = sel.first),
+                  ),
                 ),
               ],
             ),
@@ -1248,7 +1277,7 @@ class _ExercisePickerSheetState extends State<_ExercisePickerSheet> {
     );
 
     if (confirmed != true) return;
-    final exercise = await widget.onCreateNew(name, assignments, isTimed);
+    final exercise = await widget.onCreateNew(name, assignments, trackingMode);
     if (exercise != null && sheetCtx.mounted) {
       Navigator.pop(sheetCtx, exercise);
     }
@@ -1398,7 +1427,7 @@ class _EditExerciseDialogState extends ConsumerState<_EditExerciseDialog> {
   }
 
   Future<Exercise?> _createAndPickVariationExercise(
-      String name, List<ExerciseMuscleSeed> muscles, bool isTimed) async {
+      String name, List<ExerciseMuscleSeed> muscles, ExerciseTrackingMode mode) async {
     final db = ref.read(databaseProvider);
     final primary = muscles
         .where((m) => m.role == ExerciseMuscleRole.primary)
@@ -1409,7 +1438,8 @@ class _EditExerciseDialogState extends ConsumerState<_EditExerciseDialog> {
     final id = await db.exercisesDao.insertExercise(ExercisesCompanion(
       name: Value(name),
       category: Value(category),
-      isTimed: Value(isTimed),
+      isTimed: Value(mode == ExerciseTrackingMode.timed),
+      trackingMode: Value(mode.dbValue),
     ));
     await db.exercisesDao.setMusclesForExercise(id, muscles);
     ref.invalidate(exercisesProvider);

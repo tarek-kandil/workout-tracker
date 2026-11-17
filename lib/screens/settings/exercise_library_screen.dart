@@ -4,6 +4,7 @@ import 'package:drift/drift.dart' show Value;
 import '../../database/app_database.dart';
 import '../../database/daos/exercises_dao.dart' show ExerciseDeleteOutcome;
 import '../../models/exercise_muscle_seed.dart';
+import '../../models/exercise_tracking_mode.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/exercise_providers.dart';
 import '../../utils/constants.dart';
@@ -90,7 +91,8 @@ class _ExerciseLibraryScreenState
     final nameController = TextEditingController(text: existing?.name ?? '')
       ..selection =
           TextSelection.collapsed(offset: existing?.name.length ?? 0);
-    bool isTimed = existing?.isTimed ?? false;
+    ExerciseTrackingMode trackingMode =
+        existing?.mode ?? ExerciseTrackingMode.weightedReps;
     List<ExerciseMuscleSeed> assignments = List.from(initialAssignments);
 
     await showModalBottomSheet<void>(
@@ -227,12 +229,38 @@ class _ExerciseLibraryScreenState
                       ),
 
                       const SizedBox(height: 16),
-                      // Timed toggle
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Timed exercise'),
-                        value: isTimed,
-                        onChanged: (v) => setSheetState(() => isTimed = v),
+                      const Text(
+                        'TRACKING MODE',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.0,
+                          color: Colors.white54,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: SegmentedButton<ExerciseTrackingMode>(
+                          showSelectedIcon: false,
+                          segments: const [
+                            ButtonSegment(
+                              value: ExerciseTrackingMode.weightedReps,
+                              label: Text('Weighted', style: TextStyle(fontSize: 12)),
+                            ),
+                            ButtonSegment(
+                              value: ExerciseTrackingMode.bodyweightReps,
+                              label: Text('Bodyweight', style: TextStyle(fontSize: 12)),
+                            ),
+                            ButtonSegment(
+                              value: ExerciseTrackingMode.timed,
+                              label: Text('Timed', style: TextStyle(fontSize: 12)),
+                            ),
+                          ],
+                          selected: {trackingMode},
+                          onSelectionChanged: (sel) => setSheetState(
+                              () => trackingMode = sel.first),
+                        ),
                       ),
                     ],
                   ),
@@ -260,14 +288,18 @@ class _ExerciseLibraryScreenState
                                     await dao.insertExercise(ExercisesCompanion(
                                   name: Value(name),
                                   category: Value(derivedCategory),
-                                  isTimed: Value(isTimed),
+                                  isTimed: Value(
+                                      trackingMode == ExerciseTrackingMode.timed),
+                                  trackingMode: Value(trackingMode.dbValue),
                                 ));
                               } else {
                                 await dao.updateExercise(ExercisesCompanion(
                                   id: Value(existing.id),
                                   name: Value(name),
                                   category: Value(derivedCategory),
-                                  isTimed: Value(isTimed),
+                                  isTimed: Value(
+                                      trackingMode == ExerciseTrackingMode.timed),
+                                  trackingMode: Value(trackingMode.dbValue),
                                 ));
                                 exerciseId = existing.id;
                               }
@@ -554,11 +586,17 @@ class _ExerciseRow extends StatelessWidget {
                         icon: Icons.error_outline_rounded,
                       ),
                     ],
-                    if (exercise.isTimed) ...[
+                    if (exercise.isTimedMode) ...[
                       const SizedBox(width: 8),
                       const _Badge(
                         label: 'TIMED',
                         color: Color(0xFF6366F1),
+                      ),
+                    ] else if (exercise.isBodyweightReps) ...[
+                      const SizedBox(width: 8),
+                      const _Badge(
+                        label: 'BODYWEIGHT',
+                        color: Color(0xFF34D399),
                       ),
                     ],
                   ],

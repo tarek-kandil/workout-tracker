@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../database/app_database.dart';
+import '../../../models/exercise_tracking_mode.dart';
 import '../../../models/exercise_muscle_seed.dart';
 import '../../../providers/database_provider.dart';
 import '../../../providers/exercise_providers.dart';
@@ -79,6 +80,7 @@ class _ExerciseLibrarySheetState extends ConsumerState<ExerciseLibrarySheet> {
       id: id,
       name: name,
       isTimed: false,
+      trackingMode: ExerciseTrackingMode.weightedReps.dbValue,
       category: category,
       notes: null,
       muscleNeedsReview: false,
@@ -154,7 +156,7 @@ class _ExerciseLibrarySheetState extends ConsumerState<ExerciseLibrarySheet> {
                             ],
                           ],
                         ),
-                        subtitle: Text(ex.isTimed ? 'Timed' : 'Weighted', style: const TextStyle(fontSize: 11)),
+                        subtitle: Text(ex.mode.shortLabel, style: const TextStyle(fontSize: 11)),
                         onTap: () => widget.onSelected(ex),
                       ),
                   ]),

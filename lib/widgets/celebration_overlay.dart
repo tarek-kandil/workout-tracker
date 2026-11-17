@@ -136,6 +136,8 @@ Future<void> showPrOverlay(
   double newWeightKg = 0,
   int reps = 0,
   double? oldWeightKg,
+  bool isBodyweight = false,
+  int? oldReps,
   int? newDurationSeconds,
   int? oldDurationSeconds,
 }) {
@@ -148,6 +150,8 @@ Future<void> showPrOverlay(
       newWeightKg: newWeightKg,
       reps: reps,
       oldWeightKg: oldWeightKg,
+      isBodyweight: isBodyweight,
+      oldReps: oldReps,
       newDurationSeconds: newDurationSeconds,
       oldDurationSeconds: oldDurationSeconds,
       onDone: () {
@@ -165,6 +169,8 @@ class _PrOverlay extends StatefulWidget {
   final double newWeightKg;
   final int reps;
   final double? oldWeightKg;
+  final bool isBodyweight;
+  final int? oldReps;
   final int? newDurationSeconds;
   final int? oldDurationSeconds;
   final VoidCallback onDone;
@@ -173,6 +179,8 @@ class _PrOverlay extends StatefulWidget {
     required this.newWeightKg,
     required this.reps,
     required this.oldWeightKg,
+    this.isBodyweight = false,
+    this.oldReps,
     this.newDurationSeconds,
     this.oldDurationSeconds,
     required this.onDone,
@@ -229,8 +237,12 @@ class _PrOverlayState extends State<_PrOverlay>
   @override
   Widget build(BuildContext context) {
     final isTimed = widget.newDurationSeconds != null;
+    final isBw = widget.isBodyweight;
     final delta = widget.oldWeightKg != null && widget.oldWeightKg! > 0
         ? widget.newWeightKg - widget.oldWeightKg!
+        : null;
+    final repsDelta = isBw && widget.oldReps != null && widget.oldReps! > 0
+        ? widget.reps - widget.oldReps!
         : null;
     final durationDelta = isTimed &&
             widget.oldDurationSeconds != null &&
@@ -321,7 +333,9 @@ class _PrOverlayState extends State<_PrOverlay>
                     Text(
                       isTimed
                           ? _fmtSec(widget.newDurationSeconds!)
-                          : '${_fmtW(widget.newWeightKg)} kg',
+                          : isBw
+                              ? '${widget.reps} reps'
+                              : '${_fmtW(widget.newWeightKg)} kg',
                       style: const TextStyle(
                         fontSize: 30,
                         fontWeight: FontWeight.w800,
@@ -329,10 +343,20 @@ class _PrOverlayState extends State<_PrOverlay>
                         decoration: TextDecoration.none,
                       ),
                     ),
-                    if (!isTimed && delta != null && delta > 0) ...[
+                    if (!isTimed && !isBw && delta != null && delta > 0) ...[
                       const SizedBox(height: 2),
                       Text(
                         '↑ +${_fmtW(delta)} kg from ${_fmtW(widget.oldWeightKg!)} kg',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.white.withValues(alpha: 0.45),
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                    ] else if (isBw && repsDelta != null && repsDelta > 0) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        '↑ +$repsDelta reps from ${widget.oldReps} reps',
                         style: TextStyle(
                           fontSize: 10,
                           color: Colors.white.withValues(alpha: 0.45),
@@ -352,7 +376,7 @@ class _PrOverlayState extends State<_PrOverlay>
                     ],
                     const SizedBox(height: 4),
                     Text(
-                      isTimed
+                      (isTimed || isBw)
                           ? widget.exerciseName
                           : '${widget.exerciseName} · ${widget.reps} reps',
                       style: TextStyle(

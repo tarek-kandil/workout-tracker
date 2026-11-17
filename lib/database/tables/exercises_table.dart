@@ -7,6 +7,10 @@ class Exercises extends Table {
   TextColumn get notes => text().nullable()();
   BoolColumn get isTimed =>
       boolean().withDefault(const Constant(false))();
+  // Schema v24: unified tracking mode ('weighted_reps', 'bodyweight_reps',
+  // 'timed'), replacing the legacy isTimed boolean.
+  TextColumn get trackingMode =>
+      text().withDefault(const Constant('weighted_reps'))();
   // Schema v20 (Muscle Taxonomy + Weekly Volume Report): true when the
   // v19->v20 migration could not confidently map this exercise's legacy
   // broad muscle tag(s) to the new 21-muscle taxonomy (FR-016/FR-017), or

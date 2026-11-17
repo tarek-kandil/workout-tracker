@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../database/app_database.dart';
+import '../../../models/exercise_tracking_mode.dart';
 import '../../../models/next_wod_result.dart';
 import '../../../utils/rir_conversion.dart';
 import '../models/session_models.dart';
@@ -172,7 +173,9 @@ class ExerciseCard extends StatelessWidget {
           const SizedBox(height: 8),
           // History chip
           HistoryChipRow(
-            lastSets: lastSets, isTimed: isTimed,
+            lastSets: lastSets,
+            isTimed: isTimed,
+            trackingMode: entry.exercise.mode,
             prKg: prKg, prDurationSeconds: prDurationSeconds,
             expanded: historyExpanded, onToggle: onToggleHistory,
             tabs: historyTabs,
@@ -202,7 +205,9 @@ class ExerciseCard extends StatelessWidget {
                 (isDone && !isSetSkipped);
             return SetRowItem(
               key: ValueKey('set-${te.exerciseId}-$itemIndex-$setIdx'),
-              setIndex: setIdx, isTimed: isTimed,
+              setIndex: setIdx,
+              isTimed: isTimed,
+              trackingMode: entry.exercise.mode,
               isActive: isSetActive, isDone: isSetDone, isSkipped: isSetSkipped,
               canSkip: !isSetActive && !isSetDone && !isSetSkipped && isActive,
               data: setIdx < setData.length ? setData[setIdx] : SetData(weightKg: 0, reps: 0),

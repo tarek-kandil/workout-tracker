@@ -70,7 +70,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 23;
+  int get schemaVersion => 24;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -492,6 +492,57 @@ class AppDatabase extends _$AppDatabase {
               final colNames = cols.map((r) => r.read<String>('name')).toSet();
               if (!colNames.contains('reminder_days')) {
                 await m.addColumn(dailyTasks, dailyTasks.reminderDays);
+              }
+            }
+          }
+          if (from < 24) {
+            final tables = await customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table'",
+            ).get();
+            final tableNames = tables.map((r) => r.read<String>('name')).toSet();
+
+            if (tableNames.contains('exercises')) {
+              final cols =
+                  await customSelect('PRAGMA table_info(exercises)').get();
+              final colNames = cols.map((r) => r.read<String>('name')).toSet();
+              if (!colNames.contains('tracking_mode')) {
+                await m.addColumn(exercises, exercises.trackingMode);
+              }
+              // Timed exercises -> 'timed'
+              await customStatement(
+                "UPDATE exercises SET tracking_mode = 'timed' WHERE is_timed = 1;",
+              );
+              // Known bodyweight rep exercises -> 'bodyweight_reps' ONLY if
+              // they have never been logged with added weight (weight_kg > 0).
+              const bwNames = [
+                'Pull-ups',
+                'Push-ups',
+                'Dips',
+                'Chin-ups',
+                'Hanging Leg Raise',
+                'Ab Wheel Rollout',
+                'Decline Sit-up',
+                'Russian Twist',
+                'Dead Bug',
+              ];
+              final placeholders = List.filled(bwNames.length, '?').join(', ');
+              final hasWorkoutSets = tableNames.contains('workout_sets');
+              if (hasWorkoutSets) {
+                await customStatement(
+                  "UPDATE exercises SET tracking_mode = 'bodyweight_reps' "
+                  "WHERE is_timed = 0 AND name IN ($placeholders) "
+                  "AND NOT EXISTS ("
+                  "  SELECT 1 FROM workout_sets ws "
+                  "  WHERE ws.exercise_id = exercises.id AND ws.weight_kg > 0"
+                  ");",
+                  bwNames,
+                );
+              } else {
+                await customStatement(
+                  "UPDATE exercises SET tracking_mode = 'bodyweight_reps' "
+                  "WHERE is_timed = 0 AND name IN ($placeholders);",
+                  bwNames,
+                );
               }
             }
           }

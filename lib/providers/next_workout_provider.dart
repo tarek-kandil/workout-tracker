@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../database/app_database.dart';
+import '../models/exercise_tracking_mode.dart';
 import '../models/next_wod_result.dart';
 import '../models/weight_suggestion.dart';
 import '../models/wod_item.dart';
@@ -39,18 +40,26 @@ Future<List<WodItem>> buildWodItems(
         entry: WodExerciseEntry(
           templateExercise: te,
           exercise: exercise,
-          suggestion: exercise.isTimed
-              ? _computeTimedSuggestion(
-                  lastSets: lastSets,
-                  repRangeMin: te.repRangeMin,
-                  repRangeMax: te.repRangeMax,
-                )
-              : computeWeightSuggestion(
-                  lastSets: lastSets,
-                  repRangeMin: te.repRangeMin,
-                  repRangeMax: te.repRangeMax,
-                  targetRir: effectiveRir(te.targetRir, te.targetRpe),
-                ),
+          suggestion: switch (exercise.mode) {
+            ExerciseTrackingMode.timed => _computeTimedSuggestion(
+                lastSets: lastSets,
+                repRangeMin: te.repRangeMin,
+                repRangeMax: te.repRangeMax,
+              ),
+            ExerciseTrackingMode.bodyweightReps =>
+              _computeBodyweightSuggestion(
+                lastSets: lastSets,
+                repRangeMin: te.repRangeMin,
+                repRangeMax: te.repRangeMax,
+                targetRir: effectiveRir(te.targetRir, te.targetRpe),
+              ),
+            ExerciseTrackingMode.weightedReps => computeWeightSuggestion(
+                lastSets: lastSets,
+                repRangeMin: te.repRangeMin,
+                repRangeMax: te.repRangeMax,
+                targetRir: effectiveRir(te.targetRir, te.targetRpe),
+              ),
+          },
         ),
         restSeconds: te.restSeconds,
       ),
@@ -69,18 +78,25 @@ Future<List<WodItem>> buildWodItems(
       entries.add(WodExerciseEntry(
         templateExercise: te,
         exercise: exercise,
-        suggestion: exercise.isTimed
-            ? _computeTimedSuggestion(
-                lastSets: lastSets,
-                repRangeMin: te.repRangeMin,
-                repRangeMax: te.repRangeMax,
-              )
-            : computeWeightSuggestion(
-                lastSets: lastSets,
-                repRangeMin: te.repRangeMin,
-                repRangeMax: te.repRangeMax,
-                targetRir: effectiveRir(te.targetRir, te.targetRpe),
-              ),
+        suggestion: switch (exercise.mode) {
+          ExerciseTrackingMode.timed => _computeTimedSuggestion(
+              lastSets: lastSets,
+              repRangeMin: te.repRangeMin,
+              repRangeMax: te.repRangeMax,
+            ),
+          ExerciseTrackingMode.bodyweightReps => _computeBodyweightSuggestion(
+              lastSets: lastSets,
+              repRangeMin: te.repRangeMin,
+              repRangeMax: te.repRangeMax,
+              targetRir: effectiveRir(te.targetRir, te.targetRpe),
+            ),
+          ExerciseTrackingMode.weightedReps => computeWeightSuggestion(
+              lastSets: lastSets,
+              repRangeMin: te.repRangeMin,
+              repRangeMax: te.repRangeMax,
+              targetRir: effectiveRir(te.targetRir, te.targetRpe),
+            ),
+        },
       ));
     }
     items.add((
@@ -341,4 +357,40 @@ WeightSuggestion _computeTimedSuggestion({
       message: 'Stay at ${maxDur}s, aim for ${highCeiling}s',
     );
   }
+}
+
+WeightSuggestion _computeBodyweightSuggestion({
+  required List<WorkoutSet> lastSets,
+  required int repRangeMin,
+  required int repRangeMax,
+  double? targetRir,
+}) {
+  final validSets = lastSets.where((s) => s.reps > 0).toList();
+  if (validSets.isEmpty) return WeightSuggestion.noHistory;
+
+  final bestReps = validSets.map((s) => s.reps).reduce(max);
+  final minReps = validSets.map((s) => s.reps).reduce(min);
+  final rirs = validSets
+      .map((s) => effectiveRir(s.rir, s.rpe))
+      .whereType<double>()
+      .toList();
+  final avgRir =
+      rirs.isNotEmpty ? rirs.reduce((a, b) => a + b) / rirs.length : null;
+
+  final hardGrind = avgRir != null && avgRir <= 0.5;
+  if (hardGrind && minReps < bestReps) {
+    return WeightSuggestion(
+      type: SuggestionType.maintain,
+      suggestedReps: bestReps,
+      message: 'Hard effort — hold $bestReps reps across sets',
+    );
+  }
+
+  final step = (avgRir != null && avgRir >= 3.0) ? 2 : 1;
+  final nextReps = bestReps + step;
+  return WeightSuggestion(
+    type: SuggestionType.increaseReps,
+    suggestedReps: nextReps,
+    message: 'Last best $bestReps reps — push for $nextReps reps (+$step)',
+  );
 }

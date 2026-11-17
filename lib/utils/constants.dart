@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import '../database/app_database.dart';
 import '../models/exercise_muscle_seed.dart';
+import '../models/exercise_tracking_mode.dart';
 import '../models/volume_landmark.dart';
 
 // ─── 21-muscle taxonomy (specs/003-muscle-volume-report) ──────────────────
@@ -150,6 +151,11 @@ final Map<String, List<ExerciseMuscleSeed>> kExerciseMuscles = {
     const ExerciseMuscleSeed.secondary('Triceps'),
     const ExerciseMuscleSeed.secondary('Front Delts'),
   ],
+  'Weighted Dips': [
+    const ExerciseMuscleSeed.primary('Chest'),
+    const ExerciseMuscleSeed.secondary('Triceps'),
+    const ExerciseMuscleSeed.secondary('Front Delts'),
+  ],
   'Push-ups': [
     const ExerciseMuscleSeed.primary('Chest'),
     const ExerciseMuscleSeed.secondary('Triceps'),
@@ -170,6 +176,11 @@ final Map<String, List<ExerciseMuscleSeed>> kExerciseMuscles = {
     const ExerciseMuscleSeed.secondary('Rear Delts'),
   ],
   'Pull-ups': [
+    const ExerciseMuscleSeed.primary('Lats'),
+    const ExerciseMuscleSeed.secondary('Biceps'),
+    const ExerciseMuscleSeed.secondary('Upper Back'),
+  ],
+  'Weighted Pull-ups': [
     const ExerciseMuscleSeed.primary('Lats'),
     const ExerciseMuscleSeed.secondary('Biceps'),
     const ExerciseMuscleSeed.secondary('Upper Back'),
@@ -413,12 +424,14 @@ final List<ExercisesCompanion> kDefaultExercises = [
   _ex('Dumbbell Fly'),
   _ex('Cable Fly'),
   _ex('Pec Deck'),
-  _ex('Dips'),
-  _ex('Push-ups'),
+  _ex('Dips', mode: ExerciseTrackingMode.bodyweightReps),
+  _ex('Weighted Dips'),
+  _ex('Push-ups', mode: ExerciseTrackingMode.bodyweightReps),
   // Back
   _ex('Deadlift'),
   _ex('Barbell Row'),
-  _ex('Pull-ups'),
+  _ex('Pull-ups', mode: ExerciseTrackingMode.bodyweightReps),
+  _ex('Weighted Pull-ups'),
   _ex('Lat Pulldown'),
   _ex('Seated Cable Row'),
   _ex('T-Bar Row'),
@@ -472,14 +485,14 @@ final List<ExercisesCompanion> kDefaultExercises = [
   _ex('Calf Raises'),
   _ex('Seated Calf Raises'),
   // Core
-  _ex('Plank'),
-  _ex('Ab Wheel Rollout'),
+  _ex('Plank', timed: true),
+  _ex('Ab Wheel Rollout', mode: ExerciseTrackingMode.bodyweightReps),
   _ex('Cable Crunch'),
-  _ex('Hanging Leg Raise'),
-  _ex('Russian Twist'),
-  _ex('Dead Bug'),
-  _ex('Side Plank'),
-  _ex('Decline Sit-up'),
+  _ex('Hanging Leg Raise', mode: ExerciseTrackingMode.bodyweightReps),
+  _ex('Russian Twist', mode: ExerciseTrackingMode.bodyweightReps),
+  _ex('Dead Bug', mode: ExerciseTrackingMode.bodyweightReps),
+  _ex('Side Plank', timed: true),
+  _ex('Decline Sit-up', mode: ExerciseTrackingMode.bodyweightReps),
   // Cardio (timed)
   _ex('Treadmill Run', timed: true),
   _ex('Rowing Machine', timed: true),
@@ -489,8 +502,16 @@ final List<ExercisesCompanion> kDefaultExercises = [
   _ex('Cycling', timed: true),
 ];
 
-ExercisesCompanion _ex(String name, {bool timed = false}) =>
-    ExercisesCompanion(
-      name: Value(name),
-      isTimed: Value(timed),
-    );
+ExercisesCompanion _ex(
+  String name, {
+  bool timed = false,
+  ExerciseTrackingMode? mode,
+}) {
+  final effective =
+      mode ?? (timed ? ExerciseTrackingMode.timed : ExerciseTrackingMode.weightedReps);
+  return ExercisesCompanion(
+    name: Value(name),
+    isTimed: Value(effective == ExerciseTrackingMode.timed),
+    trackingMode: Value(effective.dbValue),
+  );
+}

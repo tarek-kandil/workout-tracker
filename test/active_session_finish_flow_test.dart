@@ -1211,6 +1211,7 @@ class _WorkoutBuilder {
         name: name,
         category: 'Strength',
         isTimed: isTimed,
+        trackingMode: isTimed ? 'timed' : 'weighted_reps',
         muscleNeedsReview: false,
         muscleReviewNote: null,
         archived: false,
@@ -1233,6 +1234,7 @@ class _WorkoutBuilder {
             name: name,
             category: Value(category),
             isTimed: Value(isTimed),
+            trackingMode: Value(isTimed ? 'timed' : 'weighted_reps'),
           ),
         );
     return Exercise(
@@ -1240,6 +1242,7 @@ class _WorkoutBuilder {
       name: name,
       category: category,
       isTimed: isTimed,
+      trackingMode: isTimed ? 'timed' : 'weighted_reps',
       muscleNeedsReview: false,
       muscleReviewNote: null,
       archived: false,

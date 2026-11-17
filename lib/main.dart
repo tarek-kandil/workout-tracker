@@ -155,6 +155,25 @@ Future<StartupResult> runAppStartup(ProviderContainer container) async {
 
       await prefs.setBool('muscles_seeded_v2', true);
     }
+
+    // Seed Weighted Pull-ups / Weighted Dips alongside bodyweight variants.
+    final bwSeeded = prefs.getBool('bodyweight_seeded_v1') ?? false;
+    if (!bwSeeded) {
+      final dao = db.exercisesDao;
+      final existingByName = await dao.getExerciseIdsByName();
+      for (final companion in kDefaultExercises) {
+        final name = companion.name.value;
+        if (!existingByName.containsKey(name)) {
+          final newId = await dao.insertExercise(companion);
+          existingByName[name] = newId;
+          final muscles = kExerciseMuscles[name];
+          if (muscles != null) {
+            await dao.setMusclesForExercise(newId, muscles);
+          }
+        }
+      }
+      await prefs.setBool('bodyweight_seeded_v1', true);
+    }
   } catch (e) {
     debugPrint(
       'Startup: first-launch seeding failed, will retry next launch (non-fatal): $e',

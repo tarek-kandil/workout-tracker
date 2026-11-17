@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import '../app_database.dart';
 import '../tables/sets_table.dart';
 import '../tables/sessions_table.dart';
+import '../../models/exercise_tracking_mode.dart';
 import '../../models/weight_history_point.dart';
 import '../../models/personal_record_entry.dart';
 import '../../models/weekly_pr_entry.dart';
@@ -212,14 +213,16 @@ class SetsDao extends DatabaseAccessor<AppDatabase> with _$SetsDaoMixin {
   /// Grouped by category then name. Used for the Records screen.
   Future<List<PersonalRecordEntry>> getAllPersonalRecords() async {
     final results = await customSelect(
-      'SELECT e.id, e.name, e.category, e.is_timed, '
+      'SELECT e.id, e.name, e.category, e.is_timed, e.tracking_mode, '
       'CASE WHEN e.is_timed = 0 THEN MAX(ws.weight_kg) ELSE 0.0 END AS max_weight, '
       'CASE WHEN e.is_timed = 0 THEN MAX(ws.weight_kg * (1.0 + CAST(ws.reps AS REAL) / 30.0)) ELSE 0.0 END AS max_1rm, '
+      'MAX(ws.reps) AS max_reps, '
       'CASE WHEN e.is_timed = 1 THEN MAX(ws.duration_seconds) ELSE NULL END AS max_duration '
       'FROM workout_sets ws '
       'JOIN exercises e ON ws.exercise_id = e.id '
       'WHERE e.archived = 0 AND ('
-      '  (e.is_timed = 0 AND ws.reps > 0 AND ws.weight_kg > 0) '
+      "  (e.tracking_mode = 'bodyweight_reps' AND ws.reps > 0) "
+      '  OR (e.is_timed = 0 AND ws.reps > 0 AND ws.weight_kg > 0) '
       '  OR (e.is_timed = 1 AND ws.duration_seconds IS NOT NULL AND ws.duration_seconds > 0)'
       ') '
       'GROUP BY ws.exercise_id '
@@ -228,15 +231,24 @@ class SetsDao extends DatabaseAccessor<AppDatabase> with _$SetsDaoMixin {
     ).get();
 
     return results
-        .map((r) => PersonalRecordEntry(
-              exerciseId: r.read<int>('id'),
-              exerciseName: r.read<String>('name'),
-              exerciseCategory: r.read<String>('category'),
-              isTimed: r.read<int>('is_timed') == 1,
-              maxWeightKg: r.read<double>('max_weight'),
-              estimatedOneRm: r.read<double>('max_1rm'),
-              maxDurationSeconds: r.read<int?>('max_duration'),
-            ))
+        .map((r) {
+          final isTimed = r.read<int>('is_timed') == 1;
+          final mode = ExerciseTrackingMode.fromDb(
+            r.read<String?>('tracking_mode'),
+            isTimedFallback: isTimed,
+          );
+          return PersonalRecordEntry(
+            exerciseId: r.read<int>('id'),
+            exerciseName: r.read<String>('name'),
+            exerciseCategory: r.read<String>('category'),
+            isTimed: isTimed,
+            trackingMode: mode,
+            maxWeightKg: r.read<double>('max_weight'),
+            estimatedOneRm: r.read<double>('max_1rm'),
+            maxReps: r.read<int?>('max_reps'),
+            maxDurationSeconds: r.read<int?>('max_duration'),
+          );
+        })
         .toList();
   }
 

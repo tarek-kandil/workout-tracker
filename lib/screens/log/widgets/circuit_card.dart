@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../database/app_database.dart';
+import '../../../models/exercise_tracking_mode.dart';
 import '../../../models/next_wod_result.dart';
 import '../../../models/weight_suggestion.dart';
 import '../../../models/wod_item.dart';
@@ -13,6 +14,7 @@ import 'check_circle_button.dart';
 class RoundRowItem extends StatelessWidget {
   final int roundIndex;
   final bool isTimed;
+  final ExerciseTrackingMode trackingMode;
   final bool isActive;
   final bool isDone;
   final SetData data;
@@ -21,12 +23,17 @@ class RoundRowItem extends StatelessWidget {
   final VoidCallback? onEdit;
 
   const RoundRowItem({super.key, 
-    required this.roundIndex, required this.isTimed,
+    required this.roundIndex,
+    this.isTimed = false,
+    ExerciseTrackingMode? trackingMode,
     required this.isActive, required this.isDone,
     required this.data,
     this.suggestion,
     required this.onChanged, this.onEdit,
-  });
+  }) : trackingMode = trackingMode ??
+            (isTimed
+                ? ExerciseTrackingMode.timed
+                : ExerciseTrackingMode.weightedReps);
 
   @override
   Widget build(BuildContext context) {
@@ -48,21 +55,24 @@ class RoundRowItem extends StatelessWidget {
           if (isActive && onChanged != null)
             Expanded(child: SetRow(
               key: ValueKey('round-input-$roundIndex'),
-              setNumber: roundIndex + 1, isTimed: isTimed,
+              setNumber: roundIndex + 1,
+              isTimed: trackingMode == ExerciseTrackingMode.timed,
+              trackingMode: trackingMode,
               data: data,
               suggestion: suggestion,
               onChanged: onChanged!,
             ))
           else ...[
-            if (!isTimed) ...[
+            if (trackingMode == ExerciseTrackingMode.weightedReps) ...[
               Expanded(child: ReadOnlyField(label: 'WEIGHT',
                   value: data.weightKg > 0 ? '${fmtW(data.weightKg)} kg' : '—', dim: !isDone)),
               const SizedBox(width: 6),
             ],
             Expanded(child: ReadOnlyField(
-              label: isTimed ? 'DURATION' : 'REPS',
-              value: isTimed ? (data.durationSeconds > 0 ? fmtSec(data.durationSeconds) : '—')
-                             : (data.reps > 0 ? '${data.reps}' : '—'),
+              label: trackingMode == ExerciseTrackingMode.timed ? 'DURATION' : 'REPS',
+              value: trackingMode == ExerciseTrackingMode.timed
+                  ? (data.durationSeconds > 0 ? fmtSec(data.durationSeconds) : '—')
+                  : (data.reps > 0 ? '${data.reps}' : '—'),
               dim: !isDone,
             )),
             if (onEdit != null)
@@ -144,7 +154,9 @@ class CircuitExerciseSection extends StatelessWidget {
         ]),
         const SizedBox(height: 6),
         HistoryChipRow(
-          lastSets: lastSets, isTimed: isTimed,
+          lastSets: lastSets,
+          isTimed: isTimed,
+          trackingMode: exercise.exercise.mode,
           prKg: prKg, prDurationSeconds: prDurationSeconds,
           expanded: historyExpanded, onToggle: onToggleHistory,
         ),
@@ -155,7 +167,9 @@ class CircuitExerciseSection extends StatelessWidget {
             final isRoundDone = r < currentRound || (!isCurrentExercise && r < setData.length &&
                 (isTimed ? setData[r].durationSeconds > 0 : setData[r].reps > 0));
             return RoundRowItem(
-              roundIndex: r, isTimed: isTimed,
+              roundIndex: r,
+              isTimed: isTimed,
+              trackingMode: exercise.exercise.mode,
               isActive: isRoundActive,
               isDone: isRoundDone,
               data: r < setData.length ? setData[r] : SetData(weightKg: 0, reps: 0),

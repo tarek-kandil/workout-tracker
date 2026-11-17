@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../models/exercise_tracking_mode.dart';
 import '../../../models/weight_suggestion.dart';
 import '../models/session_models.dart';
 import '../session_formatters.dart';
@@ -8,6 +9,7 @@ import 'session_common.dart';
 class SetRowItem extends StatelessWidget {
   final int setIndex;
   final bool isTimed;
+  final ExerciseTrackingMode trackingMode;
   final bool isActive;
   final bool isDone;
   final bool isSkipped;
@@ -20,12 +22,17 @@ class SetRowItem extends StatelessWidget {
 
   const SetRowItem({
     super.key,
-    required this.setIndex, required this.isTimed,
+    required this.setIndex,
+    this.isTimed = false,
+    ExerciseTrackingMode? trackingMode,
     required this.isActive, required this.isDone, required this.isSkipped,
     required this.canSkip, required this.data,
     this.suggestion,
     required this.onChanged, required this.onSkip, this.onEdit,
-  });
+  }) : trackingMode = trackingMode ??
+            (isTimed
+                ? ExerciseTrackingMode.timed
+                : ExerciseTrackingMode.weightedReps);
 
   @override
   Widget build(BuildContext context) {
@@ -51,13 +58,15 @@ class SetRowItem extends StatelessWidget {
           if (isActive && onChanged != null)
             Expanded(child: SetRow(
               key: ValueKey('srinput-$setIndex'),
-              setNumber: setIndex + 1, isTimed: isTimed,
+              setNumber: setIndex + 1,
+              isTimed: trackingMode == ExerciseTrackingMode.timed,
+              trackingMode: trackingMode,
               data: data,
               suggestion: suggestion,
               onChanged: onChanged!,
             ))
           else ...[
-            if (!isTimed) ...[
+            if (trackingMode == ExerciseTrackingMode.weightedReps) ...[
               Expanded(child: ReadOnlyField(
                 label: 'WEIGHT',
                 value: isSkipped || data.weightKg == 0 ? '—' : '${fmtW(data.weightKg)} kg',
@@ -66,10 +75,11 @@ class SetRowItem extends StatelessWidget {
               const SizedBox(width: 6),
             ],
             Expanded(child: ReadOnlyField(
-              label: isTimed ? 'DURATION' : 'REPS',
+              label: trackingMode == ExerciseTrackingMode.timed ? 'DURATION' : 'REPS',
               value: isSkipped ? 'skip'
-                  : isTimed ? (data.durationSeconds > 0 ? fmtSec(data.durationSeconds) : '—')
-                  : (data.reps > 0 ? '${data.reps}' : '—'),
+                  : trackingMode == ExerciseTrackingMode.timed
+                      ? (data.durationSeconds > 0 ? fmtSec(data.durationSeconds) : '—')
+                      : (data.reps > 0 ? '${data.reps}' : '—'),
               dim: !isDone,
               strikethrough: isSkipped,
               accent: isSkipped ? Colors.orange : null,
@@ -89,17 +99,23 @@ class SetRowItem extends StatelessWidget {
 class SetRow extends StatefulWidget {
   final int setNumber;
   final bool isTimed;
+  final ExerciseTrackingMode trackingMode;
   final SetData data;
   final WeightSuggestion? suggestion;
   final void Function(SetData) onChanged;
 
   const SetRow({
     super.key,
-    required this.setNumber, required this.isTimed,
+    required this.setNumber,
+    this.isTimed = false,
+    ExerciseTrackingMode? trackingMode,
     required this.data,
     this.suggestion,
     required this.onChanged,
-  });
+  }) : trackingMode = trackingMode ??
+            (isTimed
+                ? ExerciseTrackingMode.timed
+                : ExerciseTrackingMode.weightedReps);
 
   @override
   State<SetRow> createState() => _SetRowState();
@@ -176,7 +192,9 @@ class _SetRowState extends State<SetRow> {
 
   @override
   Widget build(BuildContext context) {
-    final isTimed = widget.isTimed;
+    final mode = widget.trackingMode;
+    final isTimed = mode == ExerciseTrackingMode.timed;
+    final showWeight = mode == ExerciseTrackingMode.weightedReps;
     final dur = widget.data.durationSeconds;
     final sug = widget.suggestion;
     final sugType = sug?.type ?? SuggestionType.noHistory;
@@ -228,7 +246,7 @@ class _SetRowState extends State<SetRow> {
     }
 
     return Row(children: [
-      if (!isTimed) ...[
+      if (showWeight) ...[
         Expanded(
           child: TappableWeightField(
             label: '${fmtW(widget.data.weightKg)} kg',

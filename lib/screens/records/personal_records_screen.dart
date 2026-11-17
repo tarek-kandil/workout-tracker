@@ -60,6 +60,7 @@ class _PersonalRecordsScreenState extends ConsumerState<PersonalRecordsScreen> {
         name: exerciseName,
         category: category,
         isTimed: false,
+        trackingMode: 'weighted_reps',
         archived: false,
         muscleNeedsReview: false,
       ),
@@ -1051,6 +1052,7 @@ class _PersonalRecordsScreenState extends ConsumerState<PersonalRecordsScreen> {
             name: r.exerciseName,
             category: r.exerciseCategory,
             isTimed: r.isTimed,
+            trackingMode: r.trackingMode.dbValue,
             archived: false,
             muscleNeedsReview: false,
           ),
@@ -1915,7 +1917,7 @@ class _LiftRecordTile extends ConsumerWidget {
                             ],
                           ),
                           const SizedBox(height: 5),
-                          if (!record.isTimed)
+                          if (record.isWeightedReps)
                             Text(
                               'Est. 1RM ~${_fmtW(record.estimatedOneRm)} kg'
                               '${goal != null ? '  ·  Goal: ${_fmtW(goal!.targetWeightKg)} kg × ${goal!.targetReps}' : ''}',
@@ -1925,6 +1927,15 @@ class _LiftRecordTile extends ConsumerWidget {
                                 color: goal != null
                                     ? const Color(0xFF34D399)
                                     : Colors.white.withValues(alpha: 0.52),
+                              ),
+                            )
+                          else if (record.isBodyweightReps)
+                            Text(
+                              'Bodyweight · Max Reps',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white.withValues(alpha: 0.52),
                               ),
                             ),
                         ],
@@ -1957,7 +1968,9 @@ class _LiftRecordTile extends ConsumerWidget {
                           Text(
                             record.isTimed
                                 ? _fmtSec(record.maxDurationSeconds ?? 0)
-                                : '${_fmtW(record.maxWeightKg)} kg',
+                                : record.isBodyweightReps
+                                    ? '${record.maxReps ?? 0} reps'
+                                    : '${_fmtW(record.maxWeightKg)} kg',
                             style: const TextStyle(
                               fontSize: 13.5,
                               fontWeight: FontWeight.w800,
@@ -1967,7 +1980,7 @@ class _LiftRecordTile extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    if (!record.isTimed) ...[
+                    if (record.isWeightedReps) ...[
                       const SizedBox(width: 4),
                       IconButton(
                         icon: Icon(
@@ -1985,7 +1998,7 @@ class _LiftRecordTile extends ConsumerWidget {
                   ],
                 ),
                 // Spacious 3-column Working Weight Strip (5RM · 8RM · 10RM)
-                if (!record.isTimed && record.estimatedOneRm > 0) ...[
+                if (record.isWeightedReps && record.estimatedOneRm > 0) ...[
                   const SizedBox(height: 12),
                   Row(
                     children: [

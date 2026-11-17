@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../database/app_database.dart';
+import '../../../models/exercise_tracking_mode.dart';
 import '../../../providers/database_provider.dart';
 
 class ExerciseSwapSheet extends ConsumerStatefulWidget {
@@ -120,7 +121,7 @@ class _ExerciseSwapSheetState extends ConsumerState<ExerciseSwapSheet> {
                                   leading: const Icon(Icons.sync_alt_rounded),
                                   title: Text(variation.name),
                                   subtitle: Text(
-                                    variation.isTimed ? 'Timed' : 'Weighted',
+                                    variation.mode.shortLabel,
                                     style: const TextStyle(fontSize: 11),
                                   ),
                                   onTap: () =>

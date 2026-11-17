@@ -136,14 +136,15 @@ class _ExerciseHistoryScreenState
       appBar: AppBar(
         title: Text(pr.exerciseName),
         actions: [
-          IconButton(
-            icon: Icon(
-              _goalKg != null ? Icons.flag : Icons.flag_outlined,
-              color: _goalKg != null ? Colors.green : null,
+          if (pr.isWeightedReps)
+            IconButton(
+              icon: Icon(
+                _goalKg != null ? Icons.flag : Icons.flag_outlined,
+                color: _goalKg != null ? Colors.green : null,
+              ),
+              tooltip: 'Set Goal',
+              onPressed: _showGoalDialog,
             ),
-            tooltip: 'Set Goal',
-            onPressed: _showGoalDialog,
-          ),
         ],
       ),
       body: Stack(
@@ -160,23 +161,42 @@ class _ExerciseHistoryScreenState
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
                     child: Row(
                       children: [
-                        _StatBox(
-                          label: 'PR',
-                          value: '${_fmtW(pr.maxWeightKg)} kg',
-                          accent: Theme.of(context).colorScheme.primary,
-                        ),
-                        const SizedBox(width: 12),
-                        _StatBox(
-                          label: 'Est. 1RM',
-                          value: '~${_fmtW(pr.estimatedOneRm)} kg',
-                        ),
-                        if (_goalKg != null) ...[
+                        if (pr.isTimed)
+                          _StatBox(
+                            label: 'PR',
+                            value: () {
+                              final sec = pr.maxDurationSeconds ?? 0;
+                              final m = sec ~/ 60;
+                              final s = sec % 60;
+                              return '$m:${s.toString().padLeft(2, '0')}';
+                            }(),
+                            accent: Theme.of(context).colorScheme.primary,
+                          )
+                        else if (pr.isBodyweightReps)
+                          _StatBox(
+                            label: 'Rep PR',
+                            value: '${pr.maxReps ?? 0} reps',
+                            accent: Theme.of(context).colorScheme.primary,
+                          )
+                        else ...[
+                          _StatBox(
+                            label: 'PR',
+                            value: '${_fmtW(pr.maxWeightKg)} kg',
+                            accent: Theme.of(context).colorScheme.primary,
+                          ),
                           const SizedBox(width: 12),
                           _StatBox(
-                            label: 'Goal ($_goalReps reps)',
-                            value: '${_fmtW(_goalKg!)} kg',
-                            accent: Colors.green,
+                            label: 'Est. 1RM',
+                            value: '~${_fmtW(pr.estimatedOneRm)} kg',
                           ),
+                          if (_goalKg != null) ...[
+                            const SizedBox(width: 12),
+                            _StatBox(
+                              label: 'Goal ($_goalReps reps)',
+                              value: '${_fmtW(_goalKg!)} kg',
+                              accent: Colors.green,
+                            ),
+                          ],
                         ],
                       ],
                     ),
@@ -205,7 +225,7 @@ class _ExerciseHistoryScreenState
                   ),
 
                 // ── Rep-Max & Working Weight Table (Option 3) ─────────────
-                if (!pr.isTimed && pr.estimatedOneRm > 0)
+                if (pr.isWeightedReps && pr.estimatedOneRm > 0)
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
