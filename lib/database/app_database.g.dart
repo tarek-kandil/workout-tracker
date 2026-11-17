@@ -7291,6 +7291,1393 @@ class ExerciseVariationsCompanion extends UpdateCompanion<ExerciseVariation> {
   }
 }
 
+class $ChallengesTable extends Challenges
+    with TableInfo<$ChallengesTable, Challenge> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ChallengesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _exerciseIdMeta = const VerificationMeta(
+    'exerciseId',
+  );
+  @override
+  late final GeneratedColumn<int> exerciseId = GeneratedColumn<int>(
+    'exercise_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES exercises (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _targetWeightKgMeta = const VerificationMeta(
+    'targetWeightKg',
+  );
+  @override
+  late final GeneratedColumn<double> targetWeightKg = GeneratedColumn<double>(
+    'target_weight_kg',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _targetRepsMeta = const VerificationMeta(
+    'targetReps',
+  );
+  @override
+  late final GeneratedColumn<int> targetReps = GeneratedColumn<int>(
+    'target_reps',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _targetDurationSecondsMeta =
+      const VerificationMeta('targetDurationSeconds');
+  @override
+  late final GeneratedColumn<int> targetDurationSeconds = GeneratedColumn<int>(
+    'target_duration_seconds',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isCompletedMeta = const VerificationMeta(
+    'isCompleted',
+  );
+  @override
+  late final GeneratedColumn<bool> isCompleted = GeneratedColumn<bool>(
+    'is_completed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_completed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _completedAtMeta = const VerificationMeta(
+    'completedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> completedAt = GeneratedColumn<DateTime>(
+    'completed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    exerciseId,
+    targetWeightKg,
+    targetReps,
+    targetDurationSeconds,
+    isCompleted,
+    completedAt,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'challenges';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Challenge> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('exercise_id')) {
+      context.handle(
+        _exerciseIdMeta,
+        exerciseId.isAcceptableOrUnknown(data['exercise_id']!, _exerciseIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_exerciseIdMeta);
+    }
+    if (data.containsKey('target_weight_kg')) {
+      context.handle(
+        _targetWeightKgMeta,
+        targetWeightKg.isAcceptableOrUnknown(
+          data['target_weight_kg']!,
+          _targetWeightKgMeta,
+        ),
+      );
+    }
+    if (data.containsKey('target_reps')) {
+      context.handle(
+        _targetRepsMeta,
+        targetReps.isAcceptableOrUnknown(data['target_reps']!, _targetRepsMeta),
+      );
+    }
+    if (data.containsKey('target_duration_seconds')) {
+      context.handle(
+        _targetDurationSecondsMeta,
+        targetDurationSeconds.isAcceptableOrUnknown(
+          data['target_duration_seconds']!,
+          _targetDurationSecondsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('is_completed')) {
+      context.handle(
+        _isCompletedMeta,
+        isCompleted.isAcceptableOrUnknown(
+          data['is_completed']!,
+          _isCompletedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('completed_at')) {
+      context.handle(
+        _completedAtMeta,
+        completedAt.isAcceptableOrUnknown(
+          data['completed_at']!,
+          _completedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Challenge map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Challenge(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      exerciseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}exercise_id'],
+      )!,
+      targetWeightKg: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}target_weight_kg'],
+      ),
+      targetReps: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}target_reps'],
+      ),
+      targetDurationSeconds: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}target_duration_seconds'],
+      ),
+      isCompleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_completed'],
+      )!,
+      completedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}completed_at'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ChallengesTable createAlias(String alias) {
+    return $ChallengesTable(attachedDatabase, alias);
+  }
+}
+
+class Challenge extends DataClass implements Insertable<Challenge> {
+  final int id;
+  final int exerciseId;
+  final double? targetWeightKg;
+  final int? targetReps;
+  final int? targetDurationSeconds;
+  final bool isCompleted;
+  final DateTime? completedAt;
+  final DateTime createdAt;
+  const Challenge({
+    required this.id,
+    required this.exerciseId,
+    this.targetWeightKg,
+    this.targetReps,
+    this.targetDurationSeconds,
+    required this.isCompleted,
+    this.completedAt,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['exercise_id'] = Variable<int>(exerciseId);
+    if (!nullToAbsent || targetWeightKg != null) {
+      map['target_weight_kg'] = Variable<double>(targetWeightKg);
+    }
+    if (!nullToAbsent || targetReps != null) {
+      map['target_reps'] = Variable<int>(targetReps);
+    }
+    if (!nullToAbsent || targetDurationSeconds != null) {
+      map['target_duration_seconds'] = Variable<int>(targetDurationSeconds);
+    }
+    map['is_completed'] = Variable<bool>(isCompleted);
+    if (!nullToAbsent || completedAt != null) {
+      map['completed_at'] = Variable<DateTime>(completedAt);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  ChallengesCompanion toCompanion(bool nullToAbsent) {
+    return ChallengesCompanion(
+      id: Value(id),
+      exerciseId: Value(exerciseId),
+      targetWeightKg: targetWeightKg == null && nullToAbsent
+          ? const Value.absent()
+          : Value(targetWeightKg),
+      targetReps: targetReps == null && nullToAbsent
+          ? const Value.absent()
+          : Value(targetReps),
+      targetDurationSeconds: targetDurationSeconds == null && nullToAbsent
+          ? const Value.absent()
+          : Value(targetDurationSeconds),
+      isCompleted: Value(isCompleted),
+      completedAt: completedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completedAt),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory Challenge.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Challenge(
+      id: serializer.fromJson<int>(json['id']),
+      exerciseId: serializer.fromJson<int>(json['exerciseId']),
+      targetWeightKg: serializer.fromJson<double?>(json['targetWeightKg']),
+      targetReps: serializer.fromJson<int?>(json['targetReps']),
+      targetDurationSeconds: serializer.fromJson<int?>(
+        json['targetDurationSeconds'],
+      ),
+      isCompleted: serializer.fromJson<bool>(json['isCompleted']),
+      completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'exerciseId': serializer.toJson<int>(exerciseId),
+      'targetWeightKg': serializer.toJson<double?>(targetWeightKg),
+      'targetReps': serializer.toJson<int?>(targetReps),
+      'targetDurationSeconds': serializer.toJson<int?>(targetDurationSeconds),
+      'isCompleted': serializer.toJson<bool>(isCompleted),
+      'completedAt': serializer.toJson<DateTime?>(completedAt),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  Challenge copyWith({
+    int? id,
+    int? exerciseId,
+    Value<double?> targetWeightKg = const Value.absent(),
+    Value<int?> targetReps = const Value.absent(),
+    Value<int?> targetDurationSeconds = const Value.absent(),
+    bool? isCompleted,
+    Value<DateTime?> completedAt = const Value.absent(),
+    DateTime? createdAt,
+  }) => Challenge(
+    id: id ?? this.id,
+    exerciseId: exerciseId ?? this.exerciseId,
+    targetWeightKg: targetWeightKg.present
+        ? targetWeightKg.value
+        : this.targetWeightKg,
+    targetReps: targetReps.present ? targetReps.value : this.targetReps,
+    targetDurationSeconds: targetDurationSeconds.present
+        ? targetDurationSeconds.value
+        : this.targetDurationSeconds,
+    isCompleted: isCompleted ?? this.isCompleted,
+    completedAt: completedAt.present ? completedAt.value : this.completedAt,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  Challenge copyWithCompanion(ChallengesCompanion data) {
+    return Challenge(
+      id: data.id.present ? data.id.value : this.id,
+      exerciseId: data.exerciseId.present
+          ? data.exerciseId.value
+          : this.exerciseId,
+      targetWeightKg: data.targetWeightKg.present
+          ? data.targetWeightKg.value
+          : this.targetWeightKg,
+      targetReps: data.targetReps.present
+          ? data.targetReps.value
+          : this.targetReps,
+      targetDurationSeconds: data.targetDurationSeconds.present
+          ? data.targetDurationSeconds.value
+          : this.targetDurationSeconds,
+      isCompleted: data.isCompleted.present
+          ? data.isCompleted.value
+          : this.isCompleted,
+      completedAt: data.completedAt.present
+          ? data.completedAt.value
+          : this.completedAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Challenge(')
+          ..write('id: $id, ')
+          ..write('exerciseId: $exerciseId, ')
+          ..write('targetWeightKg: $targetWeightKg, ')
+          ..write('targetReps: $targetReps, ')
+          ..write('targetDurationSeconds: $targetDurationSeconds, ')
+          ..write('isCompleted: $isCompleted, ')
+          ..write('completedAt: $completedAt, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    exerciseId,
+    targetWeightKg,
+    targetReps,
+    targetDurationSeconds,
+    isCompleted,
+    completedAt,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Challenge &&
+          other.id == this.id &&
+          other.exerciseId == this.exerciseId &&
+          other.targetWeightKg == this.targetWeightKg &&
+          other.targetReps == this.targetReps &&
+          other.targetDurationSeconds == this.targetDurationSeconds &&
+          other.isCompleted == this.isCompleted &&
+          other.completedAt == this.completedAt &&
+          other.createdAt == this.createdAt);
+}
+
+class ChallengesCompanion extends UpdateCompanion<Challenge> {
+  final Value<int> id;
+  final Value<int> exerciseId;
+  final Value<double?> targetWeightKg;
+  final Value<int?> targetReps;
+  final Value<int?> targetDurationSeconds;
+  final Value<bool> isCompleted;
+  final Value<DateTime?> completedAt;
+  final Value<DateTime> createdAt;
+  const ChallengesCompanion({
+    this.id = const Value.absent(),
+    this.exerciseId = const Value.absent(),
+    this.targetWeightKg = const Value.absent(),
+    this.targetReps = const Value.absent(),
+    this.targetDurationSeconds = const Value.absent(),
+    this.isCompleted = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  ChallengesCompanion.insert({
+    this.id = const Value.absent(),
+    required int exerciseId,
+    this.targetWeightKg = const Value.absent(),
+    this.targetReps = const Value.absent(),
+    this.targetDurationSeconds = const Value.absent(),
+    this.isCompleted = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  }) : exerciseId = Value(exerciseId);
+  static Insertable<Challenge> custom({
+    Expression<int>? id,
+    Expression<int>? exerciseId,
+    Expression<double>? targetWeightKg,
+    Expression<int>? targetReps,
+    Expression<int>? targetDurationSeconds,
+    Expression<bool>? isCompleted,
+    Expression<DateTime>? completedAt,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (exerciseId != null) 'exercise_id': exerciseId,
+      if (targetWeightKg != null) 'target_weight_kg': targetWeightKg,
+      if (targetReps != null) 'target_reps': targetReps,
+      if (targetDurationSeconds != null)
+        'target_duration_seconds': targetDurationSeconds,
+      if (isCompleted != null) 'is_completed': isCompleted,
+      if (completedAt != null) 'completed_at': completedAt,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  ChallengesCompanion copyWith({
+    Value<int>? id,
+    Value<int>? exerciseId,
+    Value<double?>? targetWeightKg,
+    Value<int?>? targetReps,
+    Value<int?>? targetDurationSeconds,
+    Value<bool>? isCompleted,
+    Value<DateTime?>? completedAt,
+    Value<DateTime>? createdAt,
+  }) {
+    return ChallengesCompanion(
+      id: id ?? this.id,
+      exerciseId: exerciseId ?? this.exerciseId,
+      targetWeightKg: targetWeightKg ?? this.targetWeightKg,
+      targetReps: targetReps ?? this.targetReps,
+      targetDurationSeconds:
+          targetDurationSeconds ?? this.targetDurationSeconds,
+      isCompleted: isCompleted ?? this.isCompleted,
+      completedAt: completedAt ?? this.completedAt,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (exerciseId.present) {
+      map['exercise_id'] = Variable<int>(exerciseId.value);
+    }
+    if (targetWeightKg.present) {
+      map['target_weight_kg'] = Variable<double>(targetWeightKg.value);
+    }
+    if (targetReps.present) {
+      map['target_reps'] = Variable<int>(targetReps.value);
+    }
+    if (targetDurationSeconds.present) {
+      map['target_duration_seconds'] = Variable<int>(
+        targetDurationSeconds.value,
+      );
+    }
+    if (isCompleted.present) {
+      map['is_completed'] = Variable<bool>(isCompleted.value);
+    }
+    if (completedAt.present) {
+      map['completed_at'] = Variable<DateTime>(completedAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ChallengesCompanion(')
+          ..write('id: $id, ')
+          ..write('exerciseId: $exerciseId, ')
+          ..write('targetWeightKg: $targetWeightKg, ')
+          ..write('targetReps: $targetReps, ')
+          ..write('targetDurationSeconds: $targetDurationSeconds, ')
+          ..write('isCompleted: $isCompleted, ')
+          ..write('completedAt: $completedAt, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ChallengeAttemptsTable extends ChallengeAttempts
+    with TableInfo<$ChallengeAttemptsTable, ChallengeAttempt> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ChallengeAttemptsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _challengeIdMeta = const VerificationMeta(
+    'challengeId',
+  );
+  @override
+  late final GeneratedColumn<int> challengeId = GeneratedColumn<int>(
+    'challenge_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES challenges (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _weightKgMeta = const VerificationMeta(
+    'weightKg',
+  );
+  @override
+  late final GeneratedColumn<double> weightKg = GeneratedColumn<double>(
+    'weight_kg',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _repsMeta = const VerificationMeta('reps');
+  @override
+  late final GeneratedColumn<int> reps = GeneratedColumn<int>(
+    'reps',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _durationSecondsMeta = const VerificationMeta(
+    'durationSeconds',
+  );
+  @override
+  late final GeneratedColumn<int> durationSeconds = GeneratedColumn<int>(
+    'duration_seconds',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  @override
+  late final GeneratedColumn<DateTime> date = GeneratedColumn<DateTime>(
+    'date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    challengeId,
+    weightKg,
+    reps,
+    durationSeconds,
+    date,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'challenge_attempts';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ChallengeAttempt> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('challenge_id')) {
+      context.handle(
+        _challengeIdMeta,
+        challengeId.isAcceptableOrUnknown(
+          data['challenge_id']!,
+          _challengeIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_challengeIdMeta);
+    }
+    if (data.containsKey('weight_kg')) {
+      context.handle(
+        _weightKgMeta,
+        weightKg.isAcceptableOrUnknown(data['weight_kg']!, _weightKgMeta),
+      );
+    }
+    if (data.containsKey('reps')) {
+      context.handle(
+        _repsMeta,
+        reps.isAcceptableOrUnknown(data['reps']!, _repsMeta),
+      );
+    }
+    if (data.containsKey('duration_seconds')) {
+      context.handle(
+        _durationSecondsMeta,
+        durationSeconds.isAcceptableOrUnknown(
+          data['duration_seconds']!,
+          _durationSecondsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('date')) {
+      context.handle(
+        _dateMeta,
+        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ChallengeAttempt map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ChallengeAttempt(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      challengeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}challenge_id'],
+      )!,
+      weightKg: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}weight_kg'],
+      )!,
+      reps: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}reps'],
+      )!,
+      durationSeconds: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}duration_seconds'],
+      ),
+      date: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}date'],
+      )!,
+    );
+  }
+
+  @override
+  $ChallengeAttemptsTable createAlias(String alias) {
+    return $ChallengeAttemptsTable(attachedDatabase, alias);
+  }
+}
+
+class ChallengeAttempt extends DataClass
+    implements Insertable<ChallengeAttempt> {
+  final int id;
+  final int challengeId;
+  final double weightKg;
+  final int reps;
+  final int? durationSeconds;
+  final DateTime date;
+  const ChallengeAttempt({
+    required this.id,
+    required this.challengeId,
+    required this.weightKg,
+    required this.reps,
+    this.durationSeconds,
+    required this.date,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['challenge_id'] = Variable<int>(challengeId);
+    map['weight_kg'] = Variable<double>(weightKg);
+    map['reps'] = Variable<int>(reps);
+    if (!nullToAbsent || durationSeconds != null) {
+      map['duration_seconds'] = Variable<int>(durationSeconds);
+    }
+    map['date'] = Variable<DateTime>(date);
+    return map;
+  }
+
+  ChallengeAttemptsCompanion toCompanion(bool nullToAbsent) {
+    return ChallengeAttemptsCompanion(
+      id: Value(id),
+      challengeId: Value(challengeId),
+      weightKg: Value(weightKg),
+      reps: Value(reps),
+      durationSeconds: durationSeconds == null && nullToAbsent
+          ? const Value.absent()
+          : Value(durationSeconds),
+      date: Value(date),
+    );
+  }
+
+  factory ChallengeAttempt.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ChallengeAttempt(
+      id: serializer.fromJson<int>(json['id']),
+      challengeId: serializer.fromJson<int>(json['challengeId']),
+      weightKg: serializer.fromJson<double>(json['weightKg']),
+      reps: serializer.fromJson<int>(json['reps']),
+      durationSeconds: serializer.fromJson<int?>(json['durationSeconds']),
+      date: serializer.fromJson<DateTime>(json['date']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'challengeId': serializer.toJson<int>(challengeId),
+      'weightKg': serializer.toJson<double>(weightKg),
+      'reps': serializer.toJson<int>(reps),
+      'durationSeconds': serializer.toJson<int?>(durationSeconds),
+      'date': serializer.toJson<DateTime>(date),
+    };
+  }
+
+  ChallengeAttempt copyWith({
+    int? id,
+    int? challengeId,
+    double? weightKg,
+    int? reps,
+    Value<int?> durationSeconds = const Value.absent(),
+    DateTime? date,
+  }) => ChallengeAttempt(
+    id: id ?? this.id,
+    challengeId: challengeId ?? this.challengeId,
+    weightKg: weightKg ?? this.weightKg,
+    reps: reps ?? this.reps,
+    durationSeconds: durationSeconds.present
+        ? durationSeconds.value
+        : this.durationSeconds,
+    date: date ?? this.date,
+  );
+  ChallengeAttempt copyWithCompanion(ChallengeAttemptsCompanion data) {
+    return ChallengeAttempt(
+      id: data.id.present ? data.id.value : this.id,
+      challengeId: data.challengeId.present
+          ? data.challengeId.value
+          : this.challengeId,
+      weightKg: data.weightKg.present ? data.weightKg.value : this.weightKg,
+      reps: data.reps.present ? data.reps.value : this.reps,
+      durationSeconds: data.durationSeconds.present
+          ? data.durationSeconds.value
+          : this.durationSeconds,
+      date: data.date.present ? data.date.value : this.date,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ChallengeAttempt(')
+          ..write('id: $id, ')
+          ..write('challengeId: $challengeId, ')
+          ..write('weightKg: $weightKg, ')
+          ..write('reps: $reps, ')
+          ..write('durationSeconds: $durationSeconds, ')
+          ..write('date: $date')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, challengeId, weightKg, reps, durationSeconds, date);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ChallengeAttempt &&
+          other.id == this.id &&
+          other.challengeId == this.challengeId &&
+          other.weightKg == this.weightKg &&
+          other.reps == this.reps &&
+          other.durationSeconds == this.durationSeconds &&
+          other.date == this.date);
+}
+
+class ChallengeAttemptsCompanion extends UpdateCompanion<ChallengeAttempt> {
+  final Value<int> id;
+  final Value<int> challengeId;
+  final Value<double> weightKg;
+  final Value<int> reps;
+  final Value<int?> durationSeconds;
+  final Value<DateTime> date;
+  const ChallengeAttemptsCompanion({
+    this.id = const Value.absent(),
+    this.challengeId = const Value.absent(),
+    this.weightKg = const Value.absent(),
+    this.reps = const Value.absent(),
+    this.durationSeconds = const Value.absent(),
+    this.date = const Value.absent(),
+  });
+  ChallengeAttemptsCompanion.insert({
+    this.id = const Value.absent(),
+    required int challengeId,
+    this.weightKg = const Value.absent(),
+    this.reps = const Value.absent(),
+    this.durationSeconds = const Value.absent(),
+    this.date = const Value.absent(),
+  }) : challengeId = Value(challengeId);
+  static Insertable<ChallengeAttempt> custom({
+    Expression<int>? id,
+    Expression<int>? challengeId,
+    Expression<double>? weightKg,
+    Expression<int>? reps,
+    Expression<int>? durationSeconds,
+    Expression<DateTime>? date,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (challengeId != null) 'challenge_id': challengeId,
+      if (weightKg != null) 'weight_kg': weightKg,
+      if (reps != null) 'reps': reps,
+      if (durationSeconds != null) 'duration_seconds': durationSeconds,
+      if (date != null) 'date': date,
+    });
+  }
+
+  ChallengeAttemptsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? challengeId,
+    Value<double>? weightKg,
+    Value<int>? reps,
+    Value<int?>? durationSeconds,
+    Value<DateTime>? date,
+  }) {
+    return ChallengeAttemptsCompanion(
+      id: id ?? this.id,
+      challengeId: challengeId ?? this.challengeId,
+      weightKg: weightKg ?? this.weightKg,
+      reps: reps ?? this.reps,
+      durationSeconds: durationSeconds ?? this.durationSeconds,
+      date: date ?? this.date,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (challengeId.present) {
+      map['challenge_id'] = Variable<int>(challengeId.value);
+    }
+    if (weightKg.present) {
+      map['weight_kg'] = Variable<double>(weightKg.value);
+    }
+    if (reps.present) {
+      map['reps'] = Variable<int>(reps.value);
+    }
+    if (durationSeconds.present) {
+      map['duration_seconds'] = Variable<int>(durationSeconds.value);
+    }
+    if (date.present) {
+      map['date'] = Variable<DateTime>(date.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ChallengeAttemptsCompanion(')
+          ..write('id: $id, ')
+          ..write('challengeId: $challengeId, ')
+          ..write('weightKg: $weightKg, ')
+          ..write('reps: $reps, ')
+          ..write('durationSeconds: $durationSeconds, ')
+          ..write('date: $date')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ChallengeMilestonesTable extends ChallengeMilestones
+    with TableInfo<$ChallengeMilestonesTable, ChallengeMilestone> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ChallengeMilestonesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _challengeIdMeta = const VerificationMeta(
+    'challengeId',
+  );
+  @override
+  late final GeneratedColumn<int> challengeId = GeneratedColumn<int>(
+    'challenge_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES challenges (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _targetWeightKgMeta = const VerificationMeta(
+    'targetWeightKg',
+  );
+  @override
+  late final GeneratedColumn<double> targetWeightKg = GeneratedColumn<double>(
+    'target_weight_kg',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _targetRepsMeta = const VerificationMeta(
+    'targetReps',
+  );
+  @override
+  late final GeneratedColumn<int> targetReps = GeneratedColumn<int>(
+    'target_reps',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _targetDurationSecondsMeta =
+      const VerificationMeta('targetDurationSeconds');
+  @override
+  late final GeneratedColumn<int> targetDurationSeconds = GeneratedColumn<int>(
+    'target_duration_seconds',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _achievedAtMeta = const VerificationMeta(
+    'achievedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> achievedAt = GeneratedColumn<DateTime>(
+    'achieved_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    challengeId,
+    targetWeightKg,
+    targetReps,
+    targetDurationSeconds,
+    achievedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'challenge_milestones';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ChallengeMilestone> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('challenge_id')) {
+      context.handle(
+        _challengeIdMeta,
+        challengeId.isAcceptableOrUnknown(
+          data['challenge_id']!,
+          _challengeIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_challengeIdMeta);
+    }
+    if (data.containsKey('target_weight_kg')) {
+      context.handle(
+        _targetWeightKgMeta,
+        targetWeightKg.isAcceptableOrUnknown(
+          data['target_weight_kg']!,
+          _targetWeightKgMeta,
+        ),
+      );
+    }
+    if (data.containsKey('target_reps')) {
+      context.handle(
+        _targetRepsMeta,
+        targetReps.isAcceptableOrUnknown(data['target_reps']!, _targetRepsMeta),
+      );
+    }
+    if (data.containsKey('target_duration_seconds')) {
+      context.handle(
+        _targetDurationSecondsMeta,
+        targetDurationSeconds.isAcceptableOrUnknown(
+          data['target_duration_seconds']!,
+          _targetDurationSecondsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('achieved_at')) {
+      context.handle(
+        _achievedAtMeta,
+        achievedAt.isAcceptableOrUnknown(data['achieved_at']!, _achievedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ChallengeMilestone map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ChallengeMilestone(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      challengeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}challenge_id'],
+      )!,
+      targetWeightKg: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}target_weight_kg'],
+      ),
+      targetReps: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}target_reps'],
+      ),
+      targetDurationSeconds: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}target_duration_seconds'],
+      ),
+      achievedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}achieved_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ChallengeMilestonesTable createAlias(String alias) {
+    return $ChallengeMilestonesTable(attachedDatabase, alias);
+  }
+}
+
+class ChallengeMilestone extends DataClass
+    implements Insertable<ChallengeMilestone> {
+  final int id;
+  final int challengeId;
+  final double? targetWeightKg;
+  final int? targetReps;
+  final int? targetDurationSeconds;
+  final DateTime achievedAt;
+  const ChallengeMilestone({
+    required this.id,
+    required this.challengeId,
+    this.targetWeightKg,
+    this.targetReps,
+    this.targetDurationSeconds,
+    required this.achievedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['challenge_id'] = Variable<int>(challengeId);
+    if (!nullToAbsent || targetWeightKg != null) {
+      map['target_weight_kg'] = Variable<double>(targetWeightKg);
+    }
+    if (!nullToAbsent || targetReps != null) {
+      map['target_reps'] = Variable<int>(targetReps);
+    }
+    if (!nullToAbsent || targetDurationSeconds != null) {
+      map['target_duration_seconds'] = Variable<int>(targetDurationSeconds);
+    }
+    map['achieved_at'] = Variable<DateTime>(achievedAt);
+    return map;
+  }
+
+  ChallengeMilestonesCompanion toCompanion(bool nullToAbsent) {
+    return ChallengeMilestonesCompanion(
+      id: Value(id),
+      challengeId: Value(challengeId),
+      targetWeightKg: targetWeightKg == null && nullToAbsent
+          ? const Value.absent()
+          : Value(targetWeightKg),
+      targetReps: targetReps == null && nullToAbsent
+          ? const Value.absent()
+          : Value(targetReps),
+      targetDurationSeconds: targetDurationSeconds == null && nullToAbsent
+          ? const Value.absent()
+          : Value(targetDurationSeconds),
+      achievedAt: Value(achievedAt),
+    );
+  }
+
+  factory ChallengeMilestone.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ChallengeMilestone(
+      id: serializer.fromJson<int>(json['id']),
+      challengeId: serializer.fromJson<int>(json['challengeId']),
+      targetWeightKg: serializer.fromJson<double?>(json['targetWeightKg']),
+      targetReps: serializer.fromJson<int?>(json['targetReps']),
+      targetDurationSeconds: serializer.fromJson<int?>(
+        json['targetDurationSeconds'],
+      ),
+      achievedAt: serializer.fromJson<DateTime>(json['achievedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'challengeId': serializer.toJson<int>(challengeId),
+      'targetWeightKg': serializer.toJson<double?>(targetWeightKg),
+      'targetReps': serializer.toJson<int?>(targetReps),
+      'targetDurationSeconds': serializer.toJson<int?>(targetDurationSeconds),
+      'achievedAt': serializer.toJson<DateTime>(achievedAt),
+    };
+  }
+
+  ChallengeMilestone copyWith({
+    int? id,
+    int? challengeId,
+    Value<double?> targetWeightKg = const Value.absent(),
+    Value<int?> targetReps = const Value.absent(),
+    Value<int?> targetDurationSeconds = const Value.absent(),
+    DateTime? achievedAt,
+  }) => ChallengeMilestone(
+    id: id ?? this.id,
+    challengeId: challengeId ?? this.challengeId,
+    targetWeightKg: targetWeightKg.present
+        ? targetWeightKg.value
+        : this.targetWeightKg,
+    targetReps: targetReps.present ? targetReps.value : this.targetReps,
+    targetDurationSeconds: targetDurationSeconds.present
+        ? targetDurationSeconds.value
+        : this.targetDurationSeconds,
+    achievedAt: achievedAt ?? this.achievedAt,
+  );
+  ChallengeMilestone copyWithCompanion(ChallengeMilestonesCompanion data) {
+    return ChallengeMilestone(
+      id: data.id.present ? data.id.value : this.id,
+      challengeId: data.challengeId.present
+          ? data.challengeId.value
+          : this.challengeId,
+      targetWeightKg: data.targetWeightKg.present
+          ? data.targetWeightKg.value
+          : this.targetWeightKg,
+      targetReps: data.targetReps.present
+          ? data.targetReps.value
+          : this.targetReps,
+      targetDurationSeconds: data.targetDurationSeconds.present
+          ? data.targetDurationSeconds.value
+          : this.targetDurationSeconds,
+      achievedAt: data.achievedAt.present
+          ? data.achievedAt.value
+          : this.achievedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ChallengeMilestone(')
+          ..write('id: $id, ')
+          ..write('challengeId: $challengeId, ')
+          ..write('targetWeightKg: $targetWeightKg, ')
+          ..write('targetReps: $targetReps, ')
+          ..write('targetDurationSeconds: $targetDurationSeconds, ')
+          ..write('achievedAt: $achievedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    challengeId,
+    targetWeightKg,
+    targetReps,
+    targetDurationSeconds,
+    achievedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ChallengeMilestone &&
+          other.id == this.id &&
+          other.challengeId == this.challengeId &&
+          other.targetWeightKg == this.targetWeightKg &&
+          other.targetReps == this.targetReps &&
+          other.targetDurationSeconds == this.targetDurationSeconds &&
+          other.achievedAt == this.achievedAt);
+}
+
+class ChallengeMilestonesCompanion extends UpdateCompanion<ChallengeMilestone> {
+  final Value<int> id;
+  final Value<int> challengeId;
+  final Value<double?> targetWeightKg;
+  final Value<int?> targetReps;
+  final Value<int?> targetDurationSeconds;
+  final Value<DateTime> achievedAt;
+  const ChallengeMilestonesCompanion({
+    this.id = const Value.absent(),
+    this.challengeId = const Value.absent(),
+    this.targetWeightKg = const Value.absent(),
+    this.targetReps = const Value.absent(),
+    this.targetDurationSeconds = const Value.absent(),
+    this.achievedAt = const Value.absent(),
+  });
+  ChallengeMilestonesCompanion.insert({
+    this.id = const Value.absent(),
+    required int challengeId,
+    this.targetWeightKg = const Value.absent(),
+    this.targetReps = const Value.absent(),
+    this.targetDurationSeconds = const Value.absent(),
+    this.achievedAt = const Value.absent(),
+  }) : challengeId = Value(challengeId);
+  static Insertable<ChallengeMilestone> custom({
+    Expression<int>? id,
+    Expression<int>? challengeId,
+    Expression<double>? targetWeightKg,
+    Expression<int>? targetReps,
+    Expression<int>? targetDurationSeconds,
+    Expression<DateTime>? achievedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (challengeId != null) 'challenge_id': challengeId,
+      if (targetWeightKg != null) 'target_weight_kg': targetWeightKg,
+      if (targetReps != null) 'target_reps': targetReps,
+      if (targetDurationSeconds != null)
+        'target_duration_seconds': targetDurationSeconds,
+      if (achievedAt != null) 'achieved_at': achievedAt,
+    });
+  }
+
+  ChallengeMilestonesCompanion copyWith({
+    Value<int>? id,
+    Value<int>? challengeId,
+    Value<double?>? targetWeightKg,
+    Value<int?>? targetReps,
+    Value<int?>? targetDurationSeconds,
+    Value<DateTime>? achievedAt,
+  }) {
+    return ChallengeMilestonesCompanion(
+      id: id ?? this.id,
+      challengeId: challengeId ?? this.challengeId,
+      targetWeightKg: targetWeightKg ?? this.targetWeightKg,
+      targetReps: targetReps ?? this.targetReps,
+      targetDurationSeconds:
+          targetDurationSeconds ?? this.targetDurationSeconds,
+      achievedAt: achievedAt ?? this.achievedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (challengeId.present) {
+      map['challenge_id'] = Variable<int>(challengeId.value);
+    }
+    if (targetWeightKg.present) {
+      map['target_weight_kg'] = Variable<double>(targetWeightKg.value);
+    }
+    if (targetReps.present) {
+      map['target_reps'] = Variable<int>(targetReps.value);
+    }
+    if (targetDurationSeconds.present) {
+      map['target_duration_seconds'] = Variable<int>(
+        targetDurationSeconds.value,
+      );
+    }
+    if (achievedAt.present) {
+      map['achieved_at'] = Variable<DateTime>(achievedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ChallengeMilestonesCompanion(')
+          ..write('id: $id, ')
+          ..write('challengeId: $challengeId, ')
+          ..write('targetWeightKg: $targetWeightKg, ')
+          ..write('targetReps: $targetReps, ')
+          ..write('targetDurationSeconds: $targetDurationSeconds, ')
+          ..write('achievedAt: $achievedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -7318,6 +8705,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ExerciseNotesTable exerciseNotes = $ExerciseNotesTable(this);
   late final $ExerciseVariationsTable exerciseVariations =
       $ExerciseVariationsTable(this);
+  late final $ChallengesTable challenges = $ChallengesTable(this);
+  late final $ChallengeAttemptsTable challengeAttempts =
+      $ChallengeAttemptsTable(this);
+  late final $ChallengeMilestonesTable challengeMilestones =
+      $ChallengeMilestonesTable(this);
   late final ExercisesDao exercisesDao = ExercisesDao(this as AppDatabase);
   late final ProgramsDao programsDao = ProgramsDao(this as AppDatabase);
   late final SessionsDao sessionsDao = SessionsDao(this as AppDatabase);
@@ -7335,6 +8727,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final MuscleVolumeDao muscleVolumeDao = MuscleVolumeDao(
     this as AppDatabase,
   );
+  late final ChallengesDao challengesDao = ChallengesDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -7355,6 +8748,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     exerciseMuscles,
     exerciseNotes,
     exerciseVariations,
+    challenges,
+    challengeAttempts,
+    challengeMilestones,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -7378,6 +8774,27 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('exercise_variations', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'exercises',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('challenges', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'challenges',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('challenge_attempts', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'challenges',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('challenge_milestones', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -7548,6 +8965,24 @@ final class $$ExercisesTableReferences
     final cache = $_typedResult.readTableOrNull(
       _exerciseVariationAlternativesTable($_db),
     );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$ChallengesTable, List<Challenge>>
+  _challengesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.challenges,
+    aliasName: $_aliasNameGenerator(db.exercises.id, db.challenges.exerciseId),
+  );
+
+  $$ChallengesTableProcessedTableManager get challengesRefs {
+    final manager = $$ChallengesTableTableManager(
+      $_db,
+      $_db.challenges,
+    ).filter((f) => f.exerciseId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_challengesRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -7749,6 +9184,31 @@ class $$ExercisesTableFilterComposer
           }) => $$ExerciseVariationsTableFilterComposer(
             $db: $db,
             $table: $db.exerciseVariations,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> challengesRefs(
+    Expression<bool> Function($$ChallengesTableFilterComposer f) f,
+  ) {
+    final $$ChallengesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.challenges,
+      getReferencedColumn: (t) => t.exerciseId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChallengesTableFilterComposer(
+            $db: $db,
+            $table: $db.challenges,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -8008,6 +9468,31 @@ class $$ExercisesTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> challengesRefs<T extends Object>(
+    Expression<T> Function($$ChallengesTableAnnotationComposer a) f,
+  ) {
+    final $$ChallengesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.challenges,
+      getReferencedColumn: (t) => t.exerciseId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChallengesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.challenges,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ExercisesTableTableManager
@@ -8030,6 +9515,7 @@ class $$ExercisesTableTableManager
             bool exerciseNotesRefs,
             bool exerciseVariationSources,
             bool exerciseVariationAlternatives,
+            bool challengesRefs,
           })
         > {
   $$ExercisesTableTableManager(_$AppDatabase db, $ExercisesTable table)
@@ -8103,6 +9589,7 @@ class $$ExercisesTableTableManager
                 exerciseNotesRefs = false,
                 exerciseVariationSources = false,
                 exerciseVariationAlternatives = false,
+                challengesRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -8113,6 +9600,7 @@ class $$ExercisesTableTableManager
                     if (exerciseNotesRefs) db.exerciseNotes,
                     if (exerciseVariationSources) db.exerciseVariations,
                     if (exerciseVariationAlternatives) db.exerciseVariations,
+                    if (challengesRefs) db.challenges,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -8243,6 +9731,27 @@ class $$ExercisesTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (challengesRefs)
+                        await $_getPrefetchedData<
+                          Exercise,
+                          $ExercisesTable,
+                          Challenge
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ExercisesTableReferences
+                              ._challengesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ExercisesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).challengesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.exerciseId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -8270,6 +9779,7 @@ typedef $$ExercisesTableProcessedTableManager =
         bool exerciseNotesRefs,
         bool exerciseVariationSources,
         bool exerciseVariationAlternatives,
+        bool challengesRefs,
       })
     >;
 typedef $$ProgramsTableCreateCompanionBuilder =
@@ -13915,6 +15425,1314 @@ typedef $$ExerciseVariationsTableProcessedTableManager =
       ExerciseVariation,
       PrefetchHooks Function({bool exerciseId, bool variationExerciseId})
     >;
+typedef $$ChallengesTableCreateCompanionBuilder =
+    ChallengesCompanion Function({
+      Value<int> id,
+      required int exerciseId,
+      Value<double?> targetWeightKg,
+      Value<int?> targetReps,
+      Value<int?> targetDurationSeconds,
+      Value<bool> isCompleted,
+      Value<DateTime?> completedAt,
+      Value<DateTime> createdAt,
+    });
+typedef $$ChallengesTableUpdateCompanionBuilder =
+    ChallengesCompanion Function({
+      Value<int> id,
+      Value<int> exerciseId,
+      Value<double?> targetWeightKg,
+      Value<int?> targetReps,
+      Value<int?> targetDurationSeconds,
+      Value<bool> isCompleted,
+      Value<DateTime?> completedAt,
+      Value<DateTime> createdAt,
+    });
+
+final class $$ChallengesTableReferences
+    extends BaseReferences<_$AppDatabase, $ChallengesTable, Challenge> {
+  $$ChallengesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $ExercisesTable _exerciseIdTable(_$AppDatabase db) =>
+      db.exercises.createAlias(
+        $_aliasNameGenerator(db.challenges.exerciseId, db.exercises.id),
+      );
+
+  $$ExercisesTableProcessedTableManager get exerciseId {
+    final $_column = $_itemColumn<int>('exercise_id')!;
+
+    final manager = $$ExercisesTableTableManager(
+      $_db,
+      $_db.exercises,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_exerciseIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$ChallengeAttemptsTable, List<ChallengeAttempt>>
+  _challengeAttemptsRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.challengeAttempts,
+        aliasName: $_aliasNameGenerator(
+          db.challenges.id,
+          db.challengeAttempts.challengeId,
+        ),
+      );
+
+  $$ChallengeAttemptsTableProcessedTableManager get challengeAttemptsRefs {
+    final manager = $$ChallengeAttemptsTableTableManager(
+      $_db,
+      $_db.challengeAttempts,
+    ).filter((f) => f.challengeId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _challengeAttemptsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $ChallengeMilestonesTable,
+    List<ChallengeMilestone>
+  >
+  _challengeMilestonesRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.challengeMilestones,
+        aliasName: $_aliasNameGenerator(
+          db.challenges.id,
+          db.challengeMilestones.challengeId,
+        ),
+      );
+
+  $$ChallengeMilestonesTableProcessedTableManager get challengeMilestonesRefs {
+    final manager = $$ChallengeMilestonesTableTableManager(
+      $_db,
+      $_db.challengeMilestones,
+    ).filter((f) => f.challengeId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _challengeMilestonesRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$ChallengesTableFilterComposer
+    extends Composer<_$AppDatabase, $ChallengesTable> {
+  $$ChallengesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get targetWeightKg => $composableBuilder(
+    column: $table.targetWeightKg,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get targetReps => $composableBuilder(
+    column: $table.targetReps,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get targetDurationSeconds => $composableBuilder(
+    column: $table.targetDurationSeconds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isCompleted => $composableBuilder(
+    column: $table.isCompleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ExercisesTableFilterComposer get exerciseId {
+    final $$ExercisesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.exerciseId,
+      referencedTable: $db.exercises,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExercisesTableFilterComposer(
+            $db: $db,
+            $table: $db.exercises,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> challengeAttemptsRefs(
+    Expression<bool> Function($$ChallengeAttemptsTableFilterComposer f) f,
+  ) {
+    final $$ChallengeAttemptsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.challengeAttempts,
+      getReferencedColumn: (t) => t.challengeId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChallengeAttemptsTableFilterComposer(
+            $db: $db,
+            $table: $db.challengeAttempts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> challengeMilestonesRefs(
+    Expression<bool> Function($$ChallengeMilestonesTableFilterComposer f) f,
+  ) {
+    final $$ChallengeMilestonesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.challengeMilestones,
+      getReferencedColumn: (t) => t.challengeId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChallengeMilestonesTableFilterComposer(
+            $db: $db,
+            $table: $db.challengeMilestones,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$ChallengesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ChallengesTable> {
+  $$ChallengesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get targetWeightKg => $composableBuilder(
+    column: $table.targetWeightKg,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get targetReps => $composableBuilder(
+    column: $table.targetReps,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get targetDurationSeconds => $composableBuilder(
+    column: $table.targetDurationSeconds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isCompleted => $composableBuilder(
+    column: $table.isCompleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ExercisesTableOrderingComposer get exerciseId {
+    final $$ExercisesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.exerciseId,
+      referencedTable: $db.exercises,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExercisesTableOrderingComposer(
+            $db: $db,
+            $table: $db.exercises,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ChallengesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ChallengesTable> {
+  $$ChallengesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<double> get targetWeightKg => $composableBuilder(
+    column: $table.targetWeightKg,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get targetReps => $composableBuilder(
+    column: $table.targetReps,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get targetDurationSeconds => $composableBuilder(
+    column: $table.targetDurationSeconds,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isCompleted => $composableBuilder(
+    column: $table.isCompleted,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$ExercisesTableAnnotationComposer get exerciseId {
+    final $$ExercisesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.exerciseId,
+      referencedTable: $db.exercises,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExercisesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.exercises,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> challengeAttemptsRefs<T extends Object>(
+    Expression<T> Function($$ChallengeAttemptsTableAnnotationComposer a) f,
+  ) {
+    final $$ChallengeAttemptsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.challengeAttempts,
+          getReferencedColumn: (t) => t.challengeId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ChallengeAttemptsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.challengeAttempts,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> challengeMilestonesRefs<T extends Object>(
+    Expression<T> Function($$ChallengeMilestonesTableAnnotationComposer a) f,
+  ) {
+    final $$ChallengeMilestonesTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.challengeMilestones,
+          getReferencedColumn: (t) => t.challengeId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ChallengeMilestonesTableAnnotationComposer(
+                $db: $db,
+                $table: $db.challengeMilestones,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$ChallengesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ChallengesTable,
+          Challenge,
+          $$ChallengesTableFilterComposer,
+          $$ChallengesTableOrderingComposer,
+          $$ChallengesTableAnnotationComposer,
+          $$ChallengesTableCreateCompanionBuilder,
+          $$ChallengesTableUpdateCompanionBuilder,
+          (Challenge, $$ChallengesTableReferences),
+          Challenge,
+          PrefetchHooks Function({
+            bool exerciseId,
+            bool challengeAttemptsRefs,
+            bool challengeMilestonesRefs,
+          })
+        > {
+  $$ChallengesTableTableManager(_$AppDatabase db, $ChallengesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ChallengesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ChallengesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ChallengesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> exerciseId = const Value.absent(),
+                Value<double?> targetWeightKg = const Value.absent(),
+                Value<int?> targetReps = const Value.absent(),
+                Value<int?> targetDurationSeconds = const Value.absent(),
+                Value<bool> isCompleted = const Value.absent(),
+                Value<DateTime?> completedAt = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => ChallengesCompanion(
+                id: id,
+                exerciseId: exerciseId,
+                targetWeightKg: targetWeightKg,
+                targetReps: targetReps,
+                targetDurationSeconds: targetDurationSeconds,
+                isCompleted: isCompleted,
+                completedAt: completedAt,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int exerciseId,
+                Value<double?> targetWeightKg = const Value.absent(),
+                Value<int?> targetReps = const Value.absent(),
+                Value<int?> targetDurationSeconds = const Value.absent(),
+                Value<bool> isCompleted = const Value.absent(),
+                Value<DateTime?> completedAt = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => ChallengesCompanion.insert(
+                id: id,
+                exerciseId: exerciseId,
+                targetWeightKg: targetWeightKg,
+                targetReps: targetReps,
+                targetDurationSeconds: targetDurationSeconds,
+                isCompleted: isCompleted,
+                completedAt: completedAt,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$ChallengesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({
+                exerciseId = false,
+                challengeAttemptsRefs = false,
+                challengeMilestonesRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (challengeAttemptsRefs) db.challengeAttempts,
+                    if (challengeMilestonesRefs) db.challengeMilestones,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (exerciseId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.exerciseId,
+                                    referencedTable: $$ChallengesTableReferences
+                                        ._exerciseIdTable(db),
+                                    referencedColumn:
+                                        $$ChallengesTableReferences
+                                            ._exerciseIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (challengeAttemptsRefs)
+                        await $_getPrefetchedData<
+                          Challenge,
+                          $ChallengesTable,
+                          ChallengeAttempt
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ChallengesTableReferences
+                              ._challengeAttemptsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ChallengesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).challengeAttemptsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.challengeId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (challengeMilestonesRefs)
+                        await $_getPrefetchedData<
+                          Challenge,
+                          $ChallengesTable,
+                          ChallengeMilestone
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ChallengesTableReferences
+                              ._challengeMilestonesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ChallengesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).challengeMilestonesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.challengeId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$ChallengesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ChallengesTable,
+      Challenge,
+      $$ChallengesTableFilterComposer,
+      $$ChallengesTableOrderingComposer,
+      $$ChallengesTableAnnotationComposer,
+      $$ChallengesTableCreateCompanionBuilder,
+      $$ChallengesTableUpdateCompanionBuilder,
+      (Challenge, $$ChallengesTableReferences),
+      Challenge,
+      PrefetchHooks Function({
+        bool exerciseId,
+        bool challengeAttemptsRefs,
+        bool challengeMilestonesRefs,
+      })
+    >;
+typedef $$ChallengeAttemptsTableCreateCompanionBuilder =
+    ChallengeAttemptsCompanion Function({
+      Value<int> id,
+      required int challengeId,
+      Value<double> weightKg,
+      Value<int> reps,
+      Value<int?> durationSeconds,
+      Value<DateTime> date,
+    });
+typedef $$ChallengeAttemptsTableUpdateCompanionBuilder =
+    ChallengeAttemptsCompanion Function({
+      Value<int> id,
+      Value<int> challengeId,
+      Value<double> weightKg,
+      Value<int> reps,
+      Value<int?> durationSeconds,
+      Value<DateTime> date,
+    });
+
+final class $$ChallengeAttemptsTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $ChallengeAttemptsTable,
+          ChallengeAttempt
+        > {
+  $$ChallengeAttemptsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ChallengesTable _challengeIdTable(_$AppDatabase db) =>
+      db.challenges.createAlias(
+        $_aliasNameGenerator(
+          db.challengeAttempts.challengeId,
+          db.challenges.id,
+        ),
+      );
+
+  $$ChallengesTableProcessedTableManager get challengeId {
+    final $_column = $_itemColumn<int>('challenge_id')!;
+
+    final manager = $$ChallengesTableTableManager(
+      $_db,
+      $_db.challenges,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_challengeIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ChallengeAttemptsTableFilterComposer
+    extends Composer<_$AppDatabase, $ChallengeAttemptsTable> {
+  $$ChallengeAttemptsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get weightKg => $composableBuilder(
+    column: $table.weightKg,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get reps => $composableBuilder(
+    column: $table.reps,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get durationSeconds => $composableBuilder(
+    column: $table.durationSeconds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ChallengesTableFilterComposer get challengeId {
+    final $$ChallengesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.challengeId,
+      referencedTable: $db.challenges,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChallengesTableFilterComposer(
+            $db: $db,
+            $table: $db.challenges,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ChallengeAttemptsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ChallengeAttemptsTable> {
+  $$ChallengeAttemptsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get weightKg => $composableBuilder(
+    column: $table.weightKg,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get reps => $composableBuilder(
+    column: $table.reps,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get durationSeconds => $composableBuilder(
+    column: $table.durationSeconds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ChallengesTableOrderingComposer get challengeId {
+    final $$ChallengesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.challengeId,
+      referencedTable: $db.challenges,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChallengesTableOrderingComposer(
+            $db: $db,
+            $table: $db.challenges,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ChallengeAttemptsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ChallengeAttemptsTable> {
+  $$ChallengeAttemptsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<double> get weightKg =>
+      $composableBuilder(column: $table.weightKg, builder: (column) => column);
+
+  GeneratedColumn<int> get reps =>
+      $composableBuilder(column: $table.reps, builder: (column) => column);
+
+  GeneratedColumn<int> get durationSeconds => $composableBuilder(
+    column: $table.durationSeconds,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => column);
+
+  $$ChallengesTableAnnotationComposer get challengeId {
+    final $$ChallengesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.challengeId,
+      referencedTable: $db.challenges,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChallengesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.challenges,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ChallengeAttemptsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ChallengeAttemptsTable,
+          ChallengeAttempt,
+          $$ChallengeAttemptsTableFilterComposer,
+          $$ChallengeAttemptsTableOrderingComposer,
+          $$ChallengeAttemptsTableAnnotationComposer,
+          $$ChallengeAttemptsTableCreateCompanionBuilder,
+          $$ChallengeAttemptsTableUpdateCompanionBuilder,
+          (ChallengeAttempt, $$ChallengeAttemptsTableReferences),
+          ChallengeAttempt,
+          PrefetchHooks Function({bool challengeId})
+        > {
+  $$ChallengeAttemptsTableTableManager(
+    _$AppDatabase db,
+    $ChallengeAttemptsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ChallengeAttemptsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ChallengeAttemptsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ChallengeAttemptsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> challengeId = const Value.absent(),
+                Value<double> weightKg = const Value.absent(),
+                Value<int> reps = const Value.absent(),
+                Value<int?> durationSeconds = const Value.absent(),
+                Value<DateTime> date = const Value.absent(),
+              }) => ChallengeAttemptsCompanion(
+                id: id,
+                challengeId: challengeId,
+                weightKg: weightKg,
+                reps: reps,
+                durationSeconds: durationSeconds,
+                date: date,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int challengeId,
+                Value<double> weightKg = const Value.absent(),
+                Value<int> reps = const Value.absent(),
+                Value<int?> durationSeconds = const Value.absent(),
+                Value<DateTime> date = const Value.absent(),
+              }) => ChallengeAttemptsCompanion.insert(
+                id: id,
+                challengeId: challengeId,
+                weightKg: weightKg,
+                reps: reps,
+                durationSeconds: durationSeconds,
+                date: date,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$ChallengeAttemptsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({challengeId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (challengeId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.challengeId,
+                                referencedTable:
+                                    $$ChallengeAttemptsTableReferences
+                                        ._challengeIdTable(db),
+                                referencedColumn:
+                                    $$ChallengeAttemptsTableReferences
+                                        ._challengeIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ChallengeAttemptsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ChallengeAttemptsTable,
+      ChallengeAttempt,
+      $$ChallengeAttemptsTableFilterComposer,
+      $$ChallengeAttemptsTableOrderingComposer,
+      $$ChallengeAttemptsTableAnnotationComposer,
+      $$ChallengeAttemptsTableCreateCompanionBuilder,
+      $$ChallengeAttemptsTableUpdateCompanionBuilder,
+      (ChallengeAttempt, $$ChallengeAttemptsTableReferences),
+      ChallengeAttempt,
+      PrefetchHooks Function({bool challengeId})
+    >;
+typedef $$ChallengeMilestonesTableCreateCompanionBuilder =
+    ChallengeMilestonesCompanion Function({
+      Value<int> id,
+      required int challengeId,
+      Value<double?> targetWeightKg,
+      Value<int?> targetReps,
+      Value<int?> targetDurationSeconds,
+      Value<DateTime> achievedAt,
+    });
+typedef $$ChallengeMilestonesTableUpdateCompanionBuilder =
+    ChallengeMilestonesCompanion Function({
+      Value<int> id,
+      Value<int> challengeId,
+      Value<double?> targetWeightKg,
+      Value<int?> targetReps,
+      Value<int?> targetDurationSeconds,
+      Value<DateTime> achievedAt,
+    });
+
+final class $$ChallengeMilestonesTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $ChallengeMilestonesTable,
+          ChallengeMilestone
+        > {
+  $$ChallengeMilestonesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ChallengesTable _challengeIdTable(_$AppDatabase db) =>
+      db.challenges.createAlias(
+        $_aliasNameGenerator(
+          db.challengeMilestones.challengeId,
+          db.challenges.id,
+        ),
+      );
+
+  $$ChallengesTableProcessedTableManager get challengeId {
+    final $_column = $_itemColumn<int>('challenge_id')!;
+
+    final manager = $$ChallengesTableTableManager(
+      $_db,
+      $_db.challenges,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_challengeIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ChallengeMilestonesTableFilterComposer
+    extends Composer<_$AppDatabase, $ChallengeMilestonesTable> {
+  $$ChallengeMilestonesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get targetWeightKg => $composableBuilder(
+    column: $table.targetWeightKg,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get targetReps => $composableBuilder(
+    column: $table.targetReps,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get targetDurationSeconds => $composableBuilder(
+    column: $table.targetDurationSeconds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get achievedAt => $composableBuilder(
+    column: $table.achievedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ChallengesTableFilterComposer get challengeId {
+    final $$ChallengesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.challengeId,
+      referencedTable: $db.challenges,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChallengesTableFilterComposer(
+            $db: $db,
+            $table: $db.challenges,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ChallengeMilestonesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ChallengeMilestonesTable> {
+  $$ChallengeMilestonesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get targetWeightKg => $composableBuilder(
+    column: $table.targetWeightKg,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get targetReps => $composableBuilder(
+    column: $table.targetReps,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get targetDurationSeconds => $composableBuilder(
+    column: $table.targetDurationSeconds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get achievedAt => $composableBuilder(
+    column: $table.achievedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ChallengesTableOrderingComposer get challengeId {
+    final $$ChallengesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.challengeId,
+      referencedTable: $db.challenges,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChallengesTableOrderingComposer(
+            $db: $db,
+            $table: $db.challenges,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ChallengeMilestonesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ChallengeMilestonesTable> {
+  $$ChallengeMilestonesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<double> get targetWeightKg => $composableBuilder(
+    column: $table.targetWeightKg,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get targetReps => $composableBuilder(
+    column: $table.targetReps,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get targetDurationSeconds => $composableBuilder(
+    column: $table.targetDurationSeconds,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get achievedAt => $composableBuilder(
+    column: $table.achievedAt,
+    builder: (column) => column,
+  );
+
+  $$ChallengesTableAnnotationComposer get challengeId {
+    final $$ChallengesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.challengeId,
+      referencedTable: $db.challenges,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChallengesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.challenges,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ChallengeMilestonesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ChallengeMilestonesTable,
+          ChallengeMilestone,
+          $$ChallengeMilestonesTableFilterComposer,
+          $$ChallengeMilestonesTableOrderingComposer,
+          $$ChallengeMilestonesTableAnnotationComposer,
+          $$ChallengeMilestonesTableCreateCompanionBuilder,
+          $$ChallengeMilestonesTableUpdateCompanionBuilder,
+          (ChallengeMilestone, $$ChallengeMilestonesTableReferences),
+          ChallengeMilestone,
+          PrefetchHooks Function({bool challengeId})
+        > {
+  $$ChallengeMilestonesTableTableManager(
+    _$AppDatabase db,
+    $ChallengeMilestonesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ChallengeMilestonesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ChallengeMilestonesTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$ChallengeMilestonesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> challengeId = const Value.absent(),
+                Value<double?> targetWeightKg = const Value.absent(),
+                Value<int?> targetReps = const Value.absent(),
+                Value<int?> targetDurationSeconds = const Value.absent(),
+                Value<DateTime> achievedAt = const Value.absent(),
+              }) => ChallengeMilestonesCompanion(
+                id: id,
+                challengeId: challengeId,
+                targetWeightKg: targetWeightKg,
+                targetReps: targetReps,
+                targetDurationSeconds: targetDurationSeconds,
+                achievedAt: achievedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int challengeId,
+                Value<double?> targetWeightKg = const Value.absent(),
+                Value<int?> targetReps = const Value.absent(),
+                Value<int?> targetDurationSeconds = const Value.absent(),
+                Value<DateTime> achievedAt = const Value.absent(),
+              }) => ChallengeMilestonesCompanion.insert(
+                id: id,
+                challengeId: challengeId,
+                targetWeightKg: targetWeightKg,
+                targetReps: targetReps,
+                targetDurationSeconds: targetDurationSeconds,
+                achievedAt: achievedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$ChallengeMilestonesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({challengeId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (challengeId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.challengeId,
+                                referencedTable:
+                                    $$ChallengeMilestonesTableReferences
+                                        ._challengeIdTable(db),
+                                referencedColumn:
+                                    $$ChallengeMilestonesTableReferences
+                                        ._challengeIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ChallengeMilestonesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ChallengeMilestonesTable,
+      ChallengeMilestone,
+      $$ChallengeMilestonesTableFilterComposer,
+      $$ChallengeMilestonesTableOrderingComposer,
+      $$ChallengeMilestonesTableAnnotationComposer,
+      $$ChallengeMilestonesTableCreateCompanionBuilder,
+      $$ChallengeMilestonesTableUpdateCompanionBuilder,
+      (ChallengeMilestone, $$ChallengeMilestonesTableReferences),
+      ChallengeMilestone,
+      PrefetchHooks Function({bool challengeId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -13949,4 +16767,10 @@ class $AppDatabaseManager {
       $$ExerciseNotesTableTableManager(_db, _db.exerciseNotes);
   $$ExerciseVariationsTableTableManager get exerciseVariations =>
       $$ExerciseVariationsTableTableManager(_db, _db.exerciseVariations);
+  $$ChallengesTableTableManager get challenges =>
+      $$ChallengesTableTableManager(_db, _db.challenges);
+  $$ChallengeAttemptsTableTableManager get challengeAttempts =>
+      $$ChallengeAttemptsTableTableManager(_db, _db.challengeAttempts);
+  $$ChallengeMilestonesTableTableManager get challengeMilestones =>
+      $$ChallengeMilestonesTableTableManager(_db, _db.challengeMilestones);
 }

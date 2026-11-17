@@ -19,6 +19,7 @@ import 'tables/daily_tasks_table.dart';
 import 'tables/daily_task_completions_table.dart';
 import 'tables/user_profile_table.dart';
 import 'tables/exercise_muscles_table.dart';
+import 'tables/challenges_table.dart';
 import 'daos/exercises_dao.dart';
 import 'daos/exercise_notes_dao.dart';
 import 'daos/exercise_variations_dao.dart';
@@ -29,6 +30,7 @@ import 'daos/bodyweight_dao.dart';
 import 'daos/daily_tasks_dao.dart';
 import 'daos/user_profile_dao.dart';
 import 'daos/muscle_volume_dao.dart';
+import 'daos/challenges_dao.dart';
 
 part 'app_database.g.dart';
 
@@ -49,6 +51,9 @@ part 'app_database.g.dart';
     ExerciseMuscles,
     ExerciseNotes,
     ExerciseVariations,
+    Challenges,
+    ChallengeAttempts,
+    ChallengeMilestones,
   ],
   daos: [
     ExercisesDao,
@@ -61,6 +66,7 @@ part 'app_database.g.dart';
     ExerciseNotesDao,
     ExerciseVariationsDao,
     MuscleVolumeDao,
+    ChallengesDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -70,7 +76,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 24;
+  int get schemaVersion => 25;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -544,6 +550,21 @@ class AppDatabase extends _$AppDatabase {
                   bwNames,
                 );
               }
+            }
+          }
+          if (from < 25) {
+            final tables = await customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table'",
+            ).get();
+            final tableNames = tables.map((r) => r.read<String>('name')).toSet();
+            if (!tableNames.contains('challenges')) {
+              await m.createTable(challenges);
+            }
+            if (!tableNames.contains('challenge_attempts')) {
+              await m.createTable(challengeAttempts);
+            }
+            if (!tableNames.contains('challenge_milestones')) {
+              await m.createTable(challengeMilestones);
             }
           }
           if (from >= 3 && from < 8) {

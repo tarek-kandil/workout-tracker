@@ -12,11 +12,13 @@ class SessionSoundPlayer {
   Uint8List? _beepBytes;
   Uint8List? _tickBytes;
   Uint8List? _doneBytes;
+  Uint8List? _milestoneBytes;
 
   void load() {
     _beepBytes = generateBeepWav();
     _tickBytes = generateTickBeepWav();
     _doneBytes = generateDoneBeepWav();
+    _milestoneBytes = generateChallengeMilestoneWav();
   }
 
   Future<void> playBeep() async {
@@ -41,6 +43,19 @@ class SessionSoundPlayer {
   Future<void> playDoneSound() async {
     HapticFeedback.heavyImpact();
     if (_doneBytes != null) await _sfx.play(BytesSource(_doneBytes!));
+  }
+
+  /// Louder milestone chime + triple heavy haptic for Challenge Best / Goal.
+  Future<void> playMilestoneChime() async {
+    HapticFeedback.heavyImpact();
+    await _player.setVolume(1.0);
+    if (_milestoneBytes != null) {
+      await _player.play(BytesSource(_milestoneBytes!));
+    }
+    await Future.delayed(const Duration(milliseconds: 120));
+    HapticFeedback.heavyImpact();
+    await Future.delayed(const Duration(milliseconds: 120));
+    HapticFeedback.heavyImpact();
   }
 
   void dispose() {
