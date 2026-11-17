@@ -30,30 +30,13 @@ class HomeScreen extends ConsumerWidget {
         const Positioned.fill(child: GlassBackground()),
         CustomScrollView(
           slivers: [
-            const SliverAppBar(
-              title: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('🔥', style: TextStyle(fontSize: 15)),
-                  SizedBox(width: 7),
-                  Text(
-                    'TRAIN',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.9,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-              floating: true,
-              snap: true,
-              backgroundColor: Colors.transparent,
-              surfaceTintColor: Colors.transparent,
-            ),
             SliverPadding(
-              padding: EdgeInsets.fromLTRB(16, 8, 16, MediaQuery.of(context).padding.bottom + 50),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                MediaQuery.of(context).padding.top + 12,
+                16,
+                MediaQuery.of(context).padding.bottom + 50,
+              ),
               sliver: activeProgramAsync.when(
                 loading: () => const SliverFillRemaining(
                   child: Center(child: CircularProgressIndicator()),
@@ -159,6 +142,8 @@ class HomeScreen extends ConsumerWidget {
     return SliverList(
       delegate: SliverChildListDelegate([
         // ── Hero card ────────────────────────────────────────────────────
+        const _SectionLabel(emoji: '🔥', label: 'TRAIN'),
+        const SizedBox(height: 12),
         const NextWorkoutCard(),
         const SizedBox(height: 24),
         const ProgressiveOverloadCard(),
