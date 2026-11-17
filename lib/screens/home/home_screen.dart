@@ -160,11 +160,11 @@ class HomeScreen extends ConsumerWidget {
       delegate: SliverChildListDelegate([
         // ── Hero card ────────────────────────────────────────────────────
         const NextWorkoutCard(),
-        const SizedBox(height: 12),
+        const SizedBox(height: 24),
         const ProgressiveOverloadCard(),
-        const SizedBox(height: 10),
+        const SizedBox(height: 24),
         const WeightGoalCard(),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         const WeeklyPRCard(),
         const SizedBox(height: 28),
 

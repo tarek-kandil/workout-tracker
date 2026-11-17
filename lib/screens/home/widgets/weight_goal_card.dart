@@ -21,18 +21,49 @@ class WeightGoalCard extends ConsumerWidget {
     final vm = ref.watch(weightGoalHomeViewModelProvider);
     final style = WeightGoalStatusStyle.of(vm.verdict);
 
-    return GestureDetector(
-      onTap: () => Navigator.of(context).push(
-        glassRoute(vm.hasPlan
-            ? const WeightHubScreen()
-            : const WeightGoalSetupScreen()),
-      ),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 132),
-        child: GlassCard(
-          child: vm.hasPlan ? _PlanBody(vm: vm, style: style) : _EmptyBody(style: style),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: Colors.white.withValues(alpha: 0.08),
+              ),
+            ),
+          ),
+          child: const Row(
+            children: [
+              Text('⚖️', style: TextStyle(fontSize: 15)),
+              SizedBox(width: 7),
+              Text(
+                'BODYWEIGHT',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.9,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
+        const SizedBox(height: 12),
+        GestureDetector(
+          onTap: () => Navigator.of(context).push(
+            glassRoute(vm.hasPlan
+                ? const WeightHubScreen()
+                : const WeightGoalSetupScreen()),
+          ),
+          child: SizedBox(
+            height: 132,
+            child: GlassCard(
+              child: vm.hasPlan ? _PlanBody(vm: vm, style: style) : _EmptyBody(style: style),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -90,22 +121,6 @@ class _PlanBody extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
-          children: [
-            Text('⚖️', style: TextStyle(fontSize: 15)),
-            SizedBox(width: 7),
-            Text(
-              'BODYWEIGHT',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0.9,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
         Row(
           children: [
             Expanded(

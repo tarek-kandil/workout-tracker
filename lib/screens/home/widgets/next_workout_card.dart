@@ -139,30 +139,28 @@ class _NextWodContentState extends ConsumerState<_NextWodContent> {
     final cs = Theme.of(context).colorScheme;
     final lastDone = _lastDoneLabel(widget.result.lastSessionDate);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    const ember = Color(0xFFFF6B35);
-    const violet = Color(0xFF7C5CFF);
+    const emerald = Color(0xFF34D399);
+    const sky = Color(0xFF0EA5E9);
 
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(26),
         gradient: LinearGradient(
-          begin: Alignment.bottomLeft,
-          end: Alignment.topRight,
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
           colors: isDark
               ? [
-                  violet.withValues(alpha: 0.14),
                   Colors.white.withValues(alpha: 0.06),
-                  ember.withValues(alpha: 0.14),
+                  sky.withValues(alpha: 0.14),
                 ]
               : [
-                  violet.withValues(alpha: 0.10),
                   Colors.white.withValues(alpha: 0.90),
-                  ember.withValues(alpha: 0.10),
+                  sky.withValues(alpha: 0.10),
                 ],
         ),
         border: Border.all(
           color: isDark
-              ? Colors.white.withValues(alpha: 0.12)
+              ? Colors.white.withValues(alpha: 0.11)
               : Colors.black.withValues(alpha: 0.08),
         ),
       ),
@@ -170,26 +168,49 @@ class _NextWodContentState extends ConsumerState<_NextWodContent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Label row: WEEK N pill + Switch pill ─────────────────────────
+          // ── Label row: ● WEEK N pill + Switch pill ───────────────────────
           Row(
             children: [
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.08)
-                      : Colors.black.withValues(alpha: 0.06),
+                  color: emerald.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  'WEEK ${widget.result.weekNumberInProgram}',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.0,
-                    color: cs.onSurface.withValues(alpha: 0.75),
+                  border: Border.all(
+                    color: emerald.withValues(alpha: 0.25),
                   ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: emerald,
+                        boxShadow: [
+                          BoxShadow(
+                            color: emerald.withValues(alpha: 0.85),
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'WEEK ${widget.result.weekNumberInProgram}',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.0,
+                        color: isDark
+                            ? const Color(0xFF86EFAC)
+                            : const Color(0xFF047857),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const Spacer(),
@@ -216,7 +237,7 @@ class _NextWodContentState extends ConsumerState<_NextWodContent> {
                       Icon(
                         Icons.swap_vert_rounded,
                         size: 14,
-                        color: cs.onSurface.withValues(alpha: 0.65),
+                        color: cs.onSurface.withValues(alpha: 0.70),
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -224,7 +245,7 @@ class _NextWodContentState extends ConsumerState<_NextWodContent> {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: cs.onSurface.withValues(alpha: 0.65),
+                          color: cs.onSurface.withValues(alpha: 0.70),
                         ),
                       ),
                     ],
@@ -233,32 +254,28 @@ class _NextWodContentState extends ConsumerState<_NextWodContent> {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
 
-          // ── Workout name ──────────────────────────────────────────────────
-          Text(
-            widget.result.wodTemplate.name,
-            style: Theme.of(context).textTheme.titleLarge!.copyWith(
-                  fontSize: 21,
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-
-          // ── Last done subtitle ────────────────────────────────────────────
-          if (lastDone.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              lastDone,
-              style: TextStyle(
-                fontSize: 12.5,
-                color: cs.onSurface.withValues(alpha: 0.55),
-              ),
-            ),
-          ],
-          const SizedBox(height: 14),
-
-          // ── Action buttons ────────────────────────────────────────────────
+          // ── Body: Title + Last done on left, Side-Launch CTA on right ─────
           if (_hasProgress) ...[
+            Text(
+              widget.result.wodTemplate.name,
+              style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+            if (lastDone.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                lastDone,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: cs.onSurface.withValues(alpha: 0.56),
+                ),
+              ),
+            ],
+            const SizedBox(height: 14),
             Row(
               children: [
                 Expanded(
@@ -284,11 +301,40 @@ class _NextWodContentState extends ConsumerState<_NextWodContent> {
               ],
             ),
           ] else ...[
-            _PillButton(
-              onPressed: () => _onStartOrResume(),
-              icon: Icons.fitness_center_rounded,
-              label: 'Start Workout',
-              fullWidth: true,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.result.wodTemplate.name,
+                        style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              height: 1.15,
+                            ),
+                      ),
+                      if (lastDone.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          lastDone,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: cs.onSurface.withValues(alpha: 0.56),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                _SideLaunchButton(
+                  onPressed: () => _onStartOrResume(),
+                  label: 'Start',
+                ),
+              ],
             ),
           ],
         ],
@@ -303,29 +349,27 @@ class _PillButton extends StatelessWidget {
   final VoidCallback onPressed;
   final IconData icon;
   final String label;
-  final bool fullWidth;
 
   const _PillButton({
     required this.onPressed,
     required this.icon,
     required this.label,
-    this.fullWidth = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final button = Container(
-      height: 50,
+    return Container(
+      height: 48,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFFF7847), Color(0xFFFF512F)],
+          colors: [Color(0xFF34D399), Color(0xFF0EA5E9)],
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFFF5C35).withValues(alpha: 0.35),
+            color: const Color(0xFF34D399).withValues(alpha: 0.25),
             blurRadius: 18,
             offset: const Offset(0, 6),
           ),
@@ -339,14 +383,14 @@ class _PillButton extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 20, color: Colors.white),
+              Icon(icon, size: 20, color: const Color(0xFF06131A)),
               const SizedBox(width: 8),
               Text(
                 label,
                 style: GoogleFonts.spaceGrotesk(
-                  fontSize: 15,
+                  fontSize: 14.5,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: const Color(0xFF06131A),
                 ),
               ),
             ],
@@ -354,8 +398,67 @@ class _PillButton extends StatelessWidget {
         ),
       ),
     );
-    if (fullWidth) return SizedBox(width: double.infinity, child: button);
-    return button;
+  }
+}
+
+class _SideLaunchButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  final String label;
+
+  const _SideLaunchButton({
+    required this.onPressed,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF34D399), Color(0xFF0EA5E9)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF34D399).withValues(alpha: 0.25),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(999),
+          onTap: onPressed,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF06131A),
+                  ),
+                ),
+                const SizedBox(width: 7),
+                const Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 16,
+                  color: Color(0xFF06131A),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

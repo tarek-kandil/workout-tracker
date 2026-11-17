@@ -46,64 +46,85 @@ class _OverloadBody extends StatelessWidget {
     final hasComparisons = total > 0;
     final vsW1 = summary.vsWeek1Pct;
 
-    return LiquidGlassContainer(
-      borderRadius: 18,
-      blurSigma: 10,
-      tintColor: isDark
-          ? Colors.white.withValues(alpha: 0.07)
-          : Colors.white.withValues(alpha: 0.80),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Header + vs Week 1 Pill ──────────────────────────────────────
-          Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: Colors.white.withValues(alpha: 0.08),
+              ),
+            ),
+          ),
+          child: const Row(
             children: [
-              const Expanded(
-                child: Row(
-                  children: [
-                    Text('📈', style: TextStyle(fontSize: 15)),
-                    SizedBox(width: 7),
-                    Flexible(
-                      child: Text(
-                        'PROGRESSIVE OVERLOAD',
-                        overflow: TextOverflow.ellipsis,
+              Text('📈', style: TextStyle(fontSize: 15)),
+              SizedBox(width: 7),
+              Text(
+                'PROGRESSIVE OVERLOAD',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.9,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        LiquidGlassContainer(
+          borderRadius: 18,
+          blurSigma: 10,
+          tintColor: isDark
+              ? Colors.white.withValues(alpha: 0.07)
+              : Colors.white.withValues(alpha: 0.80),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Header + vs Week 1 Pill ──────────────────────────────────
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'THIS WEEK',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.1,
+                        color: Colors.white54,
+                      ),
+                    ),
+                  ),
+                  if (vsW1 != null)
+                    _VsWeek1Pill(pct: vsW1)
+                  else if (summary.firstTimeCount > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 9, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF818CF8).withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color:
+                              const Color(0xFF818CF8).withValues(alpha: 0.35),
+                        ),
+                      ),
+                      child: const Text(
+                        'Baseline Week',
                         style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.9,
-                          color: Colors.white,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF818CF8),
                         ),
                       ),
                     ),
-                  ],
-                ),
+                ],
               ),
-              if (vsW1 != null)
-                _VsWeek1Pill(pct: vsW1)
-              else if (summary.firstTimeCount > 0)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF818CF8).withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: const Color(0xFF818CF8).withValues(alpha: 0.35),
-                    ),
-                  ),
-                  child: const Text(
-                    'Baseline Week',
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF818CF8),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
+              const SizedBox(height: 12),
 
           // ── Hero Score + Mini Week Bars ──────────────────────────────────
           Row(
@@ -284,6 +305,8 @@ class _OverloadBody extends StatelessWidget {
           ],
         ],
       ),
+        ),
+      ],
     );
   }
 }
