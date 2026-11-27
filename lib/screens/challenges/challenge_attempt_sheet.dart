@@ -262,6 +262,7 @@ class _ChallengeAttemptSheetState
     WidgetRef ref,
     ChallengeViewData data,
   ) async {
+    final container = ProviderScope.containerOf(context, listen: false);
     final choice = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -283,11 +284,11 @@ class _ChallengeAttemptSheetState
       ),
     );
 
-    final db = ref.read(databaseProvider);
+    final db = container.read(databaseProvider);
     if (choice == 'complete') {
       await db.challengesDao.completeChallenge(data.challenge.id);
-      ref.invalidate(activeChallengesProvider);
-      ref.invalidate(completedChallengesProvider);
+      container.invalidate(activeChallengesProvider);
+      container.invalidate(completedChallengesProvider);
     } else if (choice == 'extend' && context.mounted) {
       await showExtendChallengeDialog(context, ref, data);
     }
@@ -545,17 +546,19 @@ class _ChallengeAttemptSheetState
             ),
             const SizedBox(width: 16),
             SizedBox(
-              width: 110,
+              width: 144,
               child: TextField(
                 controller: _repsCtrl,
                 textAlign: TextAlign.center,
                 keyboardType: TextInputType.number,
                 style: const TextStyle(
-                  fontSize: 32,
+                  fontSize: 26,
                   fontWeight: FontWeight.w900,
                 ),
                 decoration: const InputDecoration(
-                  suffixText: 'reps',
+                  labelText: 'Reps',
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                   border: OutlineInputBorder(),
                 ),
                 onChanged: (v) {
@@ -781,8 +784,9 @@ Future<void> showExtendChallengeDialog(
     ),
   );
 
-  if (ok != true) return;
-  final db = ref.read(databaseProvider);
+  if (ok != true || !context.mounted) return;
+  final container = ProviderScope.containerOf(context, listen: false);
+  final db = container.read(databaseProvider);
   await db.challengesDao.extendChallengeTarget(
     challengeId: data.challenge.id,
     newTargetDurationSeconds: mode == ExerciseTrackingMode.timed
@@ -795,6 +799,6 @@ Future<void> showExtendChallengeDialog(
         ? double.tryParse(weightCtrl.text.replaceAll(',', '.'))
         : null,
   );
-  ref.invalidate(activeChallengesProvider);
-  ref.invalidate(completedChallengesProvider);
+  container.invalidate(activeChallengesProvider);
+  container.invalidate(completedChallengesProvider);
 }

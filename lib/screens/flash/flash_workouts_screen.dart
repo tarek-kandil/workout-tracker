@@ -78,7 +78,6 @@ class FlashWorkoutsScreen extends ConsumerWidget {
                     },
                     onEditSettings: () =>
                         showFlashWorkoutDialog(context, ref, wod),
-                    onTest: () => _sendTest(context, wod),
                     onDelete: () => _confirmDelete(context, ref, wod),
                   );
                 },
@@ -88,18 +87,6 @@ class FlashWorkoutsScreen extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  Future<void> _sendTest(BuildContext context, WodTemplate wod) async {
-    final error = await NotificationService.sendTestNotification(wod.name);
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(error == null
-          ? 'Test notification sent — check your shade'
-          : 'Failed: $error'),
-      backgroundColor: error == null ? null : Theme.of(context).colorScheme.error,
-      duration: const Duration(seconds: 4),
-    ));
   }
 
   Future<void> _confirmDelete(
@@ -367,14 +354,12 @@ class _FlashWorkoutTile extends ConsumerWidget {
   final WodTemplate wod;
   final VoidCallback onEditExercises;
   final VoidCallback onEditSettings;
-  final VoidCallback onTest;
   final VoidCallback onDelete;
 
   const _FlashWorkoutTile({
     required this.wod,
     required this.onEditExercises,
     required this.onEditSettings,
-    required this.onTest,
     required this.onDelete,
   });
 
@@ -465,8 +450,6 @@ class _FlashWorkoutTile extends ConsumerWidget {
                     onEditExercises();
                   case _FlashAction.settings:
                     onEditSettings();
-                  case _FlashAction.test:
-                    onTest();
                   case _FlashAction.delete:
                     onDelete();
                 }
@@ -488,15 +471,6 @@ class _FlashWorkoutTile extends ConsumerWidget {
                     contentPadding: EdgeInsets.zero,
                   ),
                 ),
-                if (wod.reminderHour != null)
-                  const PopupMenuItem(
-                    value: _FlashAction.test,
-                    child: ListTile(
-                      leading: Icon(Icons.notifications_active_outlined),
-                      title: Text('Send test now'),
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
                 PopupMenuItem(
                   value: _FlashAction.delete,
                   child: ListTile(
@@ -515,4 +489,4 @@ class _FlashWorkoutTile extends ConsumerWidget {
   }
 }
 
-enum _FlashAction { exercises, settings, test, delete }
+enum _FlashAction { exercises, settings, delete }

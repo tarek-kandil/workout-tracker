@@ -6,7 +6,6 @@ import '../../database/app_database.dart';
 import '../../providers/daily_tasks_providers.dart';
 import '../../providers/database_provider.dart';
 import '../../services/notification_service.dart';
-import '../../utils/task_icons.dart';
 import '../../widgets/celebration_overlay.dart';
 import '../../widgets/glass_background.dart';
 import '../../widgets/liquid_glass_container.dart';
@@ -85,7 +84,6 @@ class DailyTasksScreen extends ConsumerWidget {
                       },
                       onEdit: () => _showTaskDialog(context, ref, task),
                       onToggleEnabled: () => _toggleEnabled(ref, task),
-                      onTest: () => _sendTest(context, task),
                       onDelete: () => _confirmDelete(context, ref, task),
                     )),
               ],
@@ -97,7 +95,6 @@ class DailyTasksScreen extends ConsumerWidget {
                       onToggle: (_) {},
                       onEdit: () => _showTaskDialog(context, ref, task),
                       onToggleEnabled: () => _toggleEnabled(ref, task),
-                      onTest: () => _sendTest(context, task),
                       onDelete: () => _confirmDelete(context, ref, task),
                     )),
               ],
@@ -157,18 +154,6 @@ class DailyTasksScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _sendTest(BuildContext context, DailyTask task) async {
-    final error = await NotificationService.sendTestNotification(task.name);
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(error == null
-          ? 'Test notification sent — check your shade'
-          : 'Failed: $error'),
-      backgroundColor: error == null ? null : Theme.of(context).colorScheme.error,
-      duration: const Duration(seconds: 4),
-    ));
-  }
-
   Future<void> _showTaskDialog(
       BuildContext context, WidgetRef ref, DailyTask? task) async {
     await showDialog<void>(
@@ -196,7 +181,6 @@ class _TaskDialogState extends ConsumerState<_TaskDialog> {
   int _reminderHour = 8;
   int _reminderMinute = 30;
   int _reminderDays = 0x7F;
-  String? _selectedIcon;
 
   static const _timings = [
     'Morning',
@@ -218,7 +202,6 @@ class _TaskDialogState extends ConsumerState<_TaskDialog> {
     _reminderHour = task?.reminderHour ?? 8;
     _reminderMinute = task?.reminderMinute ?? 30;
     _reminderDays = task?.reminderDays ?? 0x7F;
-    _selectedIcon = task?.iconName;
     if (task?.reminderHour != null && task?.reminderMinute != null) {
       _reminderEnabled = true;
     }
@@ -247,7 +230,6 @@ class _TaskDialogState extends ConsumerState<_TaskDialog> {
         name: name,
         dose: Value(dose),
         timing: Value(_selectedTiming),
-        iconName: Value(_selectedIcon),
         reminderHour: Value(hour),
         reminderMinute: Value(minute),
         reminderDays: Value(days),
@@ -269,7 +251,6 @@ class _TaskDialogState extends ConsumerState<_TaskDialog> {
         name: Value(name),
         dose: Value(dose),
         timing: Value(_selectedTiming),
-        iconName: Value(_selectedIcon),
         reminderHour: Value(hour),
         reminderMinute: Value(minute),
         reminderDays: Value(days),
@@ -339,43 +320,6 @@ class _TaskDialogState extends ConsumerState<_TaskDialog> {
             ],
           ),
           const SizedBox(height: 20),
-          // ── Icon picker ───────────────────────────────────────────────
-          Text('Icon', style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            color: scheme.onSurface.withValues(alpha: 0.6),
-          )),
-          const SizedBox(height: 10),
-          StatefulBuilder(
-            builder: (ctx, setIcon) => Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: kTaskIcons.entries.map((entry) {
-                final key = entry.key;
-                final def = entry.value;
-                final selected = _selectedIcon == key;
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedIcon = selected ? null : key),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 160),
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? def.color.withValues(alpha: 0.18)
-                          : scheme.onSurface.withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: selected ? def.color : Colors.transparent,
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Icon(def.icon, size: 22,
-                        color: selected ? def.color : scheme.onSurface.withValues(alpha: 0.45)),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-          const SizedBox(height: 20),
           ReminderSchedulePicker(
             enabled: _reminderEnabled,
             onEnabledChanged: (v) => setState(() => _reminderEnabled = v),
@@ -410,7 +354,6 @@ class _TaskTile extends ConsumerWidget {
   final ValueChanged<bool> onToggle;
   final VoidCallback onEdit;
   final VoidCallback onToggleEnabled;
-  final VoidCallback onTest;
   final VoidCallback onDelete;
 
   const _TaskTile({
@@ -419,7 +362,6 @@ class _TaskTile extends ConsumerWidget {
     required this.onToggle,
     required this.onEdit,
     required this.onToggleEnabled,
-    required this.onTest,
     required this.onDelete,
   });
 
@@ -465,8 +407,6 @@ class _TaskTile extends ConsumerWidget {
                     onEdit();
                   case _Action.toggleEnabled:
                     onToggleEnabled();
-                  case _Action.test:
-                    onTest();
                   case _Action.delete:
                     onDelete();
                 }
@@ -490,15 +430,6 @@ class _TaskTile extends ConsumerWidget {
                     contentPadding: EdgeInsets.zero,
                   ),
                 ),
-                if (task.reminderHour != null)
-                  const PopupMenuItem(
-                    value: _Action.test,
-                    child: ListTile(
-                      leading: Icon(Icons.notifications_active_outlined),
-                      title: Text('Send test now'),
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
                 PopupMenuItem(
                   value: _Action.delete,
                   child: ListTile(
@@ -559,21 +490,25 @@ class _TaskIconBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final def = resolveTaskIcon(task.iconName);
-    final color = isCompleted ? Colors.green : def.color;
     return GestureDetector(
       onTap: task.isEnabled ? () => onToggle(!isCompleted) : null,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 40,
-        height: 40,
+        duration: const Duration(milliseconds: 180),
+        width: 24,
+        height: 24,
         decoration: BoxDecoration(
-          color: color.withValues(alpha: isCompleted ? 0.18 : 0.10),
-          borderRadius: BorderRadius.circular(12),
+          shape: BoxShape.circle,
+          color: isCompleted ? const Color(0xFF34D399) : Colors.transparent,
+          border: Border.all(
+            color: isCompleted
+                ? const Color(0xFF34D399)
+                : Colors.white.withValues(alpha: 0.30),
+            width: 2,
+          ),
         ),
         child: isCompleted
-            ? Icon(Icons.check_rounded, size: 20, color: Colors.green)
-            : Icon(def.icon, size: 20, color: color),
+            ? const Icon(Icons.check, size: 15, color: Color(0xFF052E16))
+            : null,
       ),
     );
   }
@@ -614,4 +549,4 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-enum _Action { edit, toggleEnabled, test, delete }
+enum _Action { edit, toggleEnabled, delete }

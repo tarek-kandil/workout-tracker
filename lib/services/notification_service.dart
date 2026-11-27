@@ -52,6 +52,7 @@ class NotificationService {
   static Future<void> init() async {
     if (_initialized) return;
     tz.initializeTimeZones();
+    tz.setLocalLocation(_resolveLocalLocation());
 
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const darwin = DarwinInitializationSettings();
@@ -64,10 +65,67 @@ class NotificationService {
     );
     _initialized = true;
 
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
+    final androidImpl = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (androidImpl != null) {
+      await androidImpl.createNotificationChannel(
+        const AndroidNotificationChannel(
+          _channelId,
+          _channelName,
+          description: _channelDesc,
+          importance: Importance.high,
+        ),
+      );
+      await androidImpl.createNotificationChannel(
+        const AndroidNotificationChannel(
+          _weighInChannelId,
+          _weighInChannelName,
+          description: _weighInChannelDesc,
+          importance: Importance.high,
+        ),
+      );
+      await androidImpl.createNotificationChannel(
+        const AndroidNotificationChannel(
+          _workoutChannelId,
+          _workoutChannelName,
+          description: 'Live workout progress',
+          importance: Importance.low,
+        ),
+      );
+      await androidImpl.requestNotificationsPermission();
+      final canExact = await androidImpl.canScheduleExactNotifications() ?? false;
+      if (!canExact) {
+        await androidImpl.requestExactAlarmsPermission();
+      }
+    }
+  }
+
+  static tz.Location _resolveLocalLocation() {
+    final now = DateTime.now();
+    final offsetMs = now.timeZoneOffset.inMilliseconds;
+    final nowMs = now.millisecondsSinceEpoch;
+    tz.Location? fallback;
+    for (final loc in tz.timeZoneDatabase.locations.values) {
+      if (loc.timeZone(nowMs).offset == offsetMs) {
+        fallback ??= loc;
+        if (loc.name.contains(now.timeZoneName)) {
+          return loc;
+        }
+      }
+    }
+    return fallback ?? tz.UTC;
+  }
+
+  static Future<AndroidScheduleMode> _resolveAndroidScheduleMode() async {
+    final androidImpl = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (androidImpl == null) {
+      return AndroidScheduleMode.exactAllowWhileIdle;
+    }
+    final canExact = await androidImpl.canScheduleExactNotifications() ?? false;
+    return canExact
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
   }
 
   /// Returns null on success, or an error string on failure.
@@ -82,6 +140,7 @@ class NotificationService {
         await init();
       }
       final scheduled = _nextInstanceOfTime(hour, minute);
+      final mode = await _resolveAndroidScheduleMode();
       await _plugin.zonedSchedule(
         id,
         title,
@@ -90,28 +149,10 @@ class NotificationService {
         _defaultDetails,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        androidScheduleMode: mode,
         matchDateTimeComponents: DateTimeComponents.time,
       );
       return null; // success
-    } catch (e) {
-      return e.toString();
-    }
-  }
-
-  /// Fires an immediate notification — use to verify the pipeline works.
-  static Future<String?> sendTestNotification(String title) async {
-    try {
-      if (!_initialized) {
-        await init();
-      }
-      await _plugin.show(
-        99999,
-        title,
-        'Test notification — if you see this, notifications are working.',
-        _defaultDetails,
-      );
-      return null;
     } catch (e) {
       return e.toString();
     }
@@ -170,6 +211,7 @@ class NotificationService {
       if (!_initialized) {
         await init();
       }
+      final mode = await _resolveAndroidScheduleMode();
       for (int i = 0; i < 7; i++) {
         if ((mask & (1 << i)) == 0) continue;
         final weekday = i + 1; // 1 = Monday … 7 = Sunday
@@ -182,7 +224,7 @@ class NotificationService {
           _defaultDetails,
           uiLocalNotificationDateInterpretation:
               UILocalNotificationDateInterpretation.absoluteTime,
-          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          androidScheduleMode: mode,
           matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
         );
       }
@@ -244,20 +286,28 @@ class NotificationService {
         "Log today's weight to keep your plan accurate.",
   }) async {
     try {
+      if (!_initialized) {
+        await init();
+      }
       final due = anchorDate.add(Duration(days: intervalDays));
       final now = DateTime.now();
       // Overdue — nudge soon (1 hour) rather than scheduling in the past.
       final fireAt = due.isAfter(now) ? due : now.add(const Duration(hours: 1));
+      final mode = await _resolveAndroidScheduleMode();
 
       await _plugin.zonedSchedule(
         weighInReminderId,
         title,
         body,
-        tz.TZDateTime.from(fireAt.toUtc(), tz.UTC),
-        const NotificationDetails(android: _weighInAndroidDetails),
+        tz.TZDateTime.from(fireAt, tz.local),
+        const NotificationDetails(
+          android: _weighInAndroidDetails,
+          iOS: _darwinDetails,
+          macOS: _darwinDetails,
+        ),
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        androidScheduleMode: mode,
       );
       return null;
     } catch (e) {
@@ -318,25 +368,23 @@ class NotificationService {
       _plugin.cancel(_workoutNotifId);
 
   static tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
-    final now = DateTime.now();
-
-    // DateTime(y,m,d,h,min) creates a LOCAL datetime.
-    // .toUtc() converts it correctly to UTC — no manual offset arithmetic needed.
-    var local = DateTime(now.year, now.month, now.day, hour, minute);
-    if (!local.isAfter(now)) {
-      local = local.add(const Duration(days: 1));
+    final now = tz.TZDateTime.now(tz.local);
+    var scheduled =
+        tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    if (!scheduled.isAfter(now)) {
+      scheduled = scheduled.add(const Duration(days: 1));
     }
-
-    return tz.TZDateTime.from(local.toUtc(), tz.UTC);
+    return scheduled;
   }
 
   static tz.TZDateTime _nextInstanceOfWeekdayAndTime(
       int weekday, int hour, int minute) {
-    final now = DateTime.now();
-    var local = DateTime(now.year, now.month, now.day, hour, minute);
-    while (local.weekday != weekday || !local.isAfter(now)) {
-      local = local.add(const Duration(days: 1));
+    final now = tz.TZDateTime.now(tz.local);
+    var scheduled =
+        tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    while (scheduled.weekday != weekday || !scheduled.isAfter(now)) {
+      scheduled = scheduled.add(const Duration(days: 1));
     }
-    return tz.TZDateTime.from(local.toUtc(), tz.UTC);
+    return scheduled;
   }
 }
