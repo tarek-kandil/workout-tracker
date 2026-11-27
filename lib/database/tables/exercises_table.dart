@@ -27,4 +27,8 @@ class Exercises extends Table {
   // their history/foreign keys) is kept intact. See
   // ExercisesDao.deleteOrArchiveExercise.
   BoolColumn get archived => boolean().withDefault(const Constant(false))();
+  // Schema v27 (Global Exercise Catalog v1): immutable snake_case identifier
+  // for global catalog exercises (used for deterministic UUID v5 mapping when
+  // syncing with the backend). Null for user-created custom exercises.
+  TextColumn get canonicalKey => text().nullable()();
 }

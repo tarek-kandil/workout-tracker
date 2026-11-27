@@ -16,4 +16,6 @@ mixin _$ExercisesDaoMixin on DatabaseAccessor<AppDatabase> {
   $WodTemplateExercisesTable get wodTemplateExercises =>
       attachedDatabase.wodTemplateExercises;
   $ExerciseNotesTable get exerciseNotes => attachedDatabase.exerciseNotes;
+  $ExerciseVariationsTable get exerciseVariations =>
+      attachedDatabase.exerciseVariations;
 }

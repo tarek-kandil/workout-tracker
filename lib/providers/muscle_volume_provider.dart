@@ -71,8 +71,10 @@ final unmappedExerciseCountProvider = FutureProvider<int>((ref) async {
 /// Infers primary + secondary muscles from an exercise's name and category
 /// when the exercise has no explicit active rows in `exercise_muscles`.
 List<ExerciseMuscleSeed> inferMusclesForExercise(Exercise ex) {
+  final canonicalName =
+      kLegacyExerciseNameAliases[ex.name.toLowerCase()] ?? ex.name;
   for (final entry in kExerciseMuscles.entries) {
-    if (entry.key.toLowerCase() == ex.name.toLowerCase()) {
+    if (entry.key.toLowerCase() == canonicalName.toLowerCase()) {
       return entry.value;
     }
   }

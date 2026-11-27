@@ -76,7 +76,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 26;
+  int get schemaVersion => 27;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -581,6 +581,20 @@ class AppDatabase extends _$AppDatabase {
               }
               if (!colNames.contains('timing')) {
                 await m.addColumn(dailyTasks, dailyTasks.timing);
+              }
+            }
+          }
+          if (from < 27) {
+            final tables = await customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table'",
+            ).get();
+            final tableNames = tables.map((r) => r.read<String>('name')).toSet();
+            if (tableNames.contains('exercises')) {
+              final cols =
+                  await customSelect('PRAGMA table_info(exercises)').get();
+              final colNames = cols.map((r) => r.read<String>('name')).toSet();
+              if (!colNames.contains('canonical_key')) {
+                await m.addColumn(exercises, exercises.canonicalKey);
               }
             }
           }

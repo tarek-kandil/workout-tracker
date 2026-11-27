@@ -5,7 +5,9 @@ import '../tables/exercise_muscles_table.dart';
 import '../tables/sets_table.dart';
 import '../tables/wod_template_exercises_table.dart';
 import '../tables/exercise_notes_table.dart';
+import '../tables/exercise_variations_table.dart';
 import '../../models/exercise_muscle_seed.dart';
+import '../../models/exercise_tracking_mode.dart';
 import '../../utils/constants.dart';
 
 part 'exercises_dao.g.dart';
@@ -30,6 +32,7 @@ enum ExerciseDeleteOutcome {
   WorkoutSets,
   WodTemplateExercises,
   ExerciseNotes,
+  ExerciseVariations,
 ])
 class ExercisesDao extends DatabaseAccessor<AppDatabase>
     with _$ExercisesDaoMixin {
@@ -125,6 +128,172 @@ class ExercisesDao extends DatabaseAccessor<AppDatabase>
 
   Future<void> seedExercises(List<ExercisesCompanion> entries) async {
     await batch((b) => b.insertAllOnConflictUpdate(exercises, entries));
+  }
+
+  /// Atomically upgrades or initializes the local exercise library to
+  /// [kGlobalExerciseCatalog] (v1):
+  ///  1. Renames legacy default exercise rows in-place (preserving `id` and
+  ///     100% of `workout_sets`, `wod_template_exercises`, `challenges`,
+  ///     `exercise_notes`, and `exercise_variations` links) and stamps
+  ///     `canonical_key`.
+  ///  2. Inserts all newly added global catalog exercises.
+  ///  3. Non-destructively refreshes active primary/secondary muscle tags for
+  ///     all global catalog exercises while leaving custom user exercises
+  ///     (`canonical_key == null`) untouched.
+  ///  4. Symmetrically seeds [kDefaultExerciseVariationGroups] using
+  ///     `InsertMode.insertOrIgnore`.
+  Future<void> syncGlobalCatalogV1() {
+    return transaction(() async {
+      final all = await getAllExercisesIncludingArchived();
+      final byKey = <String, Exercise>{
+        for (final e in all)
+          if (e.canonicalKey != null) e.canonicalKey!: e,
+      };
+      final byLowerName = <String, Exercise>{
+        for (final e in all) e.name.toLowerCase(): e,
+      };
+
+      final weightedSetRows = await (selectOnly(workoutSets, distinct: true)
+            ..addColumns([workoutSets.exerciseId])
+            ..where(workoutSets.weightKg.isBiggerThanValue(0)))
+          .get();
+      final weightedHistoryIds = {
+        for (final r in weightedSetRows)
+          if (r.read(workoutSets.exerciseId) != null)
+            r.read(workoutSets.exerciseId)!,
+      };
+
+      final catalogIdByName = <String, int>{};
+      final muscleRowsToInsert = <ExerciseMusclesCompanion>[];
+      final muscleRefreshIds = <int>[];
+
+      for (final seed in kGlobalExerciseCatalog) {
+        Exercise? existing =
+            byKey[seed.key] ?? byLowerName[seed.name.toLowerCase()];
+        if (existing == null) {
+          for (final legacy in seed.legacyNames) {
+            final match = byLowerName[legacy.toLowerCase()];
+            if (match != null) {
+              existing = match;
+              break;
+            }
+          }
+        }
+
+        late final int exId;
+        if (existing != null) {
+          exId = existing.id;
+          final targetLower = seed.name.toLowerCase();
+          final existingCollision = byLowerName[targetLower];
+          final canRename =
+              existingCollision == null || existingCollision.id == exId;
+          final newName = canRename ? seed.name : existing.name;
+
+          final shouldSwitchToBw =
+              seed.mode == ExerciseTrackingMode.bodyweightReps &&
+                  existing.trackingMode ==
+                      ExerciseTrackingMode.weightedReps.dbValue &&
+                  !weightedHistoryIds.contains(exId);
+
+          await (update(exercises)..where((e) => e.id.equals(exId))).write(
+            ExercisesCompanion(
+              name: Value(newName),
+              canonicalKey: Value(seed.key),
+              trackingMode: shouldSwitchToBw
+                  ? Value(ExerciseTrackingMode.bodyweightReps.dbValue)
+                  : const Value.absent(),
+              muscleNeedsReview: seed.muscles.isNotEmpty
+                  ? const Value(false)
+                  : const Value.absent(),
+              muscleReviewNote: seed.muscles.isNotEmpty
+                  ? const Value(null)
+                  : const Value.absent(),
+            ),
+          );
+
+          byLowerName.remove(existing.name.toLowerCase());
+          byLowerName[newName.toLowerCase()] = existing;
+          byKey[seed.key] = existing;
+        } else {
+          exId = await into(exercises).insert(
+            ExercisesCompanion.insert(
+              name: seed.name,
+              canonicalKey: Value(seed.key),
+              isTimed: Value(seed.mode == ExerciseTrackingMode.timed),
+              trackingMode: Value(seed.mode.dbValue),
+            ),
+          );
+        }
+
+        catalogIdByName[seed.name] = exId;
+
+        if (!seed.isCardio && seed.muscles.isNotEmpty) {
+          muscleRefreshIds.add(exId);
+          for (int i = 0; i < seed.muscles.length; i++) {
+            final m = seed.muscles[i];
+            muscleRowsToInsert.add(
+              ExerciseMusclesCompanion.insert(
+                exerciseId: exId,
+                muscle: m.muscle,
+                sortOrder: i,
+                role: Value(
+                  m.role == ExerciseMuscleRole.primary
+                      ? kMuscleRolePrimary
+                      : kMuscleRoleSecondary,
+                ),
+                isActive: const Value(true),
+              ),
+            );
+          }
+        }
+      }
+
+      if (muscleRefreshIds.isNotEmpty) {
+        await (update(exerciseMuscles)
+              ..where((m) =>
+                  m.exerciseId.isIn(muscleRefreshIds) &
+                  m.isActive.equals(true)))
+            .write(const ExerciseMusclesCompanion(isActive: Value(false)));
+
+        await batch((b) {
+          b.insertAll(exerciseMuscles, muscleRowsToInsert);
+        });
+      }
+
+      // Build deduplicated canonical variation pairs (minId, maxId).
+      final pairKeys = <String>{};
+      final variationRows = <ExerciseVariationsCompanion>[];
+      for (final group in kDefaultExerciseVariationGroups) {
+        for (int i = 0; i < group.length; i++) {
+          final idA = catalogIdByName[group[i]];
+          if (idA == null) continue;
+          for (int j = i + 1; j < group.length; j++) {
+            final idB = catalogIdByName[group[j]];
+            if (idB == null || idA == idB) continue;
+            final minId = idA < idB ? idA : idB;
+            final maxId = idA < idB ? idB : idA;
+            if (pairKeys.add('$minId:$maxId')) {
+              variationRows.add(
+                ExerciseVariationsCompanion.insert(
+                  exerciseId: minId,
+                  variationExerciseId: maxId,
+                ),
+              );
+            }
+          }
+        }
+      }
+
+      if (variationRows.isNotEmpty) {
+        await batch((b) {
+          b.insertAll(
+            exerciseVariations,
+            variationRows,
+            mode: InsertMode.insertOrIgnore,
+          );
+        });
+      }
+    });
   }
 
   // ── Muscles (schema v20: role-aware, active-row model) ─────────────────────

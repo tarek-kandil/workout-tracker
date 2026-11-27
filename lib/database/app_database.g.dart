@@ -124,6 +124,17 @@ class $ExercisesTable extends Exercises
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _canonicalKeyMeta = const VerificationMeta(
+    'canonicalKey',
+  );
+  @override
+  late final GeneratedColumn<String> canonicalKey = GeneratedColumn<String>(
+    'canonical_key',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -135,6 +146,7 @@ class $ExercisesTable extends Exercises
     muscleNeedsReview,
     muscleReviewNote,
     archived,
+    canonicalKey,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -210,6 +222,15 @@ class $ExercisesTable extends Exercises
         archived.isAcceptableOrUnknown(data['archived']!, _archivedMeta),
       );
     }
+    if (data.containsKey('canonical_key')) {
+      context.handle(
+        _canonicalKeyMeta,
+        canonicalKey.isAcceptableOrUnknown(
+          data['canonical_key']!,
+          _canonicalKeyMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -255,6 +276,10 @@ class $ExercisesTable extends Exercises
         DriftSqlType.bool,
         data['${effectivePrefix}archived'],
       )!,
+      canonicalKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}canonical_key'],
+      ),
     );
   }
 
@@ -274,6 +299,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
   final bool muscleNeedsReview;
   final String? muscleReviewNote;
   final bool archived;
+  final String? canonicalKey;
   const Exercise({
     required this.id,
     required this.name,
@@ -284,6 +310,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     required this.muscleNeedsReview,
     this.muscleReviewNote,
     required this.archived,
+    this.canonicalKey,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -301,6 +328,9 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       map['muscle_review_note'] = Variable<String>(muscleReviewNote);
     }
     map['archived'] = Variable<bool>(archived);
+    if (!nullToAbsent || canonicalKey != null) {
+      map['canonical_key'] = Variable<String>(canonicalKey);
+    }
     return map;
   }
 
@@ -319,6 +349,9 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           ? const Value.absent()
           : Value(muscleReviewNote),
       archived: Value(archived),
+      canonicalKey: canonicalKey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(canonicalKey),
     );
   }
 
@@ -337,6 +370,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       muscleNeedsReview: serializer.fromJson<bool>(json['muscleNeedsReview']),
       muscleReviewNote: serializer.fromJson<String?>(json['muscleReviewNote']),
       archived: serializer.fromJson<bool>(json['archived']),
+      canonicalKey: serializer.fromJson<String?>(json['canonicalKey']),
     );
   }
   @override
@@ -352,6 +386,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       'muscleNeedsReview': serializer.toJson<bool>(muscleNeedsReview),
       'muscleReviewNote': serializer.toJson<String?>(muscleReviewNote),
       'archived': serializer.toJson<bool>(archived),
+      'canonicalKey': serializer.toJson<String?>(canonicalKey),
     };
   }
 
@@ -365,6 +400,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     bool? muscleNeedsReview,
     Value<String?> muscleReviewNote = const Value.absent(),
     bool? archived,
+    Value<String?> canonicalKey = const Value.absent(),
   }) => Exercise(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -377,6 +413,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
         ? muscleReviewNote.value
         : this.muscleReviewNote,
     archived: archived ?? this.archived,
+    canonicalKey: canonicalKey.present ? canonicalKey.value : this.canonicalKey,
   );
   Exercise copyWithCompanion(ExercisesCompanion data) {
     return Exercise(
@@ -395,6 +432,9 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           ? data.muscleReviewNote.value
           : this.muscleReviewNote,
       archived: data.archived.present ? data.archived.value : this.archived,
+      canonicalKey: data.canonicalKey.present
+          ? data.canonicalKey.value
+          : this.canonicalKey,
     );
   }
 
@@ -409,7 +449,8 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           ..write('trackingMode: $trackingMode, ')
           ..write('muscleNeedsReview: $muscleNeedsReview, ')
           ..write('muscleReviewNote: $muscleReviewNote, ')
-          ..write('archived: $archived')
+          ..write('archived: $archived, ')
+          ..write('canonicalKey: $canonicalKey')
           ..write(')'))
         .toString();
   }
@@ -425,6 +466,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     muscleNeedsReview,
     muscleReviewNote,
     archived,
+    canonicalKey,
   );
   @override
   bool operator ==(Object other) =>
@@ -438,7 +480,8 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           other.trackingMode == this.trackingMode &&
           other.muscleNeedsReview == this.muscleNeedsReview &&
           other.muscleReviewNote == this.muscleReviewNote &&
-          other.archived == this.archived);
+          other.archived == this.archived &&
+          other.canonicalKey == this.canonicalKey);
 }
 
 class ExercisesCompanion extends UpdateCompanion<Exercise> {
@@ -451,6 +494,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
   final Value<bool> muscleNeedsReview;
   final Value<String?> muscleReviewNote;
   final Value<bool> archived;
+  final Value<String?> canonicalKey;
   const ExercisesCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -461,6 +505,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     this.muscleNeedsReview = const Value.absent(),
     this.muscleReviewNote = const Value.absent(),
     this.archived = const Value.absent(),
+    this.canonicalKey = const Value.absent(),
   });
   ExercisesCompanion.insert({
     this.id = const Value.absent(),
@@ -472,6 +517,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     this.muscleNeedsReview = const Value.absent(),
     this.muscleReviewNote = const Value.absent(),
     this.archived = const Value.absent(),
+    this.canonicalKey = const Value.absent(),
   }) : name = Value(name);
   static Insertable<Exercise> custom({
     Expression<int>? id,
@@ -483,6 +529,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     Expression<bool>? muscleNeedsReview,
     Expression<String>? muscleReviewNote,
     Expression<bool>? archived,
+    Expression<String>? canonicalKey,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -494,6 +541,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
       if (muscleNeedsReview != null) 'muscle_needs_review': muscleNeedsReview,
       if (muscleReviewNote != null) 'muscle_review_note': muscleReviewNote,
       if (archived != null) 'archived': archived,
+      if (canonicalKey != null) 'canonical_key': canonicalKey,
     });
   }
 
@@ -507,6 +555,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     Value<bool>? muscleNeedsReview,
     Value<String?>? muscleReviewNote,
     Value<bool>? archived,
+    Value<String?>? canonicalKey,
   }) {
     return ExercisesCompanion(
       id: id ?? this.id,
@@ -518,6 +567,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
       muscleNeedsReview: muscleNeedsReview ?? this.muscleNeedsReview,
       muscleReviewNote: muscleReviewNote ?? this.muscleReviewNote,
       archived: archived ?? this.archived,
+      canonicalKey: canonicalKey ?? this.canonicalKey,
     );
   }
 
@@ -551,6 +601,9 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     if (archived.present) {
       map['archived'] = Variable<bool>(archived.value);
     }
+    if (canonicalKey.present) {
+      map['canonical_key'] = Variable<String>(canonicalKey.value);
+    }
     return map;
   }
 
@@ -565,7 +618,8 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
           ..write('trackingMode: $trackingMode, ')
           ..write('muscleNeedsReview: $muscleNeedsReview, ')
           ..write('muscleReviewNote: $muscleReviewNote, ')
-          ..write('archived: $archived')
+          ..write('archived: $archived, ')
+          ..write('canonicalKey: $canonicalKey')
           ..write(')'))
         .toString();
   }
@@ -8902,6 +8956,7 @@ typedef $$ExercisesTableCreateCompanionBuilder =
       Value<bool> muscleNeedsReview,
       Value<String?> muscleReviewNote,
       Value<bool> archived,
+      Value<String?> canonicalKey,
     });
 typedef $$ExercisesTableUpdateCompanionBuilder =
     ExercisesCompanion Function({
@@ -8914,6 +8969,7 @@ typedef $$ExercisesTableUpdateCompanionBuilder =
       Value<bool> muscleNeedsReview,
       Value<String?> muscleReviewNote,
       Value<bool> archived,
+      Value<String?> canonicalKey,
     });
 
 final class $$ExercisesTableReferences
@@ -9132,6 +9188,11 @@ class $$ExercisesTableFilterComposer
 
   ColumnFilters<bool> get archived => $composableBuilder(
     column: $table.archived,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get canonicalKey => $composableBuilder(
+    column: $table.canonicalKey,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9364,6 +9425,11 @@ class $$ExercisesTableOrderingComposer
     column: $table.archived,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get canonicalKey => $composableBuilder(
+    column: $table.canonicalKey,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ExercisesTableAnnotationComposer
@@ -9407,6 +9473,11 @@ class $$ExercisesTableAnnotationComposer
 
   GeneratedColumn<bool> get archived =>
       $composableBuilder(column: $table.archived, builder: (column) => column);
+
+  GeneratedColumn<String> get canonicalKey => $composableBuilder(
+    column: $table.canonicalKey,
+    builder: (column) => column,
+  );
 
   Expression<T> workoutSetsRefs<T extends Object>(
     Expression<T> Function($$WorkoutSetsTableAnnotationComposer a) f,
@@ -9632,6 +9703,7 @@ class $$ExercisesTableTableManager
                 Value<bool> muscleNeedsReview = const Value.absent(),
                 Value<String?> muscleReviewNote = const Value.absent(),
                 Value<bool> archived = const Value.absent(),
+                Value<String?> canonicalKey = const Value.absent(),
               }) => ExercisesCompanion(
                 id: id,
                 name: name,
@@ -9642,6 +9714,7 @@ class $$ExercisesTableTableManager
                 muscleNeedsReview: muscleNeedsReview,
                 muscleReviewNote: muscleReviewNote,
                 archived: archived,
+                canonicalKey: canonicalKey,
               ),
           createCompanionCallback:
               ({
@@ -9654,6 +9727,7 @@ class $$ExercisesTableTableManager
                 Value<bool> muscleNeedsReview = const Value.absent(),
                 Value<String?> muscleReviewNote = const Value.absent(),
                 Value<bool> archived = const Value.absent(),
+                Value<String?> canonicalKey = const Value.absent(),
               }) => ExercisesCompanion.insert(
                 id: id,
                 name: name,
@@ -9664,6 +9738,7 @@ class $$ExercisesTableTableManager
                 muscleNeedsReview: muscleNeedsReview,
                 muscleReviewNote: muscleReviewNote,
                 archived: archived,
+                canonicalKey: canonicalKey,
               ),
           withReferenceMapper: (p0) => p0
               .map(

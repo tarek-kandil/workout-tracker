@@ -12,7 +12,6 @@ import 'screens/shell_screen.dart';
 import 'screens/settings/program_list_screen.dart';
 import 'services/notification_service.dart';
 import 'theme/app_theme.dart';
-import 'utils/constants.dart';
 
 /// A short timeout applied to non-critical native/plugin calls during
 /// startup so a hung platform channel can never leave the app stuck on the
@@ -93,86 +92,16 @@ Future<StartupResult> runAppStartup(ProviderContainer container) async {
   // simply retries on the next launch.
   try {
     final prefs = await SharedPreferences.getInstance();
-    final seeded = prefs.getBool('exercises_seeded') ?? false;
+    final globalCatalogSeeded =
+        prefs.getBool('global_catalog_seeded_v1') ?? false;
 
-    if (!seeded) {
-      await db.exercisesDao.seedExercises(kDefaultExercises);
+    if (!globalCatalogSeeded) {
+      await db.exercisesDao.syncGlobalCatalogV1();
       await prefs.setBool('exercises_seeded', true);
-    }
-
-    final musclesSeeded = prefs.getBool('muscles_seeded_v1') ?? false;
-    if (!musclesSeeded) {
-      final dao = db.exercisesDao;
-
-      // 1. Insert exercises that don't exist yet (by name).
-      final existingByName = await dao.getExerciseIdsByName();
-      for (final companion in kDefaultExercises) {
-        final name = companion.name.value;
-        if (!existingByName.containsKey(name)) {
-          final newId = await dao.insertExercise(companion);
-          existingByName[name] = newId;
-        }
-      }
-
-      // 2. Seed muscle assignments for every exercise in kExerciseMuscles.
-      for (final entry in kExerciseMuscles.entries) {
-        final id = existingByName[entry.key];
-        if (id != null) {
-          await dao.setMusclesForExercise(id, entry.value);
-        }
-      }
-
       await prefs.setBool('muscles_seeded_v1', true);
-    }
-
-    // Muscle Taxonomy + Weekly Volume Report (schema v20): re-sync every
-    // default exercise's active muscle assignments to the new 21-muscle,
-    // role-aware taxonomy. Runs once per install regardless of whether
-    // muscles_seeded_v1 already ran (that flag may predate this feature and
-    // would otherwise skip re-seeding for upgraded installs). Non-
-    // destructive: setMusclesForExercise never deletes rows, it deactivates
-    // the previous active assignment and inserts the new one, and clears
-    // any stale "needs review" flag for exercises with an exact v2 mapping.
-    final musclesSeededV2 = prefs.getBool('muscles_seeded_v2') ?? false;
-    if (!musclesSeededV2) {
-      final dao = db.exercisesDao;
-      final existingByName = await dao.getExerciseIdsByName();
-
-      for (final companion in kDefaultExercises) {
-        final name = companion.name.value;
-        if (!existingByName.containsKey(name)) {
-          final newId = await dao.insertExercise(companion);
-          existingByName[name] = newId;
-        }
-      }
-
-      for (final entry in kExerciseMuscles.entries) {
-        final id = existingByName[entry.key];
-        if (id != null) {
-          await dao.setMusclesForExercise(id, entry.value);
-        }
-      }
-
       await prefs.setBool('muscles_seeded_v2', true);
-    }
-
-    // Seed Weighted Pull-ups / Weighted Dips alongside bodyweight variants.
-    final bwSeeded = prefs.getBool('bodyweight_seeded_v1') ?? false;
-    if (!bwSeeded) {
-      final dao = db.exercisesDao;
-      final existingByName = await dao.getExerciseIdsByName();
-      for (final companion in kDefaultExercises) {
-        final name = companion.name.value;
-        if (!existingByName.containsKey(name)) {
-          final newId = await dao.insertExercise(companion);
-          existingByName[name] = newId;
-          final muscles = kExerciseMuscles[name];
-          if (muscles != null) {
-            await dao.setMusclesForExercise(newId, muscles);
-          }
-        }
-      }
       await prefs.setBool('bodyweight_seeded_v1', true);
+      await prefs.setBool('global_catalog_seeded_v1', true);
     }
   } catch (e) {
     debugPrint(
