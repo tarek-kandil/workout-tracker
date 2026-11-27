@@ -2,8 +2,9 @@ import 'package:drift/drift.dart';
 import 'wod_templates_table.dart';
 import 'wod_exercise_groups_table.dart';
 import 'exercises_table.dart';
+import 'sync_columns_mixin.dart';
 
-class WodTemplateExercises extends Table {
+class WodTemplateExercises extends Table with SyncColumnsMixin {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get wodTemplateId => integer().references(WodTemplates, #id)();
   IntColumn get exerciseId => integer().references(Exercises, #id)();

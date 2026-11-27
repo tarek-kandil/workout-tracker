@@ -76,17 +76,8 @@ class _ExerciseLibrarySheetState extends ConsumerState<ExerciseLibrarySheet> {
     }
     ref.invalidate(exercisesProvider);
     ref.invalidate(exerciseMuscleMapProvider);
-    final created = Exercise(
-      id: id,
-      name: name,
-      isTimed: false,
-      trackingMode: ExerciseTrackingMode.weightedReps.dbValue,
-      category: category,
-      notes: null,
-      muscleNeedsReview: false,
-      muscleReviewNote: null,
-      archived: false,
-    );
+    final created = (await db.exercisesDao.getAllExercises())
+        .firstWhere((e) => e.id == id);
     if (mounted) widget.onSelected(created);
   }
 

@@ -7,6 +7,7 @@ import 'package:workout_tracker/screens/log/widgets/history_chip_row.dart';
 WorkoutSet _set(int n, double kg, int reps) => WorkoutSet(
       id: n, sessionId: 1, exerciseId: 1, setNumber: n, reps: reps,
       weightKg: kg, durationSeconds: null, rpe: null, rir: null, notes: null,
+      syncId: 'set-$n', updatedAt: DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
     );
 
 void main() {

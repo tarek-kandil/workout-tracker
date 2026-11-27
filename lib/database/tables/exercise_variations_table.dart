@@ -1,8 +1,9 @@
 import 'package:drift/drift.dart';
 
 import 'exercises_table.dart';
+import 'sync_columns_mixin.dart';
 
-class ExerciseVariations extends Table {
+class ExerciseVariations extends Table with SyncColumnsMixin {
   IntColumn get id => integer().autoIncrement()();
   @ReferenceName('exerciseVariationSources')
   IntColumn get exerciseId =>

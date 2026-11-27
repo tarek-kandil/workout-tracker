@@ -1,7 +1,8 @@
 import 'package:drift/drift.dart';
+import 'sync_columns_mixin.dart';
 import 'wod_templates_table.dart';
 
-class WorkoutSessions extends Table {
+class WorkoutSessions extends Table with SyncColumnsMixin {
   IntColumn get id => integer().autoIncrement()();
   DateTimeColumn get date => dateTime()();
   // Human-readable name — auto-filled from WOD template, or user-entered for ad-hoc sessions

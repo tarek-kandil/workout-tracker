@@ -201,13 +201,16 @@ class _ChallengeAttemptSheetState
     setState(() => _saving = true);
     final db = ref.read(databaseProvider);
 
+    final now = DateTime.now();
     final newAttempt = ChallengeAttempt(
       id: -1,
       challengeId: data.challenge.id,
       weightKg: w,
       reps: r,
       durationSeconds: dur,
-      date: DateTime.now(),
+      date: now,
+      syncId: '',
+      updatedAt: now.toUtc(),
     );
 
     final wasNewBest = data.isNewBest(newAttempt);

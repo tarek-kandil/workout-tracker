@@ -36,7 +36,8 @@ class SessionsDao extends DatabaseAccessor<AppDatabase>
       into(workoutSessions).insert(entry);
 
   Future<void> updateSession(WorkoutSessionsCompanion entry) =>
-      update(workoutSessions).replace(entry);
+      (update(workoutSessions)..where((s) => s.id.equals(entry.id.value)))
+          .write(entry.copyWith(updatedAt: Value(DateTime.now().toUtc())));
 
   Future<void> deleteSession(int sessionId) =>
       (delete(workoutSessions)..where((s) => s.id.equals(sessionId))).go();

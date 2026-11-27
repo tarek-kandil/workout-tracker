@@ -1193,6 +1193,7 @@ class _WorkoutBuilder {
             restBetweenSetsSeconds: const Value(0),
           ),
         );
+    final epoch = DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
     return WodExerciseEntry(
       templateExercise: WodTemplateExercise(
         id: templateExerciseId,
@@ -1205,6 +1206,8 @@ class _WorkoutBuilder {
         repRangeMax: repRangeMax,
         restSeconds: 0,
         restBetweenSetsSeconds: 0,
+        syncId: 'te-$templateExerciseId',
+        updatedAt: epoch,
       ),
       exercise: Exercise(
         id: exerciseId,
@@ -1215,6 +1218,9 @@ class _WorkoutBuilder {
         muscleNeedsReview: false,
         muscleReviewNote: null,
         archived: false,
+        deprecated: false,
+        syncId: 'ex-$exerciseId',
+        updatedAt: epoch,
       ),
       suggestion: WeightSuggestion.noHistory,
     );
@@ -1237,45 +1243,51 @@ class _WorkoutBuilder {
             trackingMode: Value(isTimed ? 'timed' : 'weighted_reps'),
           ),
         );
-    return Exercise(
-      id: exerciseId,
-      name: name,
-      category: category,
-      isTimed: isTimed,
-      trackingMode: isTimed ? 'timed' : 'weighted_reps',
-      muscleNeedsReview: false,
-      muscleReviewNote: null,
-      archived: false,
-    );
+    return (await db.exercisesDao.getAllExercises())
+        .firstWhere((e) => e.id == exerciseId);
   }
 
   Future<void> addVariation(int exerciseId, int variationExerciseId) =>
       db.exerciseVariationsDao.addVariation(exerciseId, variationExerciseId);
 
-  NextWodResult result() => NextWodResult(
-    program: const Program(id: 1, name: 'QA Program', status: 0),
-    phase: const ProgramPhase(
-      id: 10,
-      programId: 1,
-      phaseNumber: 1,
-      name: 'Base',
-      durationWeeks: 4,
-    ),
-    phaseIndex: 1,
-    totalPhases: 1,
-    wodTemplate: const WodTemplate(
-      id: 100,
-      phaseId: 10,
-      wodNumber: 1,
-      name: 'QA Workout',
-      restSeconds: 0,
-      isArchived: false,
-      sortOrder: 0,
-    ),
-    weekNumberInProgram: 1,
-    totalProgramWeeks: 4,
-    items: List.unmodifiable(_items),
-  );
+  NextWodResult result() {
+    final epoch = DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+    return NextWodResult(
+      program: Program(
+        id: 1,
+        name: 'QA Program',
+        status: 0,
+        isPublic: false,
+        syncId: 'prog-1',
+        updatedAt: epoch,
+      ),
+      phase: ProgramPhase(
+        id: 10,
+        programId: 1,
+        phaseNumber: 1,
+        name: 'Base',
+        durationWeeks: 4,
+        syncId: 'phase-10',
+        updatedAt: epoch,
+      ),
+      phaseIndex: 1,
+      totalPhases: 1,
+      wodTemplate: WodTemplate(
+        id: 100,
+        phaseId: 10,
+        wodNumber: 1,
+        name: 'QA Workout',
+        restSeconds: 0,
+        isArchived: false,
+        sortOrder: 0,
+        syncId: 'wod-100',
+        updatedAt: epoch,
+      ),
+      weekNumberInProgram: 1,
+      totalProgramWeeks: 4,
+      items: List.unmodifiable(_items),
+    );
+  }
 }
 
 class _FakeFlutterLocalNotificationsPlatform

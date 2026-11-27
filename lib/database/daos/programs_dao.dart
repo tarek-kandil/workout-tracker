@@ -32,11 +32,17 @@ class ProgramsDao extends DatabaseAccessor<AppDatabase>
       into(programs).insert(entry);
 
   Future<void> updateProgram(ProgramsCompanion entry) =>
-      update(programs).replace(entry);
+      (update(programs)..where((p) => p.id.equals(entry.id.value))).write(
+        entry.copyWith(updatedAt: Value(DateTime.now().toUtc())),
+      );
 
   Future<void> updateProgramStatus(int programId, int status) =>
-      (update(programs)..where((p) => p.id.equals(programId)))
-          .write(ProgramsCompanion(status: Value(status)));
+      (update(programs)..where((p) => p.id.equals(programId))).write(
+        ProgramsCompanion(
+          status: Value(status),
+          updatedAt: Value(DateTime.now().toUtc()),
+        ),
+      );
 
   Future<void> deleteProgram(int programId) async {
     final phases = await getPhasesForProgram(programId);
@@ -58,7 +64,8 @@ class ProgramsDao extends DatabaseAccessor<AppDatabase>
       into(programPhases).insert(entry);
 
   Future<void> updatePhase(ProgramPhasesCompanion entry) =>
-      update(programPhases).replace(entry);
+      (update(programPhases)..where((pp) => pp.id.equals(entry.id.value)))
+          .write(entry.copyWith(updatedAt: Value(DateTime.now().toUtc())));
 
   Future<void> deletePhase(int phaseId) async {
     final wods = await getWodTemplatesForPhase(phaseId);
@@ -80,7 +87,8 @@ class ProgramsDao extends DatabaseAccessor<AppDatabase>
       into(wodTemplates).insert(entry);
 
   Future<void> updateWodTemplate(WodTemplatesCompanion entry) =>
-      update(wodTemplates).replace(entry);
+      (update(wodTemplates)..where((w) => w.id.equals(entry.id.value)))
+          .write(entry.copyWith(updatedAt: Value(DateTime.now().toUtc())));
 
   Future<void> deleteWodTemplate(int wodTemplateId) async {
     await attachedDatabase.customStatement(
@@ -149,7 +157,8 @@ class ProgramsDao extends DatabaseAccessor<AppDatabase>
 
   Future<void> updateWodTemplateExercise(
           WodTemplateExercisesCompanion entry) =>
-      update(wodTemplateExercises).replace(entry);
+      (update(wodTemplateExercises)..where((w) => w.id.equals(entry.id.value)))
+          .write(entry.copyWith(updatedAt: Value(DateTime.now().toUtc())));
 
   Future<void> deleteWodTemplateExercise(int id) =>
       (delete(wodTemplateExercises)..where((w) => w.id.equals(id))).go();
@@ -166,7 +175,8 @@ class ProgramsDao extends DatabaseAccessor<AppDatabase>
       into(wodExerciseGroups).insert(entry);
 
   Future<void> updateGroup(WodExerciseGroupsCompanion entry) =>
-      update(wodExerciseGroups).replace(entry);
+      (update(wodExerciseGroups)..where((g) => g.id.equals(entry.id.value)))
+          .write(entry.copyWith(updatedAt: Value(DateTime.now().toUtc())));
 
   Future<void> deleteGroup(int groupId) async {
     // Detach any exercises that belonged to this group (make them standalone)

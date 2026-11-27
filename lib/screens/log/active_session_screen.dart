@@ -1760,6 +1760,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       repRangeMin: origEntry.templateExercise.repRangeMin,
       repRangeMax: origEntry.templateExercise.repRangeMax,
       restSeconds: original.restSeconds,
+      syncId: '',
+      updatedAt: DateTime.now().toUtc(),
     );
     final newEntry = WodExerciseEntry(
       templateExercise: fakeTe, exercise: exercise, suggestion: WeightSuggestion.noHistory,
@@ -1851,6 +1853,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       targetSets: circuit.rounds,
       repRangeMin: original.templateExercise.repRangeMin,
       repRangeMax: original.templateExercise.repRangeMax,
+      syncId: '',
+      updatedAt: DateTime.now().toUtc(),
     );
     final newEntry = WodExerciseEntry(
       templateExercise: fakeTe, exercise: newExercise, suggestion: WeightSuggestion.noHistory,
@@ -2180,6 +2184,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       targetSets: sets,
       repRangeMin: repMin,
       repRangeMax: repMax,
+      syncId: '',
+      updatedAt: DateTime.now().toUtc(),
     );
     _insertSessionExercise(insertAt, exercise, fakeTe, isAdHoc: true);
   }

@@ -1,7 +1,8 @@
 import 'package:drift/drift.dart';
 import 'program_phases_table.dart';
+import 'sync_columns_mixin.dart';
 
-class WodTemplates extends Table {
+class WodTemplates extends Table with SyncColumnsMixin {
   IntColumn get id => integer().autoIncrement()();
   /// Null for a standalone "flash workout" (not part of any program phase).
   IntColumn get phaseId => integer().nullable().references(ProgramPhases, #id)();

@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
+import 'sync_columns_mixin.dart';
 
-class DailyTasks extends Table {
+class DailyTasks extends Table with SyncColumnsMixin {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text()();
   TextColumn get iconName => text().nullable()();

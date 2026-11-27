@@ -349,6 +349,8 @@ void main() {
           weightKg: kg,
           reps: reps,
           rir: rir,
+          syncId: 'set-$setNum',
+          updatedAt: DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
         );
 
     // 1. Hit top of range (10) at target RIR (2.0) -> Increase weight, reset reps to 8

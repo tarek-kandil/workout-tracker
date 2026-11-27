@@ -5,7 +5,10 @@ import '../models/exercise_muscle_seed.dart';
 import '../models/exercise_tracking_mode.dart';
 import '../models/volume_landmark.dart';
 
+import 'sync_ids.dart';
+
 export '../data/global_exercise_catalog.dart';
+export 'sync_ids.dart';
 
 // ─── 21-muscle taxonomy (specs/003-muscle-volume-report) ──────────────────
 
@@ -125,6 +128,7 @@ final List<ExercisesCompanion> kDefaultExercises = [
     ExercisesCompanion(
       name: Value(seed.name),
       canonicalKey: Value(seed.key),
+      syncId: Value(globalExerciseSyncId(seed.key)),
       isTimed: Value(seed.mode == ExerciseTrackingMode.timed),
       trackingMode: Value(seed.mode.dbValue),
     ),

@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
+import 'sync_columns_mixin.dart';
 
-class UserProfiles extends Table {
+class UserProfiles extends Table with SyncColumnsMixin {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text().withDefault(const Constant(''))();
   // male | female | other

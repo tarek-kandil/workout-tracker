@@ -1,9 +1,10 @@
 import 'package:drift/drift.dart';
 import 'sessions_table.dart';
 import 'exercises_table.dart';
+import 'sync_columns_mixin.dart';
 
 // Named WorkoutSets to avoid conflict with Dart's built-in Set type
-class WorkoutSets extends Table {
+class WorkoutSets extends Table with SyncColumnsMixin {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get sessionId => integer().references(WorkoutSessions, #id)();
   IntColumn get exerciseId => integer().references(Exercises, #id)();

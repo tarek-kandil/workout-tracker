@@ -39,7 +39,8 @@ class SetsDao extends DatabaseAccessor<AppDatabase> with _$SetsDaoMixin {
       into(workoutSets).insert(entry);
 
   Future<void> updateSet(WorkoutSetsCompanion entry) =>
-      update(workoutSets).replace(entry);
+      (update(workoutSets)..where((s) => s.id.equals(entry.id.value)))
+          .write(entry.copyWith(updatedAt: Value(DateTime.now().toUtc())));
 
   Future<void> deleteSet(int id) =>
       (delete(workoutSets)..where((s) => s.id.equals(id))).go();

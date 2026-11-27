@@ -18,8 +18,10 @@ import 'tables/wod_template_exercises_table.dart';
 import 'tables/daily_tasks_table.dart';
 import 'tables/daily_task_completions_table.dart';
 import 'tables/user_profile_table.dart';
+import 'tables/user_exercise_settings_table.dart';
 import 'tables/exercise_muscles_table.dart';
 import 'tables/challenges_table.dart';
+import '../utils/sync_ids.dart';
 import 'daos/exercises_dao.dart';
 import 'daos/exercise_notes_dao.dart';
 import 'daos/exercise_variations_dao.dart';
@@ -54,6 +56,7 @@ part 'app_database.g.dart';
     Challenges,
     ChallengeAttempts,
     ChallengeMilestones,
+    UserExerciseSettings,
   ],
   daos: [
     ExercisesDao,
@@ -75,11 +78,37 @@ class AppDatabase extends _$AppDatabase {
   /// Test-only constructor that accepts an explicit [QueryExecutor].
   AppDatabase.forTesting(super.e);
 
+  static const List<String> _kSyncedTables = [
+    'exercises',
+    'workout_sessions',
+    'workout_sets',
+    'bodyweight_entries',
+    'programs',
+    'program_phases',
+    'wod_templates',
+    'wod_exercise_groups',
+    'wod_template_exercises',
+    'daily_tasks',
+    'daily_task_completions',
+    'user_profiles',
+    'exercise_muscles',
+    'exercise_notes',
+    'exercise_variations',
+    'challenges',
+    'challenge_attempts',
+    'challenge_milestones',
+    'user_exercise_settings',
+  ];
+
   @override
-  int get schemaVersion => 27;
+  int get schemaVersion => 28;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (m) async {
+          await m.createAll();
+          await _ensureSyncUniqueIndexes();
+        },
         beforeOpen: (details) async {
           await customStatement('PRAGMA foreign_keys = ON');
         },
@@ -474,6 +503,32 @@ class AppDatabase extends _$AppDatabase {
               final colNames = cols.map((r) => r.read<String>('name')).toSet();
               if (!colNames.contains('reminder_days')) {
                 await customStatement('PRAGMA foreign_keys = OFF');
+                final nowEpoch =
+                    DateTime.now().toUtc().millisecondsSinceEpoch ~/ 1000;
+                if (!colNames.contains('sync_id')) {
+                  await customStatement(
+                    "ALTER TABLE wod_templates ADD COLUMN sync_id TEXT NOT NULL DEFAULT '';",
+                  );
+                }
+                if (!colNames.contains('user_id')) {
+                  await customStatement(
+                    'ALTER TABLE wod_templates ADD COLUMN user_id TEXT NULL;',
+                  );
+                }
+                if (!colNames.contains('updated_at')) {
+                  await customStatement(
+                    'ALTER TABLE wod_templates ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0;',
+                  );
+                  await customStatement(
+                    'UPDATE wod_templates SET updated_at = ? WHERE updated_at = 0;',
+                    [nowEpoch],
+                  );
+                }
+                if (!colNames.contains('deleted_at')) {
+                  await customStatement(
+                    'ALTER TABLE wod_templates ADD COLUMN deleted_at INTEGER NULL;',
+                  );
+                }
                 await m.alterTable(TableMigration(
                   wodTemplates,
                   newColumns: [
@@ -598,6 +653,9 @@ class AppDatabase extends _$AppDatabase {
               }
             }
           }
+          if (from < 28) {
+            await _migrateToV28(m);
+          }
           if (from >= 3 && from < 8) {
             final cols = await customSelect(
               'PRAGMA table_info(daily_tasks)',
@@ -610,6 +668,157 @@ class AppDatabase extends _$AppDatabase {
           }
         },
       );
+
+  Future<void> _ensureSyncUniqueIndexes([Set<String>? existingTables]) async {
+    final tableNames = existingTables ??
+        (await customSelect(
+          "SELECT name FROM sqlite_master WHERE type='table'",
+        ).get())
+            .map((r) => r.read<String>('name'))
+            .toSet();
+    for (final table in _kSyncedTables) {
+      if (!tableNames.contains(table)) continue;
+      await customStatement(
+        'CREATE UNIQUE INDEX IF NOT EXISTS idx_${table}_sync_id ON $table(sync_id);',
+      );
+    }
+  }
+
+  Future<void> _migrateToV28(Migrator m) async {
+    final tables = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type='table'",
+    ).get();
+    final tableNames = tables.map((r) => r.read<String>('name')).toSet();
+
+    if (!tableNames.contains('user_exercise_settings')) {
+      await m.createTable(userExerciseSettings);
+      tableNames.add('user_exercise_settings');
+    }
+
+    if (tableNames.contains('exercises')) {
+      final cols = await customSelect('PRAGMA table_info(exercises)').get();
+      final colNames = cols.map((r) => r.read<String>('name')).toSet();
+      if (!colNames.contains('deprecated')) {
+        await customStatement(
+          'ALTER TABLE exercises ADD COLUMN deprecated INTEGER NOT NULL DEFAULT 0;',
+        );
+      }
+    }
+
+    if (tableNames.contains('programs')) {
+      final cols = await customSelect('PRAGMA table_info(programs)').get();
+      final colNames = cols.map((r) => r.read<String>('name')).toSet();
+      if (!colNames.contains('is_public')) {
+        await customStatement(
+          'ALTER TABLE programs ADD COLUMN is_public INTEGER NOT NULL DEFAULT 0;',
+        );
+      }
+      if (!colNames.contains('source_program_sync_id')) {
+        await customStatement(
+          'ALTER TABLE programs ADD COLUMN source_program_sync_id TEXT NULL;',
+        );
+      }
+    }
+
+    for (final table in _kSyncedTables) {
+      if (!tableNames.contains(table)) continue;
+      final cols = await customSelect('PRAGMA table_info($table)').get();
+      final colNames = cols.map((r) => r.read<String>('name')).toSet();
+
+      if (!colNames.contains('sync_id')) {
+        await customStatement(
+          "ALTER TABLE $table ADD COLUMN sync_id TEXT NOT NULL DEFAULT '';",
+        );
+      }
+      if (!colNames.contains('user_id')) {
+        await customStatement(
+          'ALTER TABLE $table ADD COLUMN user_id TEXT NULL;',
+        );
+      }
+      if (!colNames.contains('updated_at')) {
+        final nowEpoch = DateTime.now().toUtc().millisecondsSinceEpoch ~/ 1000;
+        await customStatement(
+          'ALTER TABLE $table ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0;',
+        );
+        await customStatement(
+          'UPDATE $table SET updated_at = ? WHERE updated_at = 0;',
+          [nowEpoch],
+        );
+      }
+      if (!colNames.contains('deleted_at')) {
+        await customStatement(
+          'ALTER TABLE $table ADD COLUMN deleted_at INTEGER NULL;',
+        );
+      }
+
+      if (table == 'exercises' && colNames.contains('canonical_key')) {
+        final emptyRows = await customSelect(
+          "SELECT id, canonical_key FROM exercises WHERE sync_id = ''",
+        ).get();
+        for (final row in emptyRows) {
+          final id = row.read<int>('id');
+          final key = row.readNullable<String>('canonical_key');
+          final uuid = key != null && key.isNotEmpty
+              ? globalExerciseSyncId(key)
+              : generateUuidV4();
+          await customStatement(
+            'UPDATE exercises SET sync_id = ? WHERE id = ?',
+            [uuid, id],
+          );
+        }
+      } else {
+        final emptyRows = await customSelect(
+          "SELECT id FROM $table WHERE sync_id = ''",
+        ).get();
+        for (final row in emptyRows) {
+          final id = row.read<int>('id');
+          await customStatement(
+            'UPDATE $table SET sync_id = ? WHERE id = ?',
+            [generateUuidV4(), id],
+          );
+        }
+      }
+    }
+
+    await _ensureSyncUniqueIndexes(tableNames);
+
+    // Mirror any personal exercise state (archived, notes, muscle review flags)
+    // into user_exercise_settings so shared global exercise rows stay clean.
+    if (tableNames.contains('exercises')) {
+      final exCols = await customSelect('PRAGMA table_info(exercises)').get();
+      final exColNames = exCols.map((r) => r.read<String>('name')).toSet();
+      if (exColNames.containsAll([
+        'archived',
+        'notes',
+        'muscle_needs_review',
+        'muscle_review_note',
+      ])) {
+        final personalRows = await customSelect(
+          'SELECT id, archived, notes, muscle_needs_review, muscle_review_note '
+          'FROM exercises '
+          'WHERE (archived = 1 OR (notes IS NOT NULL AND length(trim(notes)) > 0) OR muscle_needs_review = 1) '
+          'AND NOT EXISTS (SELECT 1 FROM user_exercise_settings ues WHERE ues.exercise_id = exercises.id)',
+        ).get();
+        final nowEpoch = DateTime.now().toUtc().millisecondsSinceEpoch ~/ 1000;
+        for (final r in personalRows) {
+          await customStatement(
+            'INSERT INTO user_exercise_settings '
+            '(exercise_id, archived, notes, muscle_needs_review, muscle_review_note, sync_id, updated_at) '
+            'VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [
+              r.read<int>('id'),
+              r.read<int>('archived'),
+              r.readNullable<String>('notes'),
+              r.read<int>('muscle_needs_review'),
+              r.readNullable<String>('muscle_review_note'),
+              generateUuidV4(),
+              nowEpoch,
+            ],
+          );
+        }
+      }
+    }
+  }
 
   /// Migrates one legacy broad muscle tag ([from]) to an active v20
   /// taxonomy muscle ([to]) for every exercise that has it, without

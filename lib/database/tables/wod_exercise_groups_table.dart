@@ -1,7 +1,8 @@
 import 'package:drift/drift.dart';
+import 'sync_columns_mixin.dart';
 import 'wod_templates_table.dart';
 
-class WodExerciseGroups extends Table {
+class WodExerciseGroups extends Table with SyncColumnsMixin {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get wodTemplateId => integer().references(WodTemplates, #id)();
   IntColumn get sortOrder => integer()();

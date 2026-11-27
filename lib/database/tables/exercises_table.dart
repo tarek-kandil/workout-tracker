@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
+import 'sync_columns_mixin.dart';
 
-class Exercises extends Table {
+class Exercises extends Table with SyncColumnsMixin {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text().withLength(min: 1, max: 100)();
   TextColumn get category => text().withDefault(const Constant('Other'))();
@@ -31,4 +32,7 @@ class Exercises extends Table {
   // for global catalog exercises (used for deterministic UUID v5 mapping when
   // syncing with the backend). Null for user-created custom exercises.
   TextColumn get canonicalKey => text().nullable()();
+  // Schema v28: global library exercises are never hard-deleted; retired items
+  // set deprecated = true so past history remains intact.
+  BoolColumn get deprecated => boolean().withDefault(const Constant(false))();
 }

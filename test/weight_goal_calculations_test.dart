@@ -3,8 +3,13 @@ import 'package:workout_tracker/database/app_database.dart';
 import 'package:workout_tracker/models/weight_goal_plan.dart';
 import 'package:workout_tracker/utils/weight_goal_calculations.dart';
 
-BodyweightEntry _entry(int id, DateTime date, double kg) =>
-    BodyweightEntry(id: id, date: date, weightKg: kg);
+BodyweightEntry _entry(int id, DateTime date, double kg) => BodyweightEntry(
+      id: id,
+      date: date,
+      weightKg: kg,
+      syncId: 'bw-$id',
+      updatedAt: date.toUtc(),
+    );
 
 WeightGoalPlan _lossPlan({
   required DateTime start,

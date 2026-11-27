@@ -1,7 +1,8 @@
 import 'package:drift/drift.dart';
 import 'exercises_table.dart';
+import 'sync_columns_mixin.dart';
 
-class Challenges extends Table {
+class Challenges extends Table with SyncColumnsMixin {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get exerciseId =>
       integer().references(Exercises, #id, onDelete: KeyAction.cascade)();
@@ -15,7 +16,7 @@ class Challenges extends Table {
       dateTime().withDefault(currentDateAndTime)();
 }
 
-class ChallengeAttempts extends Table {
+class ChallengeAttempts extends Table with SyncColumnsMixin {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get challengeId =>
       integer().references(Challenges, #id, onDelete: KeyAction.cascade)();
@@ -25,7 +26,7 @@ class ChallengeAttempts extends Table {
   DateTimeColumn get date => dateTime().withDefault(currentDateAndTime)();
 }
 
-class ChallengeMilestones extends Table {
+class ChallengeMilestones extends Table with SyncColumnsMixin {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get challengeId =>
       integer().references(Challenges, #id, onDelete: KeyAction.cascade)();

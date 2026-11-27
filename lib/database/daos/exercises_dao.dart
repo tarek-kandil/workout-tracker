@@ -40,17 +40,17 @@ class ExercisesDao extends DatabaseAccessor<AppDatabase>
 
   // ── Exercises ──────────────────────────────────────────────────────────────
 
-  /// Live, library/picker-facing list: excludes archived exercises.
+  /// Live, library/picker-facing list: excludes archived & deprecated exercises.
   Stream<List<Exercise>> watchAllExercises() =>
       (select(exercises)
-        ..where((e) => e.archived.equals(false))
+        ..where((e) => e.archived.equals(false) & e.deprecated.equals(false))
         ..orderBy([(e) => OrderingTerm(expression: e.name)]))
       .watch();
 
-  /// One-shot, library/picker-facing list: excludes archived exercises.
+  /// One-shot, library/picker-facing list: excludes archived & deprecated exercises.
   Future<List<Exercise>> getAllExercises() =>
       (select(exercises)
-        ..where((e) => e.archived.equals(false))
+        ..where((e) => e.archived.equals(false) & e.deprecated.equals(false))
         ..orderBy([(e) => OrderingTerm(expression: e.name)]))
       .get();
 
@@ -76,7 +76,9 @@ class ExercisesDao extends DatabaseAccessor<AppDatabase>
       into(exercises).insert(entry);
 
   Future<bool> updateExercise(ExercisesCompanion entry) =>
-      update(exercises).replace(entry);
+      (update(exercises)..where((e) => e.id.equals(entry.id.value)))
+          .write(entry.copyWith(updatedAt: Value(DateTime.now().toUtc())))
+          .then((rows) => rows > 0);
 
   /// Deprecated: throws a foreign-key constraint error if the exercise has
   /// logged history, is used in a program template, or has a note (see
@@ -164,8 +166,11 @@ class ExercisesDao extends DatabaseAccessor<AppDatabase>
       };
 
       final catalogIdByName = <String, int>{};
+      final catalogKeyByName = <String, String>{};
+      final activeMusclesByExercise = await getAllMuscleAssignmentMap();
       final muscleRowsToInsert = <ExerciseMusclesCompanion>[];
-      final muscleRefreshIds = <int>[];
+      final rowsToDeactivate = <ExerciseMuscle>[];
+      final nowUtc = DateTime.now().toUtc();
 
       for (final seed in kGlobalExerciseCatalog) {
         Exercise? existing =
@@ -180,6 +185,7 @@ class ExercisesDao extends DatabaseAccessor<AppDatabase>
           }
         }
 
+        final deterministicSyncId = globalExerciseSyncId(seed.key);
         late final int exId;
         if (existing != null) {
           exId = existing.id;
@@ -199,6 +205,8 @@ class ExercisesDao extends DatabaseAccessor<AppDatabase>
             ExercisesCompanion(
               name: Value(newName),
               canonicalKey: Value(seed.key),
+              syncId: Value(deterministicSyncId),
+              updatedAt: Value(nowUtc),
               trackingMode: shouldSwitchToBw
                   ? Value(ExerciseTrackingMode.bodyweightReps.dbValue)
                   : const Value.absent(),
@@ -219,6 +227,8 @@ class ExercisesDao extends DatabaseAccessor<AppDatabase>
             ExercisesCompanion.insert(
               name: seed.name,
               canonicalKey: Value(seed.key),
+              syncId: Value(deterministicSyncId),
+              updatedAt: Value(nowUtc),
               isTimed: Value(seed.mode == ExerciseTrackingMode.timed),
               trackingMode: Value(seed.mode.dbValue),
             ),
@@ -226,35 +236,68 @@ class ExercisesDao extends DatabaseAccessor<AppDatabase>
         }
 
         catalogIdByName[seed.name] = exId;
+        catalogKeyByName[seed.name] = seed.key;
 
         if (!seed.isCardio && seed.muscles.isNotEmpty) {
-          muscleRefreshIds.add(exId);
-          for (int i = 0; i < seed.muscles.length; i++) {
-            final m = seed.muscles[i];
-            muscleRowsToInsert.add(
-              ExerciseMusclesCompanion.insert(
-                exerciseId: exId,
-                muscle: m.muscle,
-                sortOrder: i,
-                role: Value(
-                  m.role == ExerciseMuscleRole.primary
-                      ? kMuscleRolePrimary
-                      : kMuscleRoleSecondary,
+          final currentActive = activeMusclesByExercise[exId] ?? const [];
+          var alreadyMatches = currentActive.length == seed.muscles.length;
+          if (alreadyMatches) {
+            for (int i = 0; i < seed.muscles.length; i++) {
+              final m = seed.muscles[i];
+              final roleStr = m.role == ExerciseMuscleRole.primary
+                  ? kMuscleRolePrimary
+                  : kMuscleRoleSecondary;
+              final expectedSyncId =
+                  globalExerciseMuscleSyncId(seed.key, roleStr, m.muscle);
+              final cur = currentActive[i];
+              if (cur.muscle != m.muscle ||
+                  cur.role != roleStr ||
+                  cur.syncId != expectedSyncId) {
+                alreadyMatches = false;
+                break;
+              }
+            }
+          }
+
+          if (!alreadyMatches) {
+            rowsToDeactivate.addAll(currentActive);
+            for (int i = 0; i < seed.muscles.length; i++) {
+              final m = seed.muscles[i];
+              final roleStr = m.role == ExerciseMuscleRole.primary
+                  ? kMuscleRolePrimary
+                  : kMuscleRoleSecondary;
+              muscleRowsToInsert.add(
+                ExerciseMusclesCompanion.insert(
+                  exerciseId: exId,
+                  muscle: m.muscle,
+                  sortOrder: i,
+                  role: Value(roleStr),
+                  isActive: const Value(true),
+                  syncId: Value(
+                    globalExerciseMuscleSyncId(seed.key, roleStr, m.muscle),
+                  ),
+                  updatedAt: Value(nowUtc),
                 ),
-                isActive: const Value(true),
-              ),
-            );
+              );
+            }
           }
         }
       }
 
-      if (muscleRefreshIds.isNotEmpty) {
-        await (update(exerciseMuscles)
-              ..where((m) =>
-                  m.exerciseId.isIn(muscleRefreshIds) &
-                  m.isActive.equals(true)))
-            .write(const ExerciseMusclesCompanion(isActive: Value(false)));
+      if (rowsToDeactivate.isNotEmpty) {
+        for (final oldRow in rowsToDeactivate) {
+          await (update(exerciseMuscles)..where((m) => m.id.equals(oldRow.id)))
+              .write(
+            ExerciseMusclesCompanion(
+              isActive: const Value(false),
+              syncId: Value(generateUuidV4()),
+              updatedAt: Value(nowUtc),
+            ),
+          );
+        }
+      }
 
+      if (muscleRowsToInsert.isNotEmpty) {
         await batch((b) {
           b.insertAll(exerciseMuscles, muscleRowsToInsert);
         });
@@ -266,10 +309,12 @@ class ExercisesDao extends DatabaseAccessor<AppDatabase>
       for (final group in kDefaultExerciseVariationGroups) {
         for (int i = 0; i < group.length; i++) {
           final idA = catalogIdByName[group[i]];
-          if (idA == null) continue;
+          final keyA = catalogKeyByName[group[i]];
+          if (idA == null || keyA == null) continue;
           for (int j = i + 1; j < group.length; j++) {
             final idB = catalogIdByName[group[j]];
-            if (idB == null || idA == idB) continue;
+            final keyB = catalogKeyByName[group[j]];
+            if (idB == null || keyB == null || idA == idB) continue;
             final minId = idA < idB ? idA : idB;
             final maxId = idA < idB ? idB : idA;
             if (pairKeys.add('$minId:$maxId')) {
@@ -277,6 +322,8 @@ class ExercisesDao extends DatabaseAccessor<AppDatabase>
                 ExerciseVariationsCompanion.insert(
                   exerciseId: minId,
                   variationExerciseId: maxId,
+                  syncId: Value(globalExerciseVariationSyncId(keyA, keyB)),
+                  updatedAt: Value(nowUtc),
                 ),
               );
             }

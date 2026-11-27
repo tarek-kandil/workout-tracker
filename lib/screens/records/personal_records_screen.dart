@@ -62,7 +62,10 @@ class _PersonalRecordsScreenState extends ConsumerState<PersonalRecordsScreen> {
         isTimed: false,
         trackingMode: 'weighted_reps',
         archived: false,
+        deprecated: false,
         muscleNeedsReview: false,
+        syncId: '',
+        updatedAt: DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
       ),
     );
     if (inferred.isNotEmpty) return inferred.first.muscle;
@@ -1054,7 +1057,10 @@ class _PersonalRecordsScreenState extends ConsumerState<PersonalRecordsScreen> {
             isTimed: r.isTimed,
             trackingMode: r.trackingMode.dbValue,
             archived: false,
+            deprecated: false,
             muscleNeedsReview: false,
+            syncId: '',
+            updatedAt: DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
           ),
       ];
       final ranked = _smartFilterAndRankExercises(
