@@ -103,6 +103,13 @@ Future<StartupResult> runAppStartup(ProviderContainer container) async {
       await prefs.setBool('bodyweight_seeded_v1', true);
       await prefs.setBool('global_catalog_seeded_v1', true);
     }
+
+    final globalCatalogDeduped =
+        prefs.getBool('global_catalog_dedup_v1') ?? false;
+    if (!globalCatalogDeduped) {
+      await db.exercisesDao.deduplicateLegacyExercisesV1();
+      await prefs.setBool('global_catalog_dedup_v1', true);
+    }
   } catch (e) {
     debugPrint(
       'Startup: first-launch seeding failed, will retry next launch (non-fatal): $e',

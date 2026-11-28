@@ -9,6 +9,7 @@ import '../tables/exercise_variations_table.dart';
 import '../../models/exercise_muscle_seed.dart';
 import '../../models/exercise_tracking_mode.dart';
 import '../../utils/constants.dart';
+import '../../utils/exercise_deduplicator.dart';
 
 part 'exercises_dao.g.dart';
 
@@ -24,6 +25,25 @@ enum ExerciseDeleteOutcome {
   /// workout history) but archived: `archived = true`, hidden from the
   /// library/pickers, and removed from program templates.
   archived,
+}
+
+/// Summary of references moved when merging a duplicate exercise into a
+/// canonical target exercise.
+class ExerciseMergeSummary {
+  final int setCount;
+  final int templateCount;
+  final int challengeCount;
+  final int noteCount;
+
+  const ExerciseMergeSummary({
+    required this.setCount,
+    required this.templateCount,
+    required this.challengeCount,
+    required this.noteCount,
+  });
+
+  int get totalReferences =>
+      setCount + templateCount + challengeCount + noteCount;
 }
 
 @DriftAccessor(tables: [
@@ -61,8 +81,15 @@ class ExercisesDao extends DatabaseAccessor<AppDatabase>
   /// past workout history that may reference an archived exercise.
   Future<List<Exercise>> getAllExercisesIncludingArchived() =>
       (select(exercises)
+        ..where((e) => e.deprecated.equals(false))
         ..orderBy([(e) => OrderingTerm(expression: e.name)]))
       .get();
+
+  Stream<List<Exercise>> watchAllExercisesIncludingArchived() =>
+      (select(exercises)
+        ..where((e) => e.deprecated.equals(false))
+        ..orderBy([(e) => OrderingTerm(expression: e.name)]))
+      .watch();
 
   /// Name → id map over *all* rows (including archived), so seeding/migration
   /// never misses an already-seeded (but archived) exercise and re-inserts a
@@ -130,6 +157,186 @@ class ExercisesDao extends DatabaseAccessor<AppDatabase>
 
   Future<void> seedExercises(List<ExercisesCompanion> entries) async {
     await batch((b) => b.insertAllOnConflictUpdate(exercises, entries));
+  }
+
+  /// Counts logged sets, WOD template entries, challenges, and notes currently
+  /// attached to [sourceId] so a merge confirmation dialog can show exact impact.
+  Future<ExerciseMergeSummary> previewMergeImpact(int sourceId) async {
+    final setCount = await (selectOnly(workoutSets)
+          ..addColumns([workoutSets.id.count()])
+          ..where(workoutSets.exerciseId.equals(sourceId)))
+        .map((r) => r.read(workoutSets.id.count()) ?? 0)
+        .getSingle();
+
+    final templateCount = await (selectOnly(wodTemplateExercises)
+          ..addColumns([wodTemplateExercises.id.count()])
+          ..where(wodTemplateExercises.exerciseId.equals(sourceId)))
+        .map((r) => r.read(wodTemplateExercises.id.count()) ?? 0)
+        .getSingle();
+
+    final challengesTable = attachedDatabase.challenges;
+    final challengeCount = await (selectOnly(challengesTable)
+          ..addColumns([challengesTable.id.count()])
+          ..where(challengesTable.exerciseId.equals(sourceId)))
+        .map((r) => r.read(challengesTable.id.count()) ?? 0)
+        .getSingle();
+
+    final noteCount = await (selectOnly(exerciseNotes)
+          ..addColumns([exerciseNotes.id.count()])
+          ..where(exerciseNotes.exerciseId.equals(sourceId)))
+        .map((r) => r.read(exerciseNotes.id.count()) ?? 0)
+        .getSingle();
+
+    return ExerciseMergeSummary(
+      setCount: setCount,
+      templateCount: templateCount,
+      challengeCount: challengeCount,
+      noteCount: noteCount,
+    );
+  }
+
+  /// Atomically re-points all historical sets, WOD/Flash templates, challenges,
+  /// notes, and variation links from [sourceId] onto [targetId], then deletes
+  /// the duplicate [sourceId] row. Works whether [sourceId] is active or archived.
+  Future<ExerciseMergeSummary> mergeExerciseInto({
+    required int sourceId,
+    required int targetId,
+  }) {
+    if (sourceId == targetId) {
+      throw ArgumentError.value(
+        targetId,
+        'targetId',
+        'Cannot merge an exercise into itself',
+      );
+    }
+
+    return transaction(() async {
+      final summary = await previewMergeImpact(sourceId);
+      final nowUtc = DateTime.now().toUtc();
+
+      final source = await (select(exercises)
+            ..where((e) => e.id.equals(sourceId)))
+          .getSingleOrNull();
+      final target = await (select(exercises)
+            ..where((e) => e.id.equals(targetId)))
+          .getSingleOrNull();
+      if (source == null || target == null) return summary;
+
+      // 1. Move logged workout sets.
+      await (update(workoutSets)..where((s) => s.exerciseId.equals(sourceId)))
+          .write(WorkoutSetsCompanion(
+        exerciseId: Value(targetId),
+        updatedAt: Value(nowUtc),
+      ));
+
+      // 2. Move WOD & Flash workout template entries.
+      await (update(wodTemplateExercises)
+            ..where((te) => te.exerciseId.equals(sourceId)))
+          .write(WodTemplateExercisesCompanion(
+        exerciseId: Value(targetId),
+        updatedAt: Value(nowUtc),
+      ));
+
+      // 3. Move Challenges.
+      final challengesTable = attachedDatabase.challenges;
+      await (update(challengesTable)
+            ..where((c) => c.exerciseId.equals(sourceId)))
+          .write(ChallengesCompanion(
+        exerciseId: Value(targetId),
+        updatedAt: Value(nowUtc),
+      ));
+
+      // 4. Move timestamped notes.
+      await (update(exerciseNotes)..where((n) => n.exerciseId.equals(sourceId)))
+          .write(ExerciseNotesCompanion(
+        exerciseId: Value(targetId),
+        updatedAt: Value(nowUtc),
+      ));
+
+      // 5. Preserve inline note if target has none, and unarchive target if
+      //    source was active so the merged target stays visible in the library.
+      final sourceInlineNote = source.notes?.trim();
+      final targetInlineNote = target.notes?.trim();
+      final copyInlineNote =
+          (sourceInlineNote != null && sourceInlineNote.isNotEmpty) &&
+              (targetInlineNote == null || targetInlineNote.isEmpty);
+      final unarchiveTarget = target.archived && !source.archived;
+      if (copyInlineNote || unarchiveTarget) {
+        await (update(exercises)..where((e) => e.id.equals(targetId))).write(
+          ExercisesCompanion(
+            notes: copyInlineNote ? Value(sourceInlineNote) : const Value.absent(),
+            archived: unarchiveTarget ? const Value(false) : const Value.absent(),
+            updatedAt: Value(nowUtc),
+          ),
+        );
+      }
+
+      // 6. Re-point custom variation links without creating self-links or duplicates.
+      final sourceVars = await (select(exerciseVariations)
+            ..where((v) =>
+                v.exerciseId.equals(sourceId) |
+                v.variationExerciseId.equals(sourceId)))
+          .get();
+      for (final v in sourceVars) {
+        final otherId =
+            v.exerciseId == sourceId ? v.variationExerciseId : v.exerciseId;
+        if (otherId == targetId) continue;
+        final minId = targetId < otherId ? targetId : otherId;
+        final maxId = targetId < otherId ? otherId : targetId;
+        await into(exerciseVariations).insert(
+          ExerciseVariationsCompanion.insert(
+            exerciseId: minId,
+            variationExerciseId: maxId,
+            updatedAt: Value(nowUtc),
+          ),
+          mode: InsertMode.insertOrIgnore,
+        );
+      }
+      await (delete(exerciseVariations)
+            ..where((v) =>
+                v.exerciseId.equals(sourceId) |
+                v.variationExerciseId.equals(sourceId)))
+          .go();
+
+      // 7. Remove per-user settings on source (if any) and hard-delete source.
+      final settingsTable = attachedDatabase.userExerciseSettings;
+      await (delete(settingsTable)
+            ..where((s) => s.exerciseId.equals(sourceId)))
+          .go();
+      await (delete(exercises)..where((e) => e.id.equals(sourceId))).go();
+
+      return summary;
+    });
+  }
+
+  /// Automatically merges non-catalog exercises (`canonical_key == null`,
+  /// active *or* archived) whose normalized token signature unambiguously
+  /// matches a canonical Global Catalog exercise (e.g. `'Lats pulldown'` →
+  /// `'Lat Pulldowns'`, `'Pullups'` → `'Pull-Ups'`, `'RDL'` → `'Romanian Deadlifts'`).
+  Future<int> deduplicateLegacyExercisesV1() async {
+    final all = await getAllExercisesIncludingArchived();
+    final canonicalBySig = <String, Exercise>{};
+    for (final e in all) {
+      if (e.canonicalKey != null) {
+        final sig = normalizeExerciseSignature(e.name);
+        if (sig.isNotEmpty) {
+          canonicalBySig[sig] = e;
+        }
+      }
+    }
+
+    var mergedCount = 0;
+    for (final e in all) {
+      if (e.canonicalKey != null) continue;
+      final sig = normalizeExerciseSignature(e.name);
+      if (sig.isEmpty) continue;
+      final target = canonicalBySig[sig];
+      if (target != null && target.id != e.id) {
+        await mergeExerciseInto(sourceId: e.id, targetId: target.id);
+        mergedCount++;
+      }
+    }
+    return mergedCount;
   }
 
   /// Atomically upgrades or initializes the local exercise library to
