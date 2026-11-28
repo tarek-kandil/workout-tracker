@@ -154,9 +154,9 @@ class SetsDao extends DatabaseAccessor<AppDatabase> with _$SetsDaoMixin {
   }
 
   /// Sets from the most recent session (any WOD) that included [exerciseId],
-  /// plus that session's date. Null if the exercise was never logged.
-  Future<({DateTime date, List<WorkoutSet> sets})?> getLastSessionSetsForExercise(
-      int exerciseId) async {
+  /// plus that session's id and date. Null if the exercise was never logged.
+  Future<({int sessionId, DateTime date, List<WorkoutSet> sets})?>
+      getLastSessionSetsForExercise(int exerciseId) async {
     final query = select(workoutSets).join([
       innerJoin(workoutSessions,
           workoutSessions.id.equalsExp(workoutSets.sessionId)),
@@ -166,6 +166,8 @@ class SetsDao extends DatabaseAccessor<AppDatabase> with _$SetsDaoMixin {
       ..orderBy([
         OrderingTerm(
             expression: workoutSessions.date, mode: OrderingMode.desc),
+        OrderingTerm(
+            expression: workoutSessions.id, mode: OrderingMode.desc),
         OrderingTerm(expression: workoutSets.setNumber),
       ]);
 
@@ -177,7 +179,7 @@ class SetsDao extends DatabaseAccessor<AppDatabase> with _$SetsDaoMixin {
         .where((r) => r.readTable(workoutSessions).id == latest.id)
         .map((r) => r.readTable(workoutSets))
         .toList();
-    return (date: latest.date, sets: sets);
+    return (sessionId: latest.id, date: latest.date, sets: sets);
   }
 
   /// Max weight per session for an exercise — used for the progress chart.

@@ -13,6 +13,7 @@ import 'package:workout_tracker/models/weight_suggestion.dart';
 import 'package:workout_tracker/models/wod_item.dart';
 import 'package:workout_tracker/providers/database_provider.dart';
 import 'package:workout_tracker/screens/log/active_session_screen.dart';
+import 'package:workout_tracker/screens/log/widgets/history_chip_row.dart';
 import 'package:workout_tracker/screens/log/widgets/check_circle_button.dart';
 import 'package:workout_tracker/screens/log/widgets/circuit_card.dart';
 
@@ -770,6 +771,118 @@ void main() {
       expect(find.text('Jumping Jack'), findsNothing);
       expect(find.text('Battle Ropes'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Last panel automatically shows Exercise A and more-recent Variation B without swapping and highlights what was done last time',
+    (tester) async {
+      await _pumpActiveSession(
+        tester,
+        configure: (builder) async {
+          final exA = await builder.addStandalone(
+            'Tricep Pushdowns',
+            sets: 2,
+            repRangeMin: 10,
+            repRangeMax: 12,
+          );
+          final variantB = await builder.addLibraryExercise(
+            'Rope Tricep Pushdowns',
+          );
+          await builder.addVariation(exA.exercise.id, variantB.id);
+
+          // Older session: logged Exercise A (32.5 kg x 10)
+          final s1 = await builder.db.sessionsDao.insertSession(
+            WorkoutSessionsCompanion.insert(
+              wodTemplateId: Value(builder.wodId),
+              date: DateTime(2026, 11, 18, 17, 0),
+              workoutName: 'QA Workout',
+            ),
+          );
+          await builder.db.setsDao.insertSet(
+            WorkoutSetsCompanion.insert(
+              sessionId: s1,
+              exerciseId: exA.exercise.id,
+              setNumber: 1,
+              weightKg: 32.5,
+              reps: 10,
+            ),
+          );
+
+          // Most recent session: swapped to Variation B (27.5 kg x 12)
+          final s2 = await builder.db.sessionsDao.insertSession(
+            WorkoutSessionsCompanion.insert(
+              wodTemplateId: Value(builder.wodId),
+              date: DateTime(2026, 11, 25, 17, 0),
+              workoutName: 'QA Workout',
+            ),
+          );
+          await builder.db.setsDao.insertSet(
+            WorkoutSetsCompanion.insert(
+              sessionId: s2,
+              exerciseId: variantB.id,
+              setNumber: 1,
+              weightKg: 27.5,
+              reps: 12,
+            ),
+          );
+
+          return _SavedProgress(
+            wodId: builder.wodId,
+            itemIdx: 0,
+            setIdx: 0,
+            circuitExIdx: 0,
+            sets: {
+              '${exA.exercise.id}': [
+                _setJson(weight: 32.5, reps: 10),
+                _setJson(weight: 32.5, reps: 10),
+              ],
+            },
+            items: [
+              {
+                'type': 'standalone',
+                'templateExerciseId': exA.templateExercise.id,
+                'skipped': false,
+              },
+            ],
+          );
+        },
+      );
+
+      // Card still shows Exercise A without swapping
+      expect(find.text('Tricep Pushdowns'), findsOneWidget);
+      expect(find.text('Last'), findsOneWidget);
+
+      // Tap "Last" directly — NO swap required!
+      await tester.tap(find.text('Last'));
+      await tester.pumpAndSettle();
+
+      // Both variations appear, with Rope Tricep Pushdowns (most recent) first + LAST badge
+      final historyRow = find.byType(HistoryChipRow);
+      expect(find.text('Rope Tricep Pushdowns · 25 Nov'), findsOneWidget);
+      expect(find.text('Tricep Pushdowns · 18 Nov'), findsOneWidget);
+      expect(find.text('LAST'), findsOneWidget);
+      expect(
+        find.descendant(of: historyRow, matching: find.text('27.5 kg')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: historyRow, matching: find.text('32.5 kg')),
+        findsNothing,
+      );
+
+      // Tapping Exercise A's tab switches sets while preserving LAST badge on Variant B
+      await tester.tap(find.text('Tricep Pushdowns · 18 Nov'));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(of: historyRow, matching: find.text('32.5 kg')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: historyRow, matching: find.text('27.5 kg')),
+        findsNothing,
+      );
+      expect(find.text('LAST'), findsOneWidget);
     },
   );
 }

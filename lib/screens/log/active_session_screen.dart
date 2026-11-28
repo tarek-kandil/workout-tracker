@@ -109,9 +109,12 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
   final Map<int, int> _prBestReps = {};
   final Map<int, int?> _prDurationData = {};
   final Map<int, bool> _historyExpanded = {};
-  /// Per session item (by SessionItem.id): last log of the swapped-in exercise
-  /// and of the exercise it replaced, for the "Last" panel.
+  /// Per standalone session item (by SessionItem.id): up to 2 variation/swap
+  /// histories for the "Last" panel.
   final Map<int, List<ExerciseHistory>> _swapHistory = {};
+  /// Per circuit exercise (by exerciseId): up to 2 variation/swap histories
+  /// for the circuit exercise's "Last" panel.
+  final Map<int, List<ExerciseHistory>> _circuitVariationHistory = {};
 
   // ── Mutable session items ──────────────────────────────────────────────────────
   final List<SessionItem> _sessionItems = [];
@@ -364,6 +367,21 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
 
     // Build mutable session items from the original result
     _sessionItems.addAll(widget.result.items.map((i) => SessionItem(id: _nextItemId++, wodItem: i)));
+
+    // Preload variation-aware "Last" histories for every standalone & circuit
+    // exercise so "Last" shows the 2 most relevant variations without needing
+    // to swap first.
+    for (final si in _sessionItems) {
+      switch (si.wodItem) {
+        case StandaloneWodExercise(:final entry):
+          _swapHistory[si.id] = await _buildFamilyHistories(entry.exercise);
+        case WodCircuit(:final exercises):
+          for (final ex in exercises) {
+            _circuitVariationHistory[ex.exercise.id] =
+                await _buildFamilyHistories(ex.exercise);
+          }
+      }
+    }
 
     final prefs = await SharedPreferences.getInstance();
     final savedJson = prefs.getString('workout_progress_${widget.result.wodTemplate.id}');
@@ -1795,18 +1813,100 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
     _saveProgress();
   }
 
-  /// Loads the last log (any workout) of the swapped-in exercise and, if known,
-  /// of the exercise it replaced, for the card's "Last" panel.
-  Future<void> _loadSwapHistory(int itemId, Exercise current, (int, Exercise?)? original) async {
-    final dao = ref.read(databaseProvider).setsDao;
-    final histories = <ExerciseHistory>[];
-    final cur = await dao.getLastSessionSetsForExercise(current.id);
-    if (cur != null) histories.add(ExerciseHistory(name: current.name, date: cur.date, sets: cur.sets));
-    if (original != null) {
-      final orig = await dao.getLastSessionSetsForExercise(original.$1);
-      final name = original.$2?.name ?? 'Original';
-      if (orig != null) histories.add(ExerciseHistory(name: name, date: orig.date, sets: orig.sets));
+  /// Builds up to 2 most relevant [ExerciseHistory] tabs across [current],
+  /// its linked variations, and any swapped-from [original] exercise:
+  /// - Always puts the single most recently performed exercise in the family
+  ///   first (marked [ExerciseHistory.isLastDone] = true).
+  /// - When another family member also has history, includes [current] if
+  ///   [current] itself was logged, otherwise the 2nd most recent variation.
+  Future<List<ExerciseHistory>> _buildFamilyHistories(
+    Exercise current, [
+    (int, Exercise?)? original,
+  ]) async {
+    final db = ref.read(databaseProvider);
+    final candidatesById = <int, ({String name, ExerciseTrackingMode mode})>{
+      current.id: (name: current.name, mode: current.mode),
+    };
+
+    final curVars = await db.exerciseVariationsDao.getVariations(current.id);
+    for (final v in curVars) {
+      candidatesById.putIfAbsent(v.id, () => (name: v.name, mode: v.mode));
     }
+
+    if (original != null) {
+      final origEx = original.$2;
+      candidatesById.putIfAbsent(
+        original.$1,
+        () => (
+          name: origEx?.name ?? 'Original',
+          mode: origEx?.mode ?? current.mode,
+        ),
+      );
+      final origVars =
+          await db.exerciseVariationsDao.getVariations(original.$1);
+      for (final v in origVars) {
+        candidatesById.putIfAbsent(v.id, () => (name: v.name, mode: v.mode));
+      }
+    }
+
+    final logged = <({
+      int exerciseId,
+      String name,
+      ExerciseTrackingMode mode,
+      int sessionId,
+      DateTime date,
+      List<WorkoutSet> sets,
+    })>[];
+
+    for (final entry in candidatesById.entries) {
+      final last = await db.setsDao.getLastSessionSetsForExercise(entry.key);
+      if (last != null && last.sets.isNotEmpty) {
+        logged.add((
+          exerciseId: entry.key,
+          name: entry.value.name,
+          mode: entry.value.mode,
+          sessionId: last.sessionId,
+          date: last.date,
+          sets: last.sets,
+        ));
+      }
+    }
+
+    if (logged.isEmpty) return const [];
+
+    logged.sort((a, b) {
+      final cmp = b.date.compareTo(a.date);
+      return cmp != 0 ? cmp : b.sessionId.compareTo(a.sessionId);
+    });
+
+    final mostRecent = logged.first;
+    final selected = [mostRecent];
+
+    if (logged.length >= 2) {
+      final currentMatch = logged
+          .where((e) =>
+              e.exerciseId == current.id &&
+              e.exerciseId != mostRecent.exerciseId)
+          .firstOrNull;
+      selected.add(currentMatch ?? logged[1]);
+    }
+
+    return [
+      for (int i = 0; i < selected.length; i++)
+        ExerciseHistory(
+          name: selected[i].name,
+          date: selected[i].date,
+          sets: selected[i].sets,
+          trackingMode: selected[i].mode,
+          isLastDone: i == 0,
+          isVariation: selected[i].exerciseId != current.id,
+        ),
+    ];
+  }
+
+  /// Loads the variation/swap family history for a standalone slot's "Last" panel.
+  Future<void> _loadSwapHistory(int itemId, Exercise current, (int, Exercise?)? original) async {
+    final histories = await _buildFamilyHistories(current, original);
     if (!mounted) return;
     // Ignore if the slot was swapped again while loading.
     final stillCurrent = _sessionItems.any((si) =>
@@ -1815,6 +1915,13 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
         (si.wodItem as StandaloneWodExercise).entry.templateExercise.exerciseId == current.id);
     if (!stillCurrent) return;
     setState(() => _swapHistory[itemId] = histories);
+  }
+
+  Future<void> _loadCircuitVariationHistory(
+      Exercise current, [(int, Exercise?)? original]) async {
+    final histories = await _buildFamilyHistories(current, original);
+    if (!mounted) return;
+    setState(() => _circuitVariationHistory[current.id] = histories);
   }
 
   void _showSwapCircuitExerciseSheet(int itemIdx, int exIdx) {
@@ -1875,6 +1982,12 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       if (itemIdx == _currentItemIdx && exIdx == _circuitExerciseIdx) _currentSetIdx = 0;
     });
     _loadExerciseHistory(newExercise.id);
+    _loadCircuitVariationHistory(
+      newExercise,
+      original.exercise.id != newExercise.id
+          ? (original.exercise.id, original.exercise)
+          : null,
+    );
     _saveProgress();
   }
 
@@ -2219,6 +2332,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
       // current item stays active (user will reach it naturally).
     });
     _loadExerciseHistory(exercise.id);
+    _loadSwapHistory(si.id, exercise, null);
     _saveProgress();
   }
 
@@ -2364,6 +2478,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen>
                         lastSets: _lastSets,
                         prData: _prData,
                         prDurationData: _prDurationData,
+                        historyTabsByExerciseId: _circuitVariationHistory,
                         historyExpanded: _historyExpanded,
                         onToggleHistory: (exerciseId) => setState(() {
                           _historyExpanded[exerciseId] = !(_historyExpanded[exerciseId] ?? false);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:workout_tracker/database/app_database.dart';
+import 'package:workout_tracker/models/exercise_tracking_mode.dart';
 import 'package:workout_tracker/screens/log/models/session_models.dart';
 import 'package:workout_tracker/screens/log/widgets/history_chip_row.dart';
 
@@ -50,5 +51,39 @@ void main() {
   testWidgets('without tabs it falls back to lastSets', (tester) async {
     await tester.pumpWidget(host(const [], last: [_set(1, 55, 6)]));
     expect(find.text('55 kg'), findsOneWidget);
+  });
+
+  testWidgets('highlights most recent variation with LAST badge and respects per-tab trackingMode', (tester) async {
+    await tester.pumpWidget(host([
+      ExerciseHistory(
+        name: 'Rope Tricep Pushdowns',
+        date: DateTime(2026, 11, 25),
+        sets: [_set(1, 27.5, 12)],
+        trackingMode: ExerciseTrackingMode.weightedReps,
+        isLastDone: true,
+        isVariation: true,
+      ),
+      ExerciseHistory(
+        name: 'Bench Dips',
+        date: DateTime(2026, 11, 18),
+        sets: [_set(2, 0, 15)],
+        trackingMode: ExerciseTrackingMode.bodyweightReps,
+        isLastDone: false,
+        isVariation: false,
+      ),
+    ]));
+
+    // Most recent variation is shown first with LAST highlight badge
+    expect(find.text('LAST'), findsOneWidget);
+    expect(find.text('Rope Tricep Pushdowns · 25 Nov'), findsOneWidget);
+    expect(find.text('27.5 kg'), findsOneWidget);
+    expect(find.text('× 12 reps'), findsOneWidget);
+
+    // Switching to bodyweight tab keeps LAST badge on tab 0 and formats reps without weight
+    await tester.tap(find.text('Bench Dips · 18 Nov'));
+    await tester.pump();
+    expect(find.text('LAST'), findsOneWidget);
+    expect(find.text('15 reps'), findsOneWidget);
+    expect(find.text('0 kg'), findsNothing);
   });
 }

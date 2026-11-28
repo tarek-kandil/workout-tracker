@@ -96,6 +96,7 @@ class CircuitExerciseSection extends StatelessWidget {
   final List<WorkoutSet> lastSets;
   final double? prKg;
   final int? prDurationSeconds;
+  final List<ExerciseHistory> historyTabs;
   final bool historyExpanded;
   final VoidCallback onToggleHistory;
   final void Function(int, SetData) onSetDataChanged;
@@ -113,6 +114,7 @@ class CircuitExerciseSection extends StatelessWidget {
     required this.isCurrentExercise, required this.currentRound,
     required this.setData, required this.lastSets,
     required this.prKg, required this.prDurationSeconds,
+    this.historyTabs = const [],
     required this.historyExpanded, required this.onToggleHistory,
     required this.onSetDataChanged, required this.onDoneSet,
     required this.onStartTimer, required this.onStopTimer,
@@ -159,6 +161,7 @@ class CircuitExerciseSection extends StatelessWidget {
           trackingMode: exercise.exercise.mode,
           prKg: prKg, prDurationSeconds: prDurationSeconds,
           expanded: historyExpanded, onToggle: onToggleHistory,
+          tabs: historyTabs,
         ),
         const SizedBox(height: 8),
         for (int r = 0; r < rounds; r++)
@@ -210,6 +213,7 @@ class CircuitCard extends StatelessWidget {
   final Map<int, List<WorkoutSet>> lastSets;
   final Map<int, double?> prData;
   final Map<int, int?> prDurationData;
+  final Map<int, List<ExerciseHistory>> historyTabsByExerciseId;
   final Map<int, bool> historyExpanded;
   final void Function(int) onToggleHistory;
   final void Function(int, int, SetData) onSetDataChanged;
@@ -228,7 +232,9 @@ class CircuitCard extends StatelessWidget {
     required this.circuit, required this.cardState, required this.itemIndex,
     required this.currentItemIdx, required this.currentSetIdx,
     required this.currentCircuitExIdx, required this.setData, required this.lastSets,
-    required this.prData, required this.prDurationData, required this.historyExpanded,
+    required this.prData, required this.prDurationData,
+    this.historyTabsByExerciseId = const {},
+    required this.historyExpanded,
     required this.onToggleHistory, required this.onSetDataChanged,
     required this.onDoneSet, required this.onStartTimer, required this.onStopTimer,
     required this.onShowCircuitActions, required this.onShowExerciseActions,
@@ -299,6 +305,7 @@ class CircuitCard extends StatelessWidget {
             lastSets: lastSets[circuit.exercises[exIdx].templateExercise.exerciseId] ?? [],
             prKg: prData[circuit.exercises[exIdx].templateExercise.exerciseId],
             prDurationSeconds: prDurationData[circuit.exercises[exIdx].templateExercise.exerciseId],
+            historyTabs: historyTabsByExerciseId[circuit.exercises[exIdx].templateExercise.exerciseId] ?? const [],
             historyExpanded: historyExpanded[circuit.exercises[exIdx].templateExercise.exerciseId] ?? false,
             onToggleHistory: () => onToggleHistory(circuit.exercises[exIdx].templateExercise.exerciseId),
             onSetDataChanged: (r, d) => onSetDataChanged(circuit.exercises[exIdx].templateExercise.exerciseId, r, d),

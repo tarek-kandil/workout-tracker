@@ -1,4 +1,5 @@
 import '../../../database/app_database.dart' show WorkoutSet;
+import '../../../models/exercise_tracking_mode.dart';
 import '../../../models/wod_item.dart';
 
 // ─── Local session data models ─────────────────────────────────────────────────
@@ -43,7 +44,22 @@ class ExerciseHistory {
   final String name;
   final DateTime date;
   final List<WorkoutSet> sets;
-  const ExerciseHistory({required this.name, required this.date, required this.sets});
+  final ExerciseTrackingMode trackingMode;
+  /// True when this entry is the most recently logged exercise across the
+  /// slot's exercise + linked variations ("what you did last time").
+  final bool isLastDone;
+  /// True when this entry belongs to a variation/original rather than the
+  /// exercise currently displayed on the card header.
+  final bool isVariation;
+
+  const ExerciseHistory({
+    required this.name,
+    required this.date,
+    required this.sets,
+    this.trackingMode = ExerciseTrackingMode.weightedReps,
+    this.isLastDone = false,
+    this.isVariation = false,
+  });
 }
 
 enum CardState { active, completed, upcoming }
