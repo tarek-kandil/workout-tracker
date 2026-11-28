@@ -5,8 +5,12 @@ import '../../database/app_database.dart';
 import '../../database/daos/exercises_dao.dart' show ExerciseDeleteOutcome;
 import '../../models/exercise_muscle_seed.dart';
 import '../../models/exercise_tracking_mode.dart';
+import '../../providers/challenges_providers.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/exercise_providers.dart';
+import '../../providers/home_providers.dart';
+import '../../providers/muscle_volume_provider.dart';
+import '../../providers/next_workout_provider.dart';
 import '../../utils/constants.dart';
 import '../../widgets/glass_background.dart';
 import 'widgets/muscle_assignment_sheet.dart';
@@ -23,6 +27,8 @@ class _ExerciseLibraryScreenState
     extends ConsumerState<ExerciseLibraryScreen> {
   final _searchController = TextEditingController();
   String _query = '';
+  bool _customOnly = false;
+  bool _showArchived = false;
 
   static const _needsReviewGroup = 'Needs review';
   static const _untrackedGroup = 'Cardio / Untracked';
@@ -374,9 +380,93 @@ class _ExerciseLibraryScreenState
     }
   }
 
+  Future<void> _startMergeFlow(
+    Exercise source,
+    List<Exercise> allIncludingArchived,
+  ) async {
+    final candidates = allIncludingArchived
+        .where((e) => e.id != source.id && !e.archived)
+        .toList();
+
+    final target = await showModalBottomSheet<Exercise>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF141428),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (_) => _MergeTargetPickerSheet(
+        source: source,
+        candidates: candidates,
+      ),
+    );
+    if (target == null || !mounted) return;
+
+    final dao = ref.read(databaseProvider).exercisesDao;
+    final impact = await dao.previewMergeImpact(source.id);
+    if (!mounted) return;
+
+    final details = <String>[
+      '• ${impact.setCount} logged workout set${impact.setCount == 1 ? '' : 's'}',
+      if (impact.templateCount > 0)
+        '• ${impact.templateCount} program / flash WOD entr${impact.templateCount == 1 ? 'y' : 'ies'}',
+      if (impact.challengeCount > 0)
+        '• ${impact.challengeCount} challenge${impact.challengeCount == 1 ? '' : 's'}',
+      if (impact.noteCount > 0)
+        '• ${impact.noteCount} note${impact.noteCount == 1 ? '' : 's'}',
+    ].join('\n');
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Merge Exercise'),
+        content: Text(
+          'Merge "${source.name}" into "${target.name}"?\n\n'
+          '$details\n\n'
+          'All history and references will move to "${target.name}", and "${source.name}" will be removed.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Merge'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final summary = await dao.mergeExerciseInto(
+        sourceId: source.id,
+        targetId: target.id,
+      );
+      ref.invalidate(nextWodProvider);
+      ref.invalidate(progressiveOverloadProvider);
+      ref.invalidate(weeklyMuscleVolumeProvider);
+      ref.invalidate(activeChallengesProvider);
+      ref.invalidate(completedChallengesProvider);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Merged "${source.name}" into "${target.name}" (${summary.setCount} sets moved)',
+          ),
+        ),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Merge failed: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final exercisesAsync = ref.watch(exercisesProvider);
+    final allExercisesAsync = ref.watch(allExercisesIncludingArchivedProvider);
     final muscleMapAsync = ref.watch(exerciseMuscleMapProvider);
 
     return Scaffold(
@@ -402,19 +492,65 @@ class _ExerciseLibraryScreenState
                   ),
                 ),
               ),
+              if (allExercisesAsync.valueOrNull != null)
+                Builder(
+                  builder: (context) {
+                    final all = allExercisesAsync.valueOrNull!;
+                    final customCount =
+                        all.where((e) => !e.archived && e.canonicalKey == null).length;
+                    final archivedCount = all.where((e) => e.archived).length;
+                    if (customCount == 0 && archivedCount == 0 && !_customOnly && !_showArchived) {
+                      return const SizedBox.shrink();
+                    }
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                      child: Row(
+                        children: [
+                          FilterChip(
+                            label: Text(
+                              'Custom ($customCount)',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            selected: _customOnly,
+                            onSelected: (v) => setState(() => _customOnly = v),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          if (archivedCount > 0 || _showArchived) ...[
+                            const SizedBox(width: 8),
+                            FilterChip(
+                              label: Text(
+                                'Archived ($archivedCount)',
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                              selected: _showArchived,
+                              onSelected: (v) =>
+                                  setState(() => _showArchived = v),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ],
+                        ],
+                      ),
+                    );
+                  },
+                ),
               Expanded(
-                child: exercisesAsync.when(
+                child: allExercisesAsync.when(
                   loading: () =>
                       const Center(child: CircularProgressIndicator()),
                   error: (e, _) => Center(child: Text('Error: $e')),
-                  data: (exercises) {
+                  data: (allExercises) {
+                    final exercises = allExercises.where((e) {
+                      if (!_showArchived && e.archived) return false;
+                      if (_customOnly && e.canonicalKey != null) return false;
+                      return true;
+                    }).toList();
                     final muscleMap = muscleMapAsync.valueOrNull ?? {};
                     final grouped = _group(exercises, muscleMap);
                     if (grouped.isEmpty) {
                       return Center(
                         child: Text(
                           _query.isEmpty
-                              ? 'No exercises yet. Tap + to add one.'
+                              ? 'No matching exercises.'
                               : 'No results for "$_query"',
                           style:
                               Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -469,9 +605,11 @@ class _ExerciseLibraryScreenState
                               muscles: muscles,
                               onTap: () => _showExerciseDialog(
                                 existing: exercise,
-                                all: exercises,
+                                all: allExercises,
                                 muscleMap: muscleMap,
                               ),
+                              onMerge: () =>
+                                  _startMergeFlow(exercise, allExercises),
                               onLongPress: () => _confirmDelete(exercise),
                             );
                           }
@@ -487,7 +625,7 @@ class _ExerciseLibraryScreenState
           ),
         ],
       ),
-      floatingActionButton: exercisesAsync.whenOrNull(
+      floatingActionButton: allExercisesAsync.whenOrNull(
         data: (exercises) => FloatingActionButton(
           onPressed: () => _showExerciseDialog(
             all: exercises,
@@ -532,11 +670,13 @@ class _ExerciseRow extends StatelessWidget {
   final Exercise exercise;
   final List<ExerciseMuscle> muscles;
   final VoidCallback onTap;
+  final VoidCallback onMerge;
   final VoidCallback onLongPress;
   const _ExerciseRow({
     required this.exercise,
     required this.muscles,
     required this.onTap,
+    required this.onMerge,
     required this.onLongPress,
   });
 
@@ -561,7 +701,7 @@ class _ExerciseRow extends StatelessWidget {
                 width: 1.5,
               ),
             ),
-            padding: const EdgeInsets.fromLTRB(14, 13, 14, 11),
+            padding: const EdgeInsets.fromLTRB(14, 13, 10, 11),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -571,15 +711,31 @@ class _ExerciseRow extends StatelessWidget {
                     Expanded(
                       child: Text(
                         exercise.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                           letterSpacing: -0.2,
+                          color: exercise.archived
+                              ? Colors.white.withValues(alpha: 0.55)
+                              : null,
                         ),
                       ),
                     ),
+                    if (exercise.archived) ...[
+                      const SizedBox(width: 6),
+                      const _Badge(
+                        label: 'ARCHIVED',
+                        color: Color(0xFFF97316),
+                      ),
+                    ] else if (exercise.canonicalKey == null) ...[
+                      const SizedBox(width: 6),
+                      const _Badge(
+                        label: 'CUSTOM',
+                        color: Color(0xFF38BDF8),
+                      ),
+                    ],
                     if (exercise.muscleNeedsReview) ...[
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       const _Badge(
                         label: 'NEEDS REVIEW',
                         color: Color(0xFFFBBF24),
@@ -587,18 +743,34 @@ class _ExerciseRow extends StatelessWidget {
                       ),
                     ],
                     if (exercise.isTimedMode) ...[
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       const _Badge(
                         label: 'TIMED',
                         color: Color(0xFF6366F1),
                       ),
                     ] else if (exercise.isBodyweightReps) ...[
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       const _Badge(
                         label: 'BODYWEIGHT',
                         color: Color(0xFF34D399),
                       ),
                     ],
+                    const SizedBox(width: 4),
+                    IconButton(
+                      onPressed: onMerge,
+                      icon: Icon(
+                        Icons.merge_type_rounded,
+                        size: 19,
+                        color: Colors.white.withValues(alpha: 0.45),
+                      ),
+                      tooltip: 'Merge into another exercise',
+                      visualDensity: VisualDensity.compact,
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
+                      padding: EdgeInsets.zero,
+                    ),
                   ],
                 ),
                 // Muscle chips
@@ -707,6 +879,144 @@ class _MuscleGroupHeader extends StatelessWidget {
                       .onSurface
                       .withValues(alpha: 0.4),
                 ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MergeTargetPickerSheet extends StatefulWidget {
+  final Exercise source;
+  final List<Exercise> candidates;
+
+  const _MergeTargetPickerSheet({
+    required this.source,
+    required this.candidates,
+  });
+
+  @override
+  State<_MergeTargetPickerSheet> createState() =>
+      _MergeTargetPickerSheetState();
+}
+
+class _MergeTargetPickerSheetState extends State<_MergeTargetPickerSheet> {
+  final _searchCtrl = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filtered = _query.isEmpty
+        ? widget.candidates
+        : widget.candidates
+            .where((e) => e.name.toLowerCase().contains(_query))
+            .toList();
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.75,
+      minChildSize: 0.45,
+      maxChildSize: 0.92,
+      expand: false,
+      builder: (ctx, scrollCtrl) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 10),
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 2, 20, 4),
+            child: Text(
+              'Merge "${widget.source.name}" into…',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.3,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+            child: Text(
+              'Pick the exercise that should receive all logged sets, WOD entries, challenges, and notes.',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.white.withValues(alpha: 0.55),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: TextField(
+              controller: _searchCtrl,
+              autofocus: true,
+              onChanged: (v) => setState(() => _query = v.trim().toLowerCase()),
+              decoration: InputDecoration(
+                hintText: 'Search target exercise…',
+                prefixIcon: const Icon(Icons.search, size: 20),
+                suffixIcon: _query.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, size: 18),
+                        onPressed: () {
+                          _searchCtrl.clear();
+                          setState(() => _query = '');
+                        },
+                      )
+                    : null,
+              ),
+            ),
+          ),
+          Expanded(
+            child: filtered.isEmpty
+                ? Center(
+                    child: Text(
+                      'No matching target exercises',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.45),
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    controller: scrollCtrl,
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+                    itemCount: filtered.length,
+                    itemBuilder: (_, i) {
+                      final item = filtered[i];
+                      return ListTile(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        title: Text(
+                          item.name,
+                          style: const TextStyle(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        trailing: item.canonicalKey != null
+                            ? const Icon(
+                                Icons.verified_rounded,
+                                size: 16,
+                                color: Color(0xFF34D399),
+                              )
+                            : null,
+                        onTap: () => Navigator.pop(ctx, item),
+                      );
+                    },
+                  ),
           ),
         ],
       ),

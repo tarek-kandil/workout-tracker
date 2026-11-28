@@ -7,6 +7,12 @@ final exercisesProvider = StreamProvider<List<Exercise>>((ref) {
   return db.exercisesDao.watchAllExercises();
 });
 
+final allExercisesIncludingArchivedProvider =
+    StreamProvider<List<Exercise>>((ref) {
+  final db = ref.watch(databaseProvider);
+  return db.exercisesDao.watchAllExercisesIncludingArchived();
+});
+
 /// Reactive map: exerciseId → active [ExerciseMuscle] rows (primary first).
 /// Empty list means no muscle assigned for that exercise.
 final exerciseMuscleMapProvider =
