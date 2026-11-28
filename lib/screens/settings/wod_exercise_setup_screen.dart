@@ -7,6 +7,7 @@ import '../../models/exercise_tracking_mode.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/exercise_providers.dart';
 import '../../utils/constants.dart';
+import '../../utils/exercise_deduplicator.dart';
 import '../../utils/rir_conversion.dart';
 import '../../widgets/glass_background.dart';
 import '../../widgets/drum_picker.dart';
@@ -1093,7 +1094,7 @@ class _ExercisePickerSheetState extends State<_ExercisePickerSheet> {
   @override
   Widget build(BuildContext context) {
     final filtered = widget.exercises
-        .where((e) => e.name.toLowerCase().contains(_query.toLowerCase()))
+        .where((e) => matchesExerciseSearch(e.name, _query))
         .toList();
 
     final showCreateOption = _query.trim().isNotEmpty &&

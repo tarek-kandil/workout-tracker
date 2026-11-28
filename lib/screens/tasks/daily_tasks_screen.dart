@@ -83,7 +83,7 @@ class DailyTasksScreen extends ConsumerWidget {
                         }
                       },
                       onEdit: () => _showTaskDialog(context, ref, task),
-                      onToggleEnabled: () => _toggleEnabled(ref, task),
+                      onToggleEnabled: () => _toggleEnabled(context, ref, task),
                       onDelete: () => _confirmDelete(context, ref, task),
                     )),
               ],
@@ -94,7 +94,7 @@ class DailyTasksScreen extends ConsumerWidget {
                       isCompleted: false,
                       onToggle: (_) {},
                       onEdit: () => _showTaskDialog(context, ref, task),
-                      onToggleEnabled: () => _toggleEnabled(ref, task),
+                      onToggleEnabled: () => _toggleEnabled(context, ref, task),
                       onDelete: () => _confirmDelete(context, ref, task),
                     )),
               ],
@@ -107,7 +107,9 @@ class DailyTasksScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _toggleEnabled(WidgetRef ref, DailyTask task) async {
+  Future<void> _toggleEnabled(
+      BuildContext context, WidgetRef ref, DailyTask task) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
     final dao = ref.read(databaseProvider).dailyTasksDao;
     final nowEnabled = !task.isEnabled;
     await dao.updateTask(DailyTasksCompanion(
@@ -117,13 +119,31 @@ class DailyTasksScreen extends ConsumerWidget {
     if (!nowEnabled) {
       await NotificationService.cancelRecurringReminder(task.id);
     } else if (task.reminderHour != null && task.reminderMinute != null) {
-      await NotificationService.scheduleRecurringReminder(
+      final permitted = await NotificationService.ensurePermissions();
+      final err = await NotificationService.scheduleRecurringReminder(
         baseId: task.id,
         title: task.name,
         hour: task.reminderHour!,
         minute: task.reminderMinute!,
         daysMask: task.reminderDays,
+        body: NotificationService.formatSupplementReminderBody(
+          dose: task.dose,
+          timing: task.timing,
+        ),
       );
+      if (!permitted) {
+        messenger?.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Notifications are disabled in system settings — enable them to receive reminders.',
+            ),
+          ),
+        );
+      } else if (err != null) {
+        messenger?.showSnackBar(
+          SnackBar(content: Text('Could not schedule reminder: $err')),
+        );
+      }
     }
   }
 
@@ -224,6 +244,18 @@ class _TaskDialogState extends ConsumerState<_TaskDialog> {
     final int? days = _reminderEnabled ? _reminderDays : null;
 
     final dao = ref.read(databaseProvider).dailyTasksDao;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    bool permitted = true;
+    String? scheduleErr;
+
+    if (hour != null && minute != null) {
+      permitted = await NotificationService.ensurePermissions();
+    }
+
+    final reminderBody = NotificationService.formatSupplementReminderBody(
+      dose: dose,
+      timing: _selectedTiming,
+    );
 
     if (!_isEditing) {
       final id = await dao.insertTask(DailyTasksCompanion.insert(
@@ -236,12 +268,13 @@ class _TaskDialogState extends ConsumerState<_TaskDialog> {
       ));
       ref.invalidate(dailyTasksProvider);
       if (hour != null && minute != null) {
-        await NotificationService.scheduleRecurringReminder(
+        scheduleErr = await NotificationService.scheduleRecurringReminder(
           baseId: id,
           title: name,
           hour: hour,
           minute: minute,
           daysMask: days,
+          body: reminderBody,
         );
       }
     } else {
@@ -257,13 +290,14 @@ class _TaskDialogState extends ConsumerState<_TaskDialog> {
       ));
       ref.invalidate(dailyTasksProvider);
       await NotificationService.cancelRecurringReminder(task.id);
-      if (hour != null && minute != null) {
-        await NotificationService.scheduleRecurringReminder(
+      if (hour != null && minute != null && task.isEnabled) {
+        scheduleErr = await NotificationService.scheduleRecurringReminder(
           baseId: task.id,
           title: name,
           hour: hour,
           minute: minute,
           daysMask: days,
+          body: reminderBody,
         );
       }
     }
@@ -271,6 +305,19 @@ class _TaskDialogState extends ConsumerState<_TaskDialog> {
     if (!mounted) return;
 
     Navigator.pop(context);
+    if (!permitted) {
+      messenger?.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Notifications are disabled in system settings — enable them to receive reminders.',
+          ),
+        ),
+      );
+    } else if (scheduleErr != null) {
+      messenger?.showSnackBar(
+        SnackBar(content: Text('Could not schedule reminder: $scheduleErr')),
+      );
+    }
   }
 
   @override

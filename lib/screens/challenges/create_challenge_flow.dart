@@ -8,6 +8,7 @@ import '../../providers/challenges_providers.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/exercise_providers.dart';
 import '../../utils/constants.dart';
+import '../../utils/exercise_deduplicator.dart';
 import '../settings/widgets/muscle_assignment_sheet.dart';
 
 Future<void> showCreateChallengeFlow(
@@ -205,7 +206,7 @@ class _ChallengeExercisePickerSheetState
     final contains = widget.exercises
         .where((e) =>
             !e.name.toLowerCase().startsWith(q) &&
-            e.name.toLowerCase().contains(q))
+            matchesExerciseSearch(e.name, q))
         .toList();
     return [...starts, ...contains];
   }

@@ -7,7 +7,8 @@ import 'package:workout_tracker/utils/exercise_deduplicator.dart';
 
 void main() {
   group('normalizeExerciseSignature', () {
-    test('all 189 canonical Global Catalog exercises have unique normalized signatures (zero collisions)', () {
+    test('all canonical Global Catalog exercises have unique normalized signatures (zero collisions)', () {
+      expect(kGlobalExerciseCatalog.length, 201);
       final bySig = <String, String>{};
       for (final seed in kGlobalExerciseCatalog) {
         final sig = normalizeExerciseSignature(seed.name);
@@ -20,6 +21,50 @@ void main() {
         );
         bySig[sig] = seed.name;
       }
+    });
+
+    test('includes rope, straight-bar, and V-bar (triangle) cable handle variations and matches synonyms in search', () {
+      final names = kGlobalExerciseCatalog.map((e) => e.name).toSet();
+      expect(names, containsAll([
+        'Tricep Pushdowns',
+        'Rope Tricep Pushdowns',
+        'Straight-Bar Tricep Pushdowns',
+        'V-Bar Tricep Pushdowns',
+        'EZ-Bar Tricep Pushdowns',
+        'Reverse-Grip Tricep Pushdowns',
+        'Single-Arm Tricep Pushdowns',
+        'Overhead Cable Tricep Extensions',
+        'Rope Overhead Cable Tricep Extensions',
+        'Straight-Bar Overhead Cable Tricep Extensions',
+        'V-Bar Overhead Cable Tricep Extensions',
+        'EZ-Bar Overhead Cable Tricep Extensions',
+        'Single-Arm Overhead Cable Tricep Extensions',
+        'Rope Cable Hammer Curls',
+        'Straight-Bar Cable Curls',
+        'EZ-Bar Cable Curls',
+        'Single-Arm Cable Curls',
+        'V-Bar Lat Pulldowns',
+        'Single-Arm Lat Pulldowns',
+        'Rope Straight-Arm Pulldowns',
+        'V-Bar Seated Cable Rows',
+        'Straight-Bar Seated Cable Rows',
+      ]));
+
+      // Synonym search: "triangle" finds V-Bar variants; "straight handle" finds Straight-Bar
+      expect(matchesExerciseSearch('V-Bar Tricep Pushdowns', 'triangle'), isTrue);
+      expect(matchesExerciseSearch('V-Bar Overhead Cable Tricep Extensions', 'triangle tricep'), isTrue);
+      expect(matchesExerciseSearch('Straight-Bar Tricep Pushdowns', 'straight handle'), isTrue);
+      expect(matchesExerciseSearch('DB Bench Press', 'dumbbell bench'), isTrue);
+
+      // Deduplication shorthands map "Triangle pushdown" -> V-Bar Tricep Pushdowns
+      expect(
+        normalizeExerciseSignature('Triangle handle tricep pushdown'),
+        normalizeExerciseSignature('V-Bar Tricep Pushdowns'),
+      );
+      expect(
+        normalizeExerciseSignature('Straight handle pushdowns'),
+        normalizeExerciseSignature('Straight-Bar Tricep Pushdowns'),
+      );
     });
 
     test('maps spelling, plural, hyphen, equipment, and shorthand variants to canonical signatures', () {

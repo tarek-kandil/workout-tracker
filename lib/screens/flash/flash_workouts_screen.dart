@@ -141,6 +141,7 @@ Future<void> showFlashWorkoutDialog(
   WodTemplate? existing, {
   bool openExercisesOnCreate = true,
 }) async {
+  final messenger = ScaffoldMessenger.maybeOf(context);
   final form = await showDialog<_FlashWorkoutFormData>(
     context: context,
     builder: (_) => _FlashWorkoutDialog(existing: existing),
@@ -149,6 +150,12 @@ Future<void> showFlashWorkoutDialog(
 
   final dao = ref.read(databaseProvider).programsDao;
   int? createdId;
+  bool permitted = true;
+  String? scheduleErr;
+
+  if (form.reminderHour != null && form.reminderMinute != null) {
+    permitted = await NotificationService.ensurePermissions();
+  }
 
   if (existing == null) {
     final id = await dao.insertWodTemplate(WodTemplatesCompanion.insert(
@@ -163,7 +170,7 @@ Future<void> showFlashWorkoutDialog(
     createdId = id;
     ref.invalidate(flashWorkoutsProvider);
     if (form.reminderHour != null && form.reminderMinute != null) {
-      await NotificationService.scheduleFlashWorkoutReminder(
+      scheduleErr = await NotificationService.scheduleFlashWorkoutReminder(
         wodId: id,
         title: form.name,
         hour: form.reminderHour!,
@@ -184,7 +191,7 @@ Future<void> showFlashWorkoutDialog(
     ref.invalidate(flashWorkoutResultProvider(existing.id));
     await NotificationService.cancelFlashWorkoutReminder(existing.id);
     if (form.reminderHour != null && form.reminderMinute != null) {
-      await NotificationService.scheduleFlashWorkoutReminder(
+      scheduleErr = await NotificationService.scheduleFlashWorkoutReminder(
         wodId: existing.id,
         title: form.name,
         hour: form.reminderHour!,
@@ -192,6 +199,20 @@ Future<void> showFlashWorkoutDialog(
         daysMask: form.reminderDays,
       );
     }
+  }
+
+  if (!permitted) {
+    messenger?.showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Notifications are disabled in system settings — enable them to receive reminders.',
+        ),
+      ),
+    );
+  } else if (scheduleErr != null) {
+    messenger?.showSnackBar(
+      SnackBar(content: Text('Could not schedule reminder: $scheduleErr')),
+    );
   }
 
   if (createdId != null && openExercisesOnCreate && context.mounted) {

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'database/app_database.dart';
 import 'providers/database_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/weight_goal_providers.dart';
@@ -93,7 +94,7 @@ Future<StartupResult> runAppStartup(ProviderContainer container) async {
   try {
     final prefs = await SharedPreferences.getInstance();
     final globalCatalogSeeded =
-        prefs.getBool('global_catalog_seeded_v1') ?? false;
+        prefs.getBool('global_catalog_seeded_v2') ?? false;
 
     if (!globalCatalogSeeded) {
       await db.exercisesDao.syncGlobalCatalogV1();
@@ -102,13 +103,15 @@ Future<StartupResult> runAppStartup(ProviderContainer container) async {
       await prefs.setBool('muscles_seeded_v2', true);
       await prefs.setBool('bodyweight_seeded_v1', true);
       await prefs.setBool('global_catalog_seeded_v1', true);
+      await prefs.setBool('global_catalog_seeded_v2', true);
     }
 
     final globalCatalogDeduped =
-        prefs.getBool('global_catalog_dedup_v1') ?? false;
+        prefs.getBool('global_catalog_dedup_v2') ?? false;
     if (!globalCatalogDeduped) {
       await db.exercisesDao.deduplicateLegacyExercisesV1();
       await prefs.setBool('global_catalog_dedup_v1', true);
+      await prefs.setBool('global_catalog_dedup_v2', true);
     }
   } catch (e) {
     debugPrint(
@@ -116,11 +119,32 @@ Future<StartupResult> runAppStartup(ProviderContainer container) async {
     );
   }
 
-  // (c) Roll the weigh-in reminder forward when a plan exists — cheap
-  // no-op (cancels) when there's no active plan. Explicitly non-essential:
-  // fire-and-forget it AFTER startup reports ready, fully off the critical
-  // path, guarded by its own try/catch so it can never affect boot.
+  // Snapshot saved supplement & flash workout reminders while DB is open so
+  // background notification scheduling never races with test DB teardown.
+  List<DailyTask> savedTasks = const [];
+  List<WodTemplate> savedFlashWorkouts = const [];
+  try {
+    savedTasks = await db.dailyTasksDao.getAllTasks();
+    savedFlashWorkouts = await db.programsDao.getFlashWorkouts();
+  } catch (e) {
+    debugPrint('Startup: reading saved reminders failed (non-fatal): $e');
+  }
+
+  // (c) Re-sync all saved supplement, flash workout, and weigh-in reminders
+  // off the critical boot path, each guarded by its own try/catch + timeout.
   unawaited(() async {
+    if (savedTasks.isNotEmpty || savedFlashWorkouts.isNotEmpty) {
+      try {
+        await NotificationService.rescheduleAllSavedReminders(
+          tasks: savedTasks,
+          flashWorkouts: savedFlashWorkouts,
+        ).timeout(_nonCriticalStepTimeout);
+      } catch (e) {
+        debugPrint(
+          'Startup: supplement/flash reminder reschedule failed (non-fatal): $e',
+        );
+      }
+    }
     try {
       await container
           .read(weightGoalActionsProvider)

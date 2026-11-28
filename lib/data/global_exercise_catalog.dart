@@ -235,6 +235,16 @@ const List<GlobalExerciseSeed> kGlobalExerciseCatalog = [
     muscles: [_pLats, _sBiceps, _sUpperBack],
   ),
   GlobalExerciseSeed(
+    key: 'v_bar_lat_pulldowns',
+    name: 'V-Bar Lat Pulldowns',
+    muscles: [_pLats, _sBiceps, _sUpperBack],
+  ),
+  GlobalExerciseSeed(
+    key: 'single_arm_lat_pulldowns',
+    name: 'Single-Arm Lat Pulldowns',
+    muscles: [_pLats, _sBiceps, _sUpperBack],
+  ),
+  GlobalExerciseSeed(
     key: 'single_arm_db_rows',
     name: 'Single-Arm DB Rows',
     muscles: [_pLats, _sUpperBack, _sBiceps],
@@ -260,6 +270,11 @@ const List<GlobalExerciseSeed> kGlobalExerciseCatalog = [
     name: 'Straight-Arm Pulldowns',
     muscles: [_pLats],
     legacyNames: ['Straight-Arm Pulldown'],
+  ),
+  GlobalExerciseSeed(
+    key: 'rope_straight_arm_pulldowns',
+    name: 'Rope Straight-Arm Pulldowns',
+    muscles: [_pLats],
   ),
   GlobalExerciseSeed(
     key: 'db_pullovers',
@@ -304,6 +319,16 @@ const List<GlobalExerciseSeed> kGlobalExerciseCatalog = [
     key: 'close_grip_seated_cable_rows',
     name: 'Close-Grip Seated Cable Rows',
     muscles: [_pUpperBack, _sLats, _sBiceps],
+  ),
+  GlobalExerciseSeed(
+    key: 'v_bar_seated_cable_rows',
+    name: 'V-Bar Seated Cable Rows',
+    muscles: [_pUpperBack, _sLats, _sBiceps, _sRearDelts],
+  ),
+  GlobalExerciseSeed(
+    key: 'straight_bar_seated_cable_rows',
+    name: 'Straight-Bar Seated Cable Rows',
+    muscles: [_pUpperBack, _sLats, _sRearDelts, _sBiceps],
   ),
   GlobalExerciseSeed(
     key: 't_bar_rows',
@@ -492,6 +517,36 @@ const List<GlobalExerciseSeed> kGlobalExerciseCatalog = [
     legacyNames: ['Tricep Pushdown'],
   ),
   GlobalExerciseSeed(
+    key: 'rope_tricep_pushdowns',
+    name: 'Rope Tricep Pushdowns',
+    muscles: [_pTriceps],
+  ),
+  GlobalExerciseSeed(
+    key: 'straight_bar_tricep_pushdowns',
+    name: 'Straight-Bar Tricep Pushdowns',
+    muscles: [_pTriceps],
+  ),
+  GlobalExerciseSeed(
+    key: 'v_bar_tricep_pushdowns',
+    name: 'V-Bar Tricep Pushdowns',
+    muscles: [_pTriceps],
+  ),
+  GlobalExerciseSeed(
+    key: 'ez_bar_tricep_pushdowns',
+    name: 'EZ-Bar Tricep Pushdowns',
+    muscles: [_pTriceps],
+  ),
+  GlobalExerciseSeed(
+    key: 'reverse_grip_tricep_pushdowns',
+    name: 'Reverse-Grip Tricep Pushdowns',
+    muscles: [_pTriceps],
+  ),
+  GlobalExerciseSeed(
+    key: 'single_arm_tricep_pushdowns',
+    name: 'Single-Arm Tricep Pushdowns',
+    muscles: [_pTriceps],
+  ),
+  GlobalExerciseSeed(
     key: 'skull_crushers',
     name: 'Skull Crushers',
     muscles: [_pTriceps],
@@ -505,6 +560,31 @@ const List<GlobalExerciseSeed> kGlobalExerciseCatalog = [
   GlobalExerciseSeed(
     key: 'overhead_cable_tricep_extensions',
     name: 'Overhead Cable Tricep Extensions',
+    muscles: [_pTriceps],
+  ),
+  GlobalExerciseSeed(
+    key: 'rope_overhead_cable_tricep_extensions',
+    name: 'Rope Overhead Cable Tricep Extensions',
+    muscles: [_pTriceps],
+  ),
+  GlobalExerciseSeed(
+    key: 'straight_bar_overhead_cable_tricep_extensions',
+    name: 'Straight-Bar Overhead Cable Tricep Extensions',
+    muscles: [_pTriceps],
+  ),
+  GlobalExerciseSeed(
+    key: 'v_bar_overhead_cable_tricep_extensions',
+    name: 'V-Bar Overhead Cable Tricep Extensions',
+    muscles: [_pTriceps],
+  ),
+  GlobalExerciseSeed(
+    key: 'ez_bar_overhead_cable_tricep_extensions',
+    name: 'EZ-Bar Overhead Cable Tricep Extensions',
+    muscles: [_pTriceps],
+  ),
+  GlobalExerciseSeed(
+    key: 'single_arm_overhead_cable_tricep_extensions',
+    name: 'Single-Arm Overhead Cable Tricep Extensions',
     muscles: [_pTriceps],
   ),
   GlobalExerciseSeed(
@@ -590,6 +670,26 @@ const List<GlobalExerciseSeed> kGlobalExerciseCatalog = [
     name: 'Cable Curls',
     muscles: [_pBiceps],
     legacyNames: ['Cable Curl'],
+  ),
+  GlobalExerciseSeed(
+    key: 'rope_cable_hammer_curls',
+    name: 'Rope Cable Hammer Curls',
+    muscles: [_pBiceps, _sForearms],
+  ),
+  GlobalExerciseSeed(
+    key: 'straight_bar_cable_curls',
+    name: 'Straight-Bar Cable Curls',
+    muscles: [_pBiceps],
+  ),
+  GlobalExerciseSeed(
+    key: 'ez_bar_cable_curls',
+    name: 'EZ-Bar Cable Curls',
+    muscles: [_pBiceps],
+  ),
+  GlobalExerciseSeed(
+    key: 'single_arm_cable_curls',
+    name: 'Single-Arm Cable Curls',
+    muscles: [_pBiceps],
   ),
   GlobalExerciseSeed(
     key: 'bayesian_cable_curls',
@@ -1138,6 +1238,8 @@ const List<List<String>> kDefaultExerciseVariationGroups = [
     'Neutral-Grip Lat Pulldowns',
     'Close-Grip Lat Pulldowns',
     'Underhand Lat Pulldowns',
+    'V-Bar Lat Pulldowns',
+    'Single-Arm Lat Pulldowns',
   ],
   // 7. Free-Weight / Smith Barbell Rows
   [
@@ -1153,6 +1255,8 @@ const List<List<String>> kDefaultExerciseVariationGroups = [
     'Seated Cable Rows',
     'Wide-Grip Seated Cable Rows',
     'Close-Grip Seated Cable Rows',
+    'V-Bar Seated Cable Rows',
+    'Straight-Bar Seated Cable Rows',
     'Chest-Supported Rows',
     'Machine Rows',
     'Inverted Rows',
@@ -1160,7 +1264,7 @@ const List<List<String>> kDefaultExerciseVariationGroups = [
   // 9. Unilateral Rows
   ['Single-Arm DB Rows', 'Single-Arm Cable Rows', 'Meadows Rows'],
   // 10. Lat Isolation
-  ['Straight-Arm Pulldowns', 'DB Pullovers'],
+  ['Straight-Arm Pulldowns', 'Rope Straight-Arm Pulldowns', 'DB Pullovers'],
   // 11. Shrugs
   ['DB Shrugs', 'BB Shrugs', 'Smith Machine Shrugs', 'Cable Shrugs'],
   // 12. Floor Deadlifts
@@ -1190,9 +1294,27 @@ const List<List<String>> kDefaultExerciseVariationGroups = [
   // 18. Rear Delts
   ['Face Pulls', 'Reverse Flys', 'Reverse Pec Deck', 'Cable Rear Delt Flys'],
   // 19. Tricep Pushdowns / Kickbacks
-  ['Tricep Pushdowns', 'Skull Crushers', 'DB Tricep Kickbacks'],
+  [
+    'Tricep Pushdowns',
+    'Rope Tricep Pushdowns',
+    'Straight-Bar Tricep Pushdowns',
+    'V-Bar Tricep Pushdowns',
+    'EZ-Bar Tricep Pushdowns',
+    'Reverse-Grip Tricep Pushdowns',
+    'Single-Arm Tricep Pushdowns',
+    'Skull Crushers',
+    'DB Tricep Kickbacks',
+  ],
   // 20. Overhead Triceps
-  ['Overhead DB Tricep Extensions', 'Overhead Cable Tricep Extensions'],
+  [
+    'Overhead DB Tricep Extensions',
+    'Overhead Cable Tricep Extensions',
+    'Rope Overhead Cable Tricep Extensions',
+    'Straight-Bar Overhead Cable Tricep Extensions',
+    'V-Bar Overhead Cable Tricep Extensions',
+    'EZ-Bar Overhead Cable Tricep Extensions',
+    'Single-Arm Overhead Cable Tricep Extensions',
+  ],
   // 21. Compound Triceps
   [
     'Close-Grip Bench Press',
@@ -1209,7 +1331,12 @@ const List<List<String>> kDefaultExerciseVariationGroups = [
     'Close-Grip EZ-Bar Curls',
     'DB Curls',
     'Cable Curls',
+    'Straight-Bar Cable Curls',
+    'EZ-Bar Cable Curls',
+    'Single-Arm Cable Curls',
   ],
+  // 22b. Hammer / Neutral-Grip Curls
+  ['Hammer Curls', 'Rope Cable Hammer Curls', 'Reverse Curls'],
   // 23. Lengthened & Shortened Curls
   ['Incline DB Curls', 'Bayesian Cable Curls'],
   ['Preacher Curls', 'Spider Curls', 'Concentration Curls'],

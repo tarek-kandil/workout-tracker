@@ -32,6 +32,8 @@ String normalizeExerciseSignature(String raw) {
     (r'\bpull\s+overs?\b', 'pullover'),
     (r'\bwood\s+choppers?\b', 'woodchopper'),
     (r'\bez\s+bar\b', 'ezbar'),
+    (r'\bv\s+bar\b', 'vbar'),
+    (r'\bstraight\s+bar\b', 'straightbar'),
     (r'\bt\s+bar\b', 'tbar'),
     (r'\bl\s+sit\b', 'lsit'),
   ];
@@ -111,7 +113,50 @@ const Map<String, String> _kSafeShorthands = {
   'tricep kickback': 'db tricep kickback',
   'overhead tricep extension': 'overhead db tricep extension',
   'cable kickback': 'cable glute kickback',
+  'rope face pull': 'face pull',
+  'rope pushdown': 'rope tricep pushdown',
+  'straightbar pushdown': 'straightbar tricep pushdown',
+  'straight handle tricep pushdown': 'straightbar tricep pushdown',
+  'straight handle pushdown': 'straightbar tricep pushdown',
+  'vbar pushdown': 'vbar tricep pushdown',
+  'triangle tricep pushdown': 'vbar tricep pushdown',
+  'triangle handle tricep pushdown': 'vbar tricep pushdown',
+  'triangle pushdown': 'vbar tricep pushdown',
+  'triangle handle overhead cable tricep extension':
+      'vbar overhead cable tricep extension',
+  'triangle overhead cable tricep extension':
+      'vbar overhead cable tricep extension',
+  'straight handle overhead cable tricep extension':
+      'straightbar overhead cable tricep extension',
+  'rope hammer curl': 'rope cable hammer curl',
 };
+
+/// Matches an exercise name against a user search query, handling synonyms
+/// like `"triangle"` ↔ `"V-Bar"`, `"dumbbell"` ↔ `"DB"`, `"barbell"` ↔ `"BB"`,
+/// and hyphen/space differences (`"v bar"` ↔ `"V-Bar"`, `"pullup"` ↔ `"Pull-Ups"`).
+bool matchesExerciseSearch(String exerciseName, String rawQuery) {
+  final q = rawQuery.trim().toLowerCase();
+  if (q.isEmpty) return true;
+  final lowerName = exerciseName.toLowerCase();
+  if (lowerName.contains(q)) return true;
+
+  var expandedName = lowerName
+      .replaceAll('-', ' ')
+      .replaceAll(RegExp(r'\bv\s+bar\b'), 'v bar triangle handle')
+      .replaceAll(RegExp(r'\bstraight\s+bar\b'), 'straight bar straight handle')
+      .replaceAll(RegExp(r'\bdb\b'), 'db dumbbell')
+      .replaceAll(RegExp(r'\bbb\b'), 'bb barbell');
+
+  final queryTokens = q
+      .replaceAll('-', ' ')
+      .split(RegExp(r'\s+'))
+      .where((t) => t.isNotEmpty);
+  if (queryTokens.every((t) => expandedName.contains(t))) return true;
+
+  final normName = normalizeExerciseSignature(exerciseName);
+  final normQuery = normalizeExerciseSignature(q);
+  return normQuery.isNotEmpty && normName.contains(normQuery);
+}
 
 const Set<String> _kKeepTrailingS = {
   'press',

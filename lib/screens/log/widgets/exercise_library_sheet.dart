@@ -7,6 +7,7 @@ import '../../../models/exercise_muscle_seed.dart';
 import '../../../providers/database_provider.dart';
 import '../../../providers/exercise_providers.dart';
 import '../../../utils/constants.dart';
+import '../../../utils/exercise_deduplicator.dart';
 import '../../settings/widgets/muscle_assignment_sheet.dart';
 
 class ExerciseLibrarySheet extends ConsumerStatefulWidget {
@@ -45,8 +46,7 @@ class _ExerciseLibrarySheetState extends ConsumerState<ExerciseLibrarySheet> {
 
   List<Exercise> get _filtered {
     if (_query.isEmpty) return _all;
-    final q = _query.toLowerCase();
-    return _all.where((e) => e.name.toLowerCase().contains(q)).toList();
+    return _all.where((e) => matchesExerciseSearch(e.name, _query)).toList();
   }
 
   Future<void> _createAndSelect(String rawName) async {

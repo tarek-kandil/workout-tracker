@@ -14,6 +14,10 @@ class DailyTasksDao extends DatabaseAccessor<AppDatabase>
         ..orderBy([(t) => OrderingTerm(expression: t.sortOrder)]))
       .watch();
 
+  Future<List<DailyTask>> getAllTasks() => (select(dailyTasks)
+        ..orderBy([(t) => OrderingTerm(expression: t.sortOrder)]))
+      .get();
+
   Stream<List<DailyTaskCompletion>> watchTodayCompletions() {
     final today = _todayStart();
     final tomorrow = today.add(const Duration(days: 1));

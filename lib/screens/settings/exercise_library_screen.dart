@@ -12,6 +12,7 @@ import '../../providers/home_providers.dart';
 import '../../providers/muscle_volume_provider.dart';
 import '../../providers/next_workout_provider.dart';
 import '../../utils/constants.dart';
+import '../../utils/exercise_deduplicator.dart';
 import '../../widgets/glass_background.dart';
 import 'widgets/muscle_assignment_sheet.dart';
 
@@ -57,7 +58,7 @@ class _ExerciseLibraryScreenState
     final filtered = _query.isEmpty
         ? exercises
         : exercises
-            .where((e) => e.name.toLowerCase().contains(_query))
+            .where((e) => matchesExerciseSearch(e.name, _query))
             .toList();
 
     final Map<String, List<Exercise>> grouped = {};
@@ -915,7 +916,7 @@ class _MergeTargetPickerSheetState extends State<_MergeTargetPickerSheet> {
     final filtered = _query.isEmpty
         ? widget.candidates
         : widget.candidates
-            .where((e) => e.name.toLowerCase().contains(_query))
+            .where((e) => matchesExerciseSearch(e.name, _query))
             .toList();
 
     return DraggableScrollableSheet(
